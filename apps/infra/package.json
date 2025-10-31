@@ -21,6 +21,10 @@
   },
   "dependencies": {
     "aws-cdk-lib": "2.215.0",
-    "constructs": "^10.0.0"
+    "constructs": "^10.0.0",
+    "@aws-solutions-constructs/aws-s3-lambda": "^2.40.0",
+    "@aws-solutions-constructs/aws-lambda-dynamodb": "^2.40.0",
+    "@aws-solutions-constructs/aws-sqs-lambda": "^2.40.0",
+    "@aws-solutions-constructs/aws-lambda-sqs": "^2.40.0"
   }
 }
