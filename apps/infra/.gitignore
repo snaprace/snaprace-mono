@@ -1,8 +1,44 @@
+# CDK
 *.js
-!jest.config.js
 *.d.ts
 node_modules
-
-# CDK asset staging directory
-.cdk.staging
 cdk.out
+.cdk.staging
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+coverage/
+.nyc_output/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Lambda build artifacts
+lambda/**/node_modules
+lambda/**/*.js
+lambda/**/*.d.ts
+lambda/**/.build
+
+# Temporary
+tmp/
+temp/
+*.tmp
+
+# CDK Context
+cdk.context.json
