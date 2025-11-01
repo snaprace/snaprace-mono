@@ -1,17 +1,38 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "ui": "tui",
+  "globalEnv": [
+    "AWS_REGION",
+    "AWS_ACCESS_KEY_ID",
+    "AWS_SECRET_ACCESS_KEY",
+    "DYNAMO_GALLERIES_TABLE",
+    "DYNAMO_EVENTS_TABLE",
+    "DYNAMO_PHOTOS_TABLE",
+    "DYNAMO_FEEDBACKS_TABLE",
+    "DYNAMO_ORGANIZATIONS_TABLE",
+    "DYNAMO_TIMING_RESULTS_TABLE",
+    "BUCKET",
+    "AUTH_SECRET",
+    "AUTH_URL",
+    "CRISP_WEBSITE_ID",
+    "NODE_ENV"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**", "lib/**", "*.js", "*.d.ts"]
     },
     "lint": {
       "dependsOn": ["^lint"]
     },
     "check-types": {
       "dependsOn": ["^check-types"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "**/*.test.{ts,tsx}"],
+      "outputs": ["coverage/**"]
     },
     "dev": {
       "cache": false,
