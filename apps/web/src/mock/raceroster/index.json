@@ -1,0 +1,13 @@
+{
+  "event_id": "footrace-for-the-fallen-2025",
+  "event_name": "Footrace For The Fallen 2025",
+  "organization_id": "millennium-running",
+  "result_sets": [
+    {
+      "id": "footrace-for-the-fallen-2025",
+      "category": "5K",
+      "s3_key": "millennium-running/footrace-for-the-fallen-2025/results/5k.json"
+    }
+  ],
+  "updated_at": "2025-10-16T12:40:00Z"
+}

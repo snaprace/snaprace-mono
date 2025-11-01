@@ -1,0 +1,18 @@
+{
+  "event_id": "everybody-5k-10k-2025",
+  "event_name": "Everybody 5k + 10k",
+  "organization_id": "winningeventsgroup",
+  "result_sets": [
+    {
+      "id": "everybody-10k-2025-5k",
+      "category": "5K",
+      "s3_key": "winningeventsgroup/everybody-10k-2024/results/5k.json"
+    },
+    {
+      "id": "everybody-5k-2025-10k",
+      "category": "10K",
+      "s3_key": "winningeventsgroup/everybody-10k-2024/results/10k.json"
+    }
+  ],
+  "updated_at": "2025-10-19T12:40:00Z"
+}
