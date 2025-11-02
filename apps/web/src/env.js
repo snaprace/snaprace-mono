@@ -19,7 +19,7 @@ export const env = createEnv({
     DYNAMO_FEEDBACKS_TABLE: z.string(),
     DYNAMO_ORGANIZATIONS_TABLE: z.string(),
     DYNAMO_TIMING_RESULTS_TABLE: z.string(),
-    DYNAMO_RUNNERS_TABLE: z.string(),
+    DYNAMO_RUNNERS_TABLE: z.string().optional(), // 스크립트 전용, 빌드 시 불필요
     BUCKET: z.string(),
     // Auth.js (NextAuth) configuration
     AUTH_SECRET: z.string(),

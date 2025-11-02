@@ -52,12 +52,12 @@ async function main() {
     .parse();
 
   const args: CliArgs = {
-    eventId: (argv["event-id"] ?? "") as string,
-    apiKey: (argv["api-key"] ?? "") as string,
-    eventIdDb: (argv["event-id-db"] ?? "") as string,
-    eventDate: (argv["event-date"] ?? "") as string,
-    eventName: (argv["event-name"] ?? "") as string,
-    tableName: (argv["table-name"] ?? "Runners") as string,
+    eventId: argv["event-id"] ?? "",
+    apiKey: argv["api-key"] ?? "",
+    eventIdDb: argv["event-id-db"] ?? "",
+    eventDate: argv["event-date"] ?? "",
+    eventName: argv["event-name"] ?? "",
+    tableName: argv["table-name"] ?? "Runners",
   };
 
   console.log("🚀 RaceResult Runners 임포트 시작");
@@ -113,4 +113,7 @@ async function main() {
   }
 }
 
-main();
+void main().catch((error) => {
+  console.error("Fatal error:", error);
+  process.exit(1);
+});

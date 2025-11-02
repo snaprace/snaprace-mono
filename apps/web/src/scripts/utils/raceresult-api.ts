@@ -22,7 +22,7 @@ export interface RaceResultRecord {
 export async function fetchRaceResultData(
   eventId: string,
   apiKey: string,
-  maxRetries = 3
+  maxRetries = 3,
 ): Promise<RaceResultRecord[]> {
   const url = `https://api.raceresult.com/${eventId}/${apiKey}`;
 
@@ -38,7 +38,7 @@ export async function fetchRaceResultData(
 
       if (!response.ok) {
         throw new Error(
-          `RaceResult API error: ${response.status} ${response.statusText}`
+          `RaceResult API error: ${response.status} ${response.statusText}`,
         );
       }
 
@@ -70,4 +70,3 @@ export async function fetchRaceResultData(
 
   throw new Error("Max retries exceeded");
 }
-
