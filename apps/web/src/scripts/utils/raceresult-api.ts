@@ -42,7 +42,7 @@ export async function fetchRaceResultData(
         );
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as RaceResultRecord[];
 
       if (!Array.isArray(data)) {
         throw new Error("Invalid API response format: expected array");
@@ -55,7 +55,7 @@ export async function fetchRaceResultData(
       }
 
       console.log(`   ✅ ${data.length}개 레코드 수신 완료`);
-      return data as RaceResultRecord[];
+      return data;
     } catch (error) {
       if (attempt === maxRetries) {
         throw error;
