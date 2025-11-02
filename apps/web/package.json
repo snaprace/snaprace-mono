@@ -9,7 +9,8 @@
     "lint": "next lint",
     "check-types": "tsc --noEmit",
     "test": "vitest",
-    "import:raceresult": "tsx src/scripts/import-raceresult-runners.ts"
+    "runners:update": "tsx src/scripts/raceresult/update-runners-table.ts",
+    "timing:update-s3": "tsx src/scripts/raceresult/update-timingdata-s3.ts"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.873.0",

@@ -118,8 +118,8 @@ curl -s "https://api.raceresult.com/369364/IWHDJALRR9QHRNR3J6BZ1H02TOY1KUVC"
 - ✅ `apps/web/src/mock/fetch-raceroster-data.js`: RaceRoster API 데이터 페처 (참고용)
 - ✅ `apps/web/src/lib/dynamodb.ts`: DynamoDB 클라이언트 설정
 - ✅ `apps/web/src/env.js`: 환경 변수 관리
-- ❌ Runners 테이블 환경 변수 없음
-- ❌ RaceResult API 연동 스크립트 없음
+- ✅ `apps/web/src/scripts/raceresult/update-runners-table.ts`: RaceResult API 연동 스크립트
+- ✅ `apps/web/src/scripts/raceresult/utils/`: 유틸리티 함수들
 
 **기존 패턴 참고**:
 
@@ -169,22 +169,14 @@ curl -s "https://api.raceresult.com/369364/IWHDJALRR9QHRNR3J6BZ1H02TOY1KUVC"
 apps/web/
 ├── src/
 │   └── scripts/
-│       ├── import-raceresult-runners.ts     # 메인 스크립트
-│       └── utils/
-│           ├── raceresult-api.ts           # RaceResult API 클라이언트
-│           ├── runners-transformer.ts      # 데이터 변환 로직
-│           └── dynamodb-helpers.ts         # DynamoDB 헬퍼 함수
+│       └── raceresult/
+│           ├── update-runners-table.ts     # 메인 스크립트
+│           └── utils/
+│               ├── raceresult-api.ts       # RaceResult API 클라이언트
+│               ├── runners-transformer.ts  # 데이터 변환 로직
+│               └── dynamodb-helpers.ts     # DynamoDB 헬퍼 함수
 ├── package.json                            # 스크립트 실행 명령어 추가
 └── tsconfig.json                           # TypeScript 설정
-```
-
-**또는 더 간단한 구조**:
-
-```
-apps/web/
-├── scripts/
-│   └── import-raceresult-runners.ts        # 독립 실행 가능한 스크립트
-└── package.json
 ```
 
 ### 3.2 기술 스택 결정
@@ -209,8 +201,11 @@ apps/web/
 **사용**: AWS SDK for JavaScript v3
 
 ```typescript
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import { DynamoDBDocumentClient, BatchWriteCommand } from '@aws-sdk/lib-dynamodb'
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import {
+  DynamoDBDocumentClient,
+  BatchWriteCommand,
+} from "@aws-sdk/lib-dynamodb";
 ```
 
 **이유**:
@@ -230,27 +225,27 @@ import { DynamoDBDocumentClient, BatchWriteCommand } from '@aws-sdk/lib-dynamodb
 ```typescript
 // RaceResult API 응답 형식
 interface RaceResultRecord {
-  Contest: string
-  Bib: number
-  Name: string
-  Hometown: string
-  Age: number
-  Gender: string
-  AG: string
-  'Start Time': string
-  'Finish Time': string
-  'Course Time Chip': string
-  'Course Time Gun': string
+  Contest: string;
+  Bib: number;
+  Name: string;
+  Hometown: string;
+  Age: number;
+  Gender: string;
+  AG: string;
+  "Start Time": string;
+  "Finish Time": string;
+  "Course Time Chip": string;
+  "Course Time Gun": string;
 }
 
 // DynamoDB 저장 형식 (최소 필드만 저장)
 interface RunnerItem {
-  bib_number: string // Partition Key
-  event_id: string // Sort Key
-  event_date: string
-  event_name: string
-  finish_time: string
-  name: string
+  bib_number: string; // Partition Key
+  event_id: string; // Sort Key
+  event_date: string;
+  event_name: string;
+  finish_time: string;
+  name: string;
 }
 ```
 
@@ -260,45 +255,50 @@ interface RunnerItem {
 function transformToRunnerItem(
   record: RaceResultRecord,
   eventInfo: {
-    eventId: string
-    eventDate: string
-    eventName: string
-  }
+    eventId: string;
+    eventDate: string;
+    eventName: string;
+  },
 ): RunnerItem {
   return {
     bib_number: String(record.Bib),
     event_id: eventInfo.eventId,
     event_date: eventInfo.eventDate,
     event_name: eventInfo.eventName,
-    finish_time: record['Finish Time'],
-    name: record.Name
-  }
+    finish_time: record["Finish Time"],
+    name: record.Name,
+  };
 }
 ```
 
 ### 4.2 RaceResult API 클라이언트
 
 ```typescript
-async function fetchRaceResultData(eventId: string, apiKey: string): Promise<RaceResultRecord[]> {
-  const url = `https://api.raceresult.com/${eventId}/${apiKey}`
+async function fetchRaceResultData(
+  eventId: string,
+  apiKey: string,
+): Promise<RaceResultRecord[]> {
+  const url = `https://api.raceresult.com/${eventId}/${apiKey}`;
 
   const response = await fetch(url, {
     headers: {
-      Accept: 'application/json'
-    }
-  })
+      Accept: "application/json",
+    },
+  });
 
   if (!response.ok) {
-    throw new Error(`RaceResult API error: ${response.status} ${response.statusText}`)
+    throw new Error(
+      `RaceResult API error: ${response.status} ${response.statusText}`,
+    );
   }
 
-  const data = await response.json()
+  const data = await response.json();
 
   if (!Array.isArray(data)) {
-    throw new Error('Invalid API response format')
+    throw new Error("Invalid API response format");
   }
 
-  return data
+  return data;
 }
 ```
 
@@ -307,39 +307,42 @@ async function fetchRaceResultData(eventId: string, apiKey: string): Promise<Rac
 **배치 WriteItem 사용** (최대 25개 항목):
 
 ```typescript
-async function batchSaveRunners(items: RunnerItem[], tableName: string): Promise<{ success: number; failed: number }> {
-  const client = new DynamoDBClient({ region: process.env.AWS_REGION })
-  const docClient = DynamoDBDocumentClient.from(client)
+async function batchSaveRunners(
+  items: RunnerItem[],
+  tableName: string,
+): Promise<{ success: number; failed: number }> {
+  const client = new DynamoDBClient({ region: process.env.AWS_REGION });
+  const docClient = DynamoDBDocumentClient.from(client);
 
-  let success = 0
-  let failed = 0
+  let success = 0;
+  let failed = 0;
 
   // 25개씩 배치 처리
   for (let i = 0; i < items.length; i += 25) {
-    const batch = items.slice(i, i + 25)
+    const batch = items.slice(i, i + 25);
 
     const requests = batch.map((item) => ({
       PutRequest: {
-        Item: item
-      }
-    }))
+        Item: item,
+      },
+    }));
 
     try {
       await docClient.send(
         new BatchWriteCommand({
           RequestItems: {
-            [tableName]: requests
-          }
-        })
-      )
-      success += batch.length
+            [tableName]: requests,
+          },
+        }),
+      );
+      success += batch.length;
     } catch (error) {
-      console.error(`Batch write failed:`, error)
-      failed += batch.length
+      console.error(`Batch write failed:`, error);
+      failed += batch.length;
     }
   }
 
-  return { success, failed }
+  return { success, failed };
 }
 ```
 
@@ -353,7 +356,7 @@ async function batchSaveRunners(items: RunnerItem[], tableName: string): Promise
 **커맨드 라인 인자** (CLI 인자 방식 사용):
 
 ```bash
-tsx src/scripts/import-raceresult-runners.ts \
+tsx src/scripts/raceresult/update-runners-table.ts \
   --event-id 369364 \
   --api-key IWHDJALRR9QHRNR3J6BZ1H02TOY1KUVC \
   --event-id-db happy-hour-hustle-week4-2025 \
@@ -429,20 +432,22 @@ export AWS_PROFILE=snaprace
 async function fetchRaceResultDataWithRetry(
   eventId: string,
   apiKey: string,
-  maxRetries = 3
+  maxRetries = 3,
 ): Promise<RaceResultRecord[]> {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      return await fetchRaceResultData(eventId, apiKey)
+      return await fetchRaceResultData(eventId, apiKey);
     } catch (error) {
       if (attempt === maxRetries) {
-        throw error
+        throw error;
       }
       // 지수 백오프: 1초, 2초, 4초
-      await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 1000))
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.pow(2, attempt) * 1000),
+      );
     }
   }
-  throw new Error('Max retries exceeded')
+  throw new Error("Max retries exceeded");
 }
 ```
 
@@ -451,9 +456,11 @@ async function fetchRaceResultDataWithRetry(
 **Throttling 처리**:
 
 ```typescript
-if (error.name === 'ProvisionedThroughputExceededException') {
+if (error.name === "ProvisionedThroughputExceededException") {
   // 지수 백오프 재시도
-  await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 1000))
+  await new Promise((resolve) =>
+    setTimeout(resolve, Math.pow(2, attempt) * 1000),
+  );
 }
 ```
 
@@ -480,7 +487,7 @@ export AWS_SECRET_ACCESS_KEY=your_secret_key
 export DYNAMO_RUNNERS_TABLE=Runners
 
 # 3. 스크립트 실행
-pnpm run import:raceresult \
+pnpm run runners:update \
   --event-id 369364 \
   --api-key IWHDJALRR9QHRNR3J6BZ1H02TOY1KUVC \
   --event-id-db happy-hour-hustle-week4-2025 \
@@ -491,7 +498,7 @@ pnpm run import:raceresult \
 **또는 테이블 이름 직접 지정**:
 
 ```bash
-pnpm run import:raceresult \
+pnpm run runners:update \
   --event-id 369364 \
   --api-key IWHDJALRR9QHRNR3J6BZ1H02TOY1KUVC \
   --event-id-db happy-hour-hustle-week4-2025 \
@@ -505,7 +512,7 @@ pnpm run import:raceresult \
 ```bash
 # 여러 이벤트 일괄 처리
 for event in event1 event2 event3; do
-  pnpm run import:raceresult \
+  pnpm run runners:update \
     --event-id $event \
     --api-key $API_KEY \
     --event-id-db $event \
@@ -564,10 +571,10 @@ done
 
 ### Phase 1: 기반 구조 구축 ✅ 완료
 
-- [x] `apps/web/src/scripts/` 디렉토리 생성
+- [x] `apps/web/src/scripts/raceresult/` 디렉토리 생성
 - [x] TypeScript 설정 확인 (기존 설정 사용)
 - [x] 환경 변수 추가 (`DYNAMO_RUNNERS_TABLE`)
-- [x] 기본 스크립트 파일 생성
+- [x] 기본 스크립트 파일 생성 (`update-runners-table.ts`)
 
 ### Phase 2: RaceResult API 연동 ✅ 완료
 
@@ -613,11 +620,12 @@ done
 apps/web/
 ├── src/
 │   └── scripts/
-│       ├── import-raceresult-runners.ts
-│       └── utils/
-│           ├── raceresult-api.ts
-│           ├── runners-transformer.ts
-│           └── dynamodb-helpers.ts
+│       └── raceresult/
+│           ├── update-runners-table.ts
+│           └── utils/
+│               ├── raceresult-api.ts
+│               ├── runners-transformer.ts
+│               └── dynamodb-helpers.ts
 ├── package.json                              # 스크립트 명령어 추가
 └── README.md                                 # 사용법 문서 업데이트
 ```
@@ -627,7 +635,7 @@ apps/web/
 ```json
 {
   "scripts": {
-    "import:raceresult": "tsx src/scripts/import-raceresult-runners.ts"
+    "runners:update": "tsx src/scripts/raceresult/update-runners-table.ts"
   }
 }
 ```
@@ -649,11 +657,12 @@ apps/web/
 apps/web/
 ├── src/
 │   └── scripts/
-│       ├── import-raceresult-runners.ts      # 메인 스크립트
-│       └── utils/
-│           ├── raceresult-api.ts            # RaceResult API 클라이언트
-│           ├── runners-transformer.ts        # 데이터 변환 로직
-│           └── dynamodb-helpers.ts          # DynamoDB 헬퍼 함수
+│       └── raceresult/
+│           ├── update-runners-table.ts       # 메인 스크립트
+│           └── utils/
+│               ├── raceresult-api.ts        # RaceResult API 클라이언트
+│               ├── runners-transformer.ts   # 데이터 변환 로직
+│               └── dynamodb-helpers.ts      # DynamoDB 헬퍼 함수
 └── package.json                              # 스크립트 및 의존성 추가됨
 ```
 
