@@ -636,7 +636,7 @@ export interface IndexFacesFunction {
   // 처리:
   // 1. Rekognition 컬렉션 확인/생성 (이름: {organizer_id}-{event_id})
   // 2. Rekognition IndexFaces로 얼굴 ID 획득
-  // 3. SearchFaces(FaceId 기반)로 동일 얼굴이 있는 bib 확인
+  // 3. SearchFaces(FaceId 기반)로 동일 얼굴이 있는 bib 확인 (득표 방식)
   // 4. 사진의 bib_number 확정/수정 (Photos 테이블 UpdateItem)
   // 5. PhotoFaces 테이블에 얼굴-사진 매핑 PutItem
   // 6. Photos 테이블의 face_ids, processing_status 업데이트
@@ -644,8 +644,29 @@ export interface IndexFacesFunction {
   // 특징:
   // - 컬렉션 자동 생성: 이벤트별 컬렉션 자동 생성
   // - 얼굴-사진 다대다 관계 정확히 모델링
+  // - 얼굴 매칭 다수결: SearchFaces 결과의 매칭된 기존 얼굴들의 bib을 득표로 모아 결정
+  // - Bib 결정 우선순위: OCR 단독 확정 > 얼굴 매칭 다수결(임계 통과) > 보류(NONE)
 }
 ```
+
+**중요한 구현 세부사항:**
+
+1. **GSI_ByBib 업데이트 버그 수정**: `updatePhoto()`가 `bib_number`를 변경하지 않아도 GSI_ByBib를 항상 재설정하여 NONE으로 덮어쓰는 문제를 수정. `bib_number`가 변경될 때만 GSI_ByBib를 업데이트하도록 변경.
+
+2. **SearchFaces 매칭 로직 개선**: 새로 인덱싱된 faceId를 조회하는 대신, SearchFaces 결과의 **매칭된 기존 얼굴들(other.FaceId)**의 bib을 조회하여 득표를 모아 결정. 이렇게 해야 "사진1=A+B, 사진2=A, 사진3=B"일 때 사진3이 A 갤러리에 섞이지 않고 B로 확정됨.
+
+3. **최종 bib 결정 규칙**:
+   - 우선순위 1: OCR 단독 확정 (`hasConfirmedBib && bib`)
+   - 우선순위 2: 얼굴 매칭 다수결 (득표수 ≥ `REQUIRED_VOTES`, 최고 유사도 ≥ `MIN_SIMILARITY_THRESHOLD`)
+   - 우선순위 3: 보류 (NONE)
+
+4. **환경 변수 설정**:
+   - `MIN_SIMILARITY_THRESHOLD`: 얼굴 매칭 최소 유사도 (기본값: 95.0)
+   - `REQUIRED_VOTES`: 얼굴 매칭 최소 득표수 (기본값: 2)
+
+5. **Promise.allSettled 중복 호출 제거**: 핸들러에서 한 번만 호출하도록 수정.
+
+6. **상태 전이 최소화**: `NO_FACES` 같은 상태 업데이트 시 GSI_ByBib를 건드리지 않아 갤러리 오염 방지.
 
 #### 3. `find_by_selfie` (API Gateway → 유저-facing 검색/강화)
 
@@ -864,6 +885,116 @@ try {
   }
 }
 ```
+
+### 6.3 index-faces Lambda 버그 수정 및 개선 사항
+
+#### 핵심 수정 포인트
+
+**1. GSI_ByBib 업데이트 버그 수정**
+
+**문제**: `updatePhoto()` 함수가 `bib_number`를 변경하지 않아도 GSI_ByBib를 항상 재설정하여 NONE으로 덮어쓰는 버그가 있었음.
+
+**원인**: `NO_FACES` 같은 상태 업데이트 시에도 `bib_number`가 undefined이면 자동으로 `BIB#NONE`으로 설정되어 기존 갤러리 정보가 손실됨.
+
+**해결**: `bib_number`가 실제로 변경될 때만 GSI_ByBib를 업데이트하도록 수정:
+
+```typescript
+// bib_number가 변경될 때만 GSI_ByBib 업데이트
+if (updates.bib_number !== undefined) {
+  updateExpressionParts.push('#bib_number = :bib_number')
+  // ... bib_number 업데이트
+
+  const gsi1pk = `EVT#${organizerId}#${eventId}#BIB#${updates.bib_number}`
+  const gsi1sk = `TS#${now}#PHOTO#${sanitizedKey}`
+  updateExpressionParts.push('#gsi1pk = :gsi1pk', '#gsi1sk = :gsi1sk')
+  // GSI 업데이트는 bib_number 변경 시에만
+}
+
+// processing_status는 항상 업데이트 (GSI_ByStatus도 함께)
+if (updates.processing_status) {
+  // ... 상태 GSI 업데이트
+}
+```
+
+**효과**: 상태만 바꾸는 업데이트가 갤러리(GSI_ByBib)를 건드리지 않아 "사진3이 A 갤러리에 섞이는" 오염 방지.
+
+**2. SearchFaces 매칭 로직 개선**
+
+**문제**: 새로 인덱싱된 faceId를 조회하여 bib을 찾으려 했지만, 새 faceId에는 과거 이력이 없어 매칭 실패.
+
+**원인**: `findExistingBibForFace(newFaceId)`를 호출하면 새로 만든 faceId이므로 PhotoFaces 테이블에 기록이 없음.
+
+**해결**: SearchFaces 결과의 **매칭된 기존 얼굴들(other.FaceId)**에서 bib을 조회하여 득표를 모아 결정:
+
+```typescript
+async function indexFacesAndMatch(...): Promise<{
+  faceIds: string[]
+  votesByBib: Map<string, { votes: number; topSim: number }>
+}> {
+  const votesByBib = new Map<string, { votes: number; topSim: number }>()
+
+  for (const faceRecord of indexedFaces) {
+    const faceId = faceRecord.Face?.FaceId
+    // SearchFaces로 동일 얼굴 검색
+    const matches = (searchResponse.FaceMatches || [])
+      .filter(m => m.Face?.FaceId !== faceId) // 자기 자신 제외
+
+    for (const m of matches) {
+      const matchedFaceId = m.Face!.FaceId! // 매칭된 기존 얼굴
+      const sim = m.Similarity ?? 0
+
+      // 매칭된 기존 얼굴의 bib 조회
+      const existingBib = await findExistingBibForFace(
+        photoFacesTableName, organizerId, eventId, matchedFaceId
+      )
+
+      if (existingBib && existingBib !== 'NONE') {
+        const v = votesByBib.get(existingBib) ?? { votes: 0, topSim: 0 }
+        v.votes += 1
+        v.topSim = Math.max(v.topSim, sim)
+        votesByBib.set(existingBib, v)
+      }
+    }
+  }
+
+  return { faceIds, votesByBib }
+}
+```
+
+**효과**: "사진1=A+B, 사진2=A, 사진3=B"일 때, 사진3은 B 쪽 얼굴 매칭 득표를 받아 B로 확정되고, A 갤러리에 섞이지 않음.
+
+**3. 최종 bib 결정 규칙 명확화**
+
+**정책**: OCR 단독 확정 > 얼굴 매칭 다수결(유사도 임계 통과) > 모호하면 보류
+
+```typescript
+let finalBibNumber: string = 'NONE'
+
+// 1) OCR가 유일 확정이면 최우선
+if (hasConfirmedBib && bib) {
+  finalBibNumber = bib
+}
+// 2) 얼굴 매칭 다수결 결과 사용
+else if (votesByBib.size > 0) {
+  const sorted = [...votesByBib.entries()].sort((a, b) => b[1].votes - a[1].votes || b[1].topSim - a[1].topSim)
+
+  const [bestBib, meta] = sorted[0]
+  const requiredVotes = getRequiredVotes(env) // 기본값: 2
+  const minSimilarityThreshold = getMinSimilarityThreshold(env) // 기본값: 95.0
+
+  if (meta.votes >= requiredVotes && meta.topSim >= minSimilarityThreshold) {
+    finalBibNumber = bestBib
+  }
+  // 애매하면 보류 (NONE 유지)
+}
+```
+
+**4. 기타 개선 사항**
+
+- **Promise.allSettled 중복 호출 제거**: 핸들러에서 한 번만 호출하도록 수정
+- **환경 변수로 임계값 설정**: `MIN_SIMILARITY_THRESHOLD`, `REQUIRED_VOTES`를 환경 변수로 설정하여 이벤트별 튜닝 가능
+- **상태 전이 최소화**: `NO_FACES` 같은 상태 업데이트 시 GSI_ByBib를 건드리지 않아 갤러리 오염 방지
+- **로깅 개선**: bib 결정 과정과 득표 정보를 상세히 로깅하여 디버깅 용이성 향상
 
 ### 7. 자동화된 시스템 흐름
 

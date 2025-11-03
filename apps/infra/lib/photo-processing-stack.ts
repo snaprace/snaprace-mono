@@ -3,6 +3,7 @@ import { Construct } from 'constructs'
 import * as s3 from 'aws-cdk-lib/aws-s3'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 import * as lambda from 'aws-cdk-lib/aws-lambda'
+import * as lambdaEventSources from 'aws-cdk-lib/aws-lambda-event-sources'
 import * as sqs from 'aws-cdk-lib/aws-sqs'
 import * as events from 'aws-cdk-lib/aws-events'
 import * as targets from 'aws-cdk-lib/aws-events-targets'
@@ -238,6 +239,54 @@ export class PhotoProcessingStack extends cdk.Stack {
       })
     )
 
+    // index-faces Lambda 함수 생성
+    const indexFacesFunction = new lambda.Function(this, 'IndexFacesFunction', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/index-faces')),
+      layers: [commonLayer],
+      timeout: Duration.minutes(5),
+      memorySize: 1024, // 얼굴 인식은 더 많은 메모리 필요
+      environment: {
+        PHOTOS_TABLE_NAME: photosTable.tableName,
+        PHOTO_FACES_TABLE_NAME: photoFacesTable.tableName,
+        PHOTOS_BUCKET_NAME: photosBucket.bucketName,
+        MIN_SIMILARITY_THRESHOLD: '95.0', // 얼굴 매칭 최소 유사도 (%)
+        REQUIRED_VOTES: '2' // 얼굴 매칭 최소 득표수
+      },
+      logRetention: cdk.aws_logs.RetentionDays.ONE_WEEK,
+      tracing: lambda.Tracing.ACTIVE
+    })
+
+    // DynamoDB 테이블 읽기/쓰기 권한
+    photosTable.grantReadWriteData(indexFacesFunction)
+    photoFacesTable.grantReadWriteData(indexFacesFunction)
+
+    // Rekognition 권한
+    indexFacesFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'rekognition:IndexFaces',
+          'rekognition:SearchFaces',
+          'rekognition:CreateCollection',
+          'rekognition:DescribeCollection'
+        ],
+        resources: ['*']
+      })
+    )
+
+    // S3 읽기 권한 (버킷 내 객체)
+    photosBucket.grantRead(indexFacesFunction)
+
+    // SQS 이벤트 소스 연결: photoQueue → index-faces Lambda
+    indexFacesFunction.addEventSource(
+      new lambdaEventSources.SqsEventSource(photoQueue, {
+        batchSize: 5,
+        maxBatchingWindow: Duration.seconds(10)
+      })
+    )
+
     // Outputs
     new cdk.CfnOutput(this, 'PhotosBucketName', {
       value: photosBucket.bucketName
@@ -256,6 +305,9 @@ export class PhotoProcessingStack extends cdk.Stack {
     })
     new cdk.CfnOutput(this, 'DetectTextFunctionName', {
       value: detectTextFunction.functionName
+    })
+    new cdk.CfnOutput(this, 'IndexFacesFunctionName', {
+      value: indexFacesFunction.functionName
     })
   }
 }
