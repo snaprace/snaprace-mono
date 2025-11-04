@@ -45,8 +45,9 @@ function extractContestName(
   const contestFilter = groupFilters.find((filter) => filter.Type === 1);
   if (contestFilter && contestFilter.Values.length > 0) {
     // contestKey에서 인덱스 추출 (#1_5K -> 1)
-    const match = contestKey.match(/^#(\d+)_/);
-    if (match && match[1]) {
+    const regex = /^#(\d+)_/;
+    const match = regex.exec(contestKey);
+    if (match?.[1]) {
       const index = parseInt(match[1], 10) - 1; // 1-based to 0-based
       if (index >= 0 && index < contestFilter.Values.length) {
         const value = contestFilter.Values[index];
@@ -56,8 +57,9 @@ function extractContestName(
   }
 
   // Fallback: 키에서 직접 추출 (#1_5K -> 5K)
-  const fallbackMatch = contestKey.match(/^#\d+_(.+)$/);
-  if (fallbackMatch && fallbackMatch[1]) {
+  const fallbackRegex = /^#\d+_(.+)$/;
+  const fallbackMatch = fallbackRegex.exec(contestKey);
+  if (fallbackMatch?.[1]) {
     return fallbackMatch[1];
   }
 
@@ -114,7 +116,6 @@ function createHeadings(
 ): TimingHeading[] {
   const headings: TimingHeading[] = [];
   const Fields = apiResponse.list?.Fields;
-  const { DataFields } = apiResponse;
 
   // Fields가 배열인지 확인
   if (!Array.isArray(Fields)) {
@@ -157,18 +158,6 @@ function createHeadings(
     ];
     return defaultHeadings;
   }
-
-  // 기본 필드 매핑 (표에 정의된 필드만)
-  const fieldMapping: Record<string, string> = {
-    "WithStatus([AutoRank.p])": "race_placement",
-    Bib: "bib_num",
-    DisplayName: "name",
-    "Nation.Flag": "countrycode",
-    Age: "age",
-    "Finish.PACE": "avg_pace",
-    "Finish.CHIP": "chip_time",
-    "Finish.GUN": "clock_time",
-  };
 
   // Fields 배열을 순회하며 headings 생성
   const fieldMap = new Map<string, TimingHeading>();
@@ -355,7 +344,6 @@ export function transformContestData(
 
   // Results 배열의 각 row를 headings 순서에 맞게 재정렬
   // Mock 파일 순서: race_placement, bib_num, name, profile_image_url, gender, age, city, state, countrycode, clock_time, chip_time, avg_pace, age_performance_percentage, division_place, division
-  const { DataFields } = apiResponse;
   const reorderedResults = results.map(({ row, gender }) => {
     // DataFields 인덱스를 기준으로 필요한 필드만 추출
     const reorderedRow: unknown[] = [];
@@ -364,8 +352,9 @@ export function transformContestData(
     const placement = row[2];
     if (typeof placement === "string") {
       // "1." -> 1, "2." -> 2
-      const match = placement.match(/(\d+)/);
-      reorderedRow.push(match && match[1] ? parseInt(match[1], 10) : "");
+      const regex = /(\d+)/;
+      const match = regex.exec(placement);
+      reorderedRow.push(match?.[1] ? parseInt(match[1], 10) : "");
     } else {
       reorderedRow.push(placement ?? "");
     }
@@ -402,8 +391,9 @@ export function transformContestData(
     const countryFlag = row[5];
     if (typeof countryFlag === "string" && countryFlag.includes("flags/")) {
       // [img:flags/US.gif] -> US 추출
-      const match = countryFlag.match(/flags\/([A-Z]{2})\./);
-      reorderedRow.push(match ? match[1] : "");
+      const regex = /flags\/([A-Z]{2})\./;
+      const match = regex.exec(countryFlag);
+      reorderedRow.push(match?.[1] ?? "");
     } else {
       reorderedRow.push("");
     }
@@ -544,25 +534,29 @@ function compareTime(timeA: string, timeB: string): number {
  */
 function extractDistanceFromContestName(contestName: string): number | null {
   // 5 Mile, 10 Mile 등 - 이미 mile 단위
-  const mileMatch = contestName.match(/(\d+(?:\.\d+)?)\s*mile/i);
-  if (mileMatch && mileMatch[1]) {
+  const mileRegex = /(\d+(?:\.\d+)?)\s*mile/i;
+  const mileMatch = mileRegex.exec(contestName);
+  if (mileMatch?.[1]) {
     return parseFloat(mileMatch[1]);
   }
 
   // 5K, 10K 등 - km를 mile로 변환
-  const kmMatch = contestName.match(/(\d+(?:\.\d+)?)\s*K/i);
-  if (kmMatch && kmMatch[1]) {
+  const kmRegex = /(\d+(?:\.\d+)?)\s*K/i;
+  const kmMatch = kmRegex.exec(contestName);
+  if (kmMatch?.[1]) {
     const km = parseFloat(kmMatch[1]);
     return km / 1.60934; // Convert km to miles
   }
 
   // Half Marathon - km를 mile로 변환
-  if (contestName.match(/half[\s-]?marathon/i)) {
+  const halfMarathonRegex = /half[\s-]?marathon/i;
+  if (halfMarathonRegex.exec(contestName)) {
     return 21.0975 / 1.60934; // Half marathon distance in miles (~13.1 miles)
   }
 
   // Marathon - km를 mile로 변환
-  if (contestName.match(/^marathon$/i)) {
+  const marathonRegex = /^marathon$/i;
+  if (marathonRegex.exec(contestName)) {
     return 42.195 / 1.60934; // Marathon distance in miles (~26.2 miles)
   }
 
