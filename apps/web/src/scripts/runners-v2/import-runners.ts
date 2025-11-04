@@ -362,7 +362,13 @@ async function main() {
     console.log("📖 JSON 파일 읽는 중...");
     const fs = await import("fs/promises");
     const fileContent = await fs.readFile(args.dataFile, "utf-8");
-    const records: RaceResultRecord[] = JSON.parse(fileContent);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const parsedData = JSON.parse(fileContent) as unknown;
+    // 타입 검증: 배열인지 확인
+    if (!Array.isArray(parsedData)) {
+      throw new Error("JSON 데이터는 배열 형식이어야 합니다.");
+    }
+    const records = parsedData as RaceResultRecord[];
     console.log(`✅ ${records.length}개의 레코드 로드 완료`);
     console.log("");
 
