@@ -24,6 +24,7 @@ export class PhotoProcessingStack extends cdk.Stack {
       enforceSSL: true,
       removalPolicy,
       autoDeleteObjects: true, // dev
+      eventBridgeEnabled: true,
     });
 
     const photosTable = new dynamodb.TableV2(this, "PhotosTable", {

@@ -2,8 +2,12 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "types": ["node", "aws-lambda"],
-    "moduleDetection": "force"
+    "moduleDetection": "force",
+    "baseUrl": "..",
+    "paths": {
+      "shared/*": ["shared/*"]
+    }
   },
-  "include": ["**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": ["**/*.ts", "../shared/**/*.ts"],
+  "exclude": ["node_modules", "shared"]
 }
