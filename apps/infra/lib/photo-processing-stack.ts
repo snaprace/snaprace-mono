@@ -20,7 +20,7 @@ export class PhotoProcessingStack extends cdk.Stack {
     const removalPolicy = RemovalPolicy.DESTROY; // dev
 
     const photosBucket = new s3.Bucket(this, "SnapRaceBucket", {
-      bucketName: "snparace",
+      bucketName: "snaprace",
       enforceSSL: true,
       removalPolicy,
       autoDeleteObjects: true, // dev
@@ -347,7 +347,12 @@ export class PhotoProcessingStack extends cdk.Stack {
       restApiName: "SnapRace Photo Search API",
       description: "API for finding photos by selfie",
       defaultCorsPreflightOptions: {
-        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowOrigins: [
+          "http://localhost:3000",
+          "https://snap-race.com",
+          "https://www.snap-race.com",
+          "https://*.snap-race.com",
+        ],
         allowMethods: apigateway.Cors.ALL_METHODS,
         allowHeaders: [
           "Content-Type",

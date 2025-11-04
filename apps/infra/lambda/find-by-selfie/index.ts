@@ -22,7 +22,15 @@ import {
 import {
   RekognitionClient,
   SearchFacesByImageCommand,
+  FaceMatch,
 } from "@aws-sdk/client-rekognition";
+import { validateEnv, parseFloatEnv } from "../shared/env-validator";
+import {
+  successResponse,
+  errorResponse,
+  badRequestResponse,
+  internalServerErrorResponse,
+} from "../shared/api-response";
 
 // ============================================================================
 // 타입 정의
@@ -54,7 +62,7 @@ interface PhotoResult {
 // ============================================================================
 
 const getMinSimilarityThreshold = (env: FindBySelfieEnvironment): number => {
-  return parseFloat(env.MIN_SIMILARITY_THRESHOLD || "95.0");
+  return parseFloatEnv(env.MIN_SIMILARITY_THRESHOLD, 95.0);
 };
 
 // ============================================================================
@@ -104,8 +112,8 @@ async function findPhotosByFaces(
 ): Promise<PhotoResult[]> {
   const photoMap = new Map<string, PhotoResult>();
 
-  // 각 얼굴 ID에 대해 PhotoFaces 테이블 Query
-  for (const faceId of matchedFaceIds) {
+  // 병렬 처리: 모든 얼굴 ID에 대한 DynamoDB 쿼리를 동시에 수행
+  const queryPromises = matchedFaceIds.map(async (faceId) => {
     const pk = `ORG#${organizerId}#EVT#${eventId}#FACE#${faceId}`;
 
     const expressionAttributeValues: Record<string, any> = {
@@ -129,18 +137,22 @@ async function findPhotosByFaces(
     });
 
     const result = await dynamoClient.send(command);
-    const items = result.Items || [];
+    return result.Items || [];
+  });
 
-    for (const item of items) {
-      const photoId = item.photo_id;
-      if (!photoMap.has(photoId)) {
-        photoMap.set(photoId, {
-          photo_id: photoId,
-          cloudfront_url: "", // 이후 Photos 테이블에서 조회
-          uploaded_at: item.uploaded_at || item.created_at || "",
-          bib_number: item.bib_number,
-        });
-      }
+  // 모든 쿼리 결과를 병렬로 처리
+  const allItems = (await Promise.all(queryPromises)).flat();
+
+  // 중복 제거하며 photoMap에 추가
+  for (const item of allItems) {
+    const photoId = item.photo_id;
+    if (!photoMap.has(photoId)) {
+      photoMap.set(photoId, {
+        photo_id: photoId,
+        cloudfront_url: "", // 이후 Photos 테이블에서 조회
+        uploaded_at: item.uploaded_at || item.created_at || "",
+        bib_number: item.bib_number,
+      });
     }
   }
 
@@ -210,23 +222,22 @@ export const handler = async (
   event: APIGatewayProxyEvent,
   context: Context
 ): Promise<APIGatewayProxyResult> => {
-  const env = process.env as unknown as FindBySelfieEnvironment;
+  const rawEnv = process.env as Record<string, string | undefined>;
 
   // 환경 변수 검증
-  if (
-    !env.PHOTOS_TABLE_NAME ||
-    !env.PHOTO_FACES_TABLE_NAME ||
-    !env.PHOTOS_BUCKET_NAME
-  ) {
-    return {
-      statusCode: 500,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      },
-      body: JSON.stringify({ error: "Missing required environment variables" }),
-    };
+  const envValidation = validateEnv<FindBySelfieEnvironment>(rawEnv, [
+    "PHOTOS_TABLE_NAME",
+    "PHOTO_FACES_TABLE_NAME",
+    "PHOTOS_BUCKET_NAME",
+  ]);
+
+  if (!envValidation.success || !envValidation.env) {
+    return internalServerErrorResponse(
+      envValidation.error || "Missing required environment variables"
+    );
   }
+
+  const env = envValidation.env;
 
   try {
     // 1. 요청 본문 파싱
@@ -234,30 +245,16 @@ export const handler = async (
     try {
       requestBody = JSON.parse(event.body || "{}");
     } catch (error) {
-      return {
-        statusCode: 400,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: JSON.stringify({ error: "Invalid JSON in request body" }),
-      };
+      return badRequestResponse("Invalid JSON in request body");
     }
 
     const { image, organizer_id, event_id, bib_number } = requestBody;
 
     // 필수 필드 검증 (bib_number는 선택사항)
     if (!image || !organizer_id || !event_id) {
-      return {
-        statusCode: 400,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: JSON.stringify({
-          error: "Missing required fields: image, organizer_id, event_id",
-        }),
-      };
+      return badRequestResponse(
+        "Missing required fields: image, organizer_id, event_id"
+      );
     }
 
     console.log(
@@ -269,21 +266,14 @@ export const handler = async (
     try {
       imageBuffer = base64ToBuffer(image);
     } catch (error) {
-      return {
-        statusCode: 400,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: JSON.stringify({ error: "Invalid base64 image format" }),
-      };
+      return badRequestResponse("Invalid base64 image format");
     }
 
     // 3. Rekognition 컬렉션 확인 및 얼굴 검색
     const collectionId = createCollectionId(organizer_id, event_id);
     const minSimilarityThreshold = getMinSimilarityThreshold(env);
 
-    let faceMatches: any[] = [];
+    let faceMatches: FaceMatch[] = [];
     try {
       const searchCommand = new SearchFacesByImageCommand({
         CollectionId: collectionId,
@@ -300,36 +290,22 @@ export const handler = async (
         console.warn(
           `Collection not found: ${collectionId}. No faces indexed yet.`
         );
-        return {
-          statusCode: 200,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-          },
-          body: JSON.stringify({
-            message: "No collection found. No photos indexed yet.",
-            photos: [],
-            matched_faces: 0,
-          }),
-        };
+        return successResponse({
+          message: "No collection found. No photos indexed yet.",
+          photos: [],
+          matched_faces: 0,
+        });
       }
       // 다른 에러는 재던지기
       throw error;
     }
 
     if (faceMatches.length === 0) {
-      return {
-        statusCode: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: JSON.stringify({
-          message: "No matching faces found",
-          photos: [],
-          matched_faces: 0,
-        }),
-      };
+      return successResponse({
+        message: "No matching faces found",
+        photos: [],
+        matched_faces: 0,
+      });
     }
 
     console.log(`Found ${faceMatches.length} matching faces`);
@@ -341,7 +317,7 @@ export const handler = async (
 
     // 5. PhotoFaces 테이블에서 관련 사진 찾기
     const photoResults = await findPhotosByFaces(
-      env.PHOTO_FACES_TABLE_NAME,
+      env.PHOTO_FACES_TABLE_NAME!,
       organizer_id,
       event_id,
       matchedFaceIds,
@@ -353,24 +329,17 @@ export const handler = async (
     );
 
     if (photoResults.length === 0) {
-      return {
-        statusCode: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: JSON.stringify({
-          message: "No photos found for matched faces",
-          photos: [],
-          matched_faces: faceMatches.length,
-        }),
-      };
+      return successResponse({
+        message: "No photos found for matched faces",
+        photos: [],
+        matched_faces: faceMatches.length,
+      });
     }
 
     // 6. Photos 테이블에서 상세 정보 조회 (cloudfront_url 등)
     const photoIds = photoResults.map((p) => p.photo_id);
     const photoDetailsMap = await getPhotoDetails(
-      env.PHOTOS_TABLE_NAME,
+      env.PHOTOS_TABLE_NAME!,
       organizer_id,
       event_id,
       photoIds
@@ -396,32 +365,17 @@ export const handler = async (
 
     console.log(`Returning ${photos.length} photos`);
 
-    return {
-      statusCode: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      },
-      body: JSON.stringify({
-        message: `Found ${photos.length} photos`,
-        photos,
-        matched_faces: faceMatches.length,
-        filtered_by_bib: !!bib_number,
-      }),
-    };
+    return successResponse({
+      message: `Found ${photos.length} photos`,
+      photos,
+      matched_faces: faceMatches.length,
+      filtered_by_bib: !!bib_number,
+    });
   } catch (error: any) {
     console.error("Error processing selfie search:", error);
 
-    return {
-      statusCode: 500,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      },
-      body: JSON.stringify({
-        error: "Internal server error",
-        message: error.message,
-      }),
-    };
+    return internalServerErrorResponse(error, {
+      message: error.message,
+    });
   }
 };

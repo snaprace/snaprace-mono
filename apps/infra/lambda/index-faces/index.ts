@@ -31,6 +31,11 @@ import {
   CreateCollectionCommand,
   DescribeCollectionCommand,
 } from "@aws-sdk/client-rekognition";
+import {
+  validateEnv,
+  parseFloatEnv,
+  parseIntEnv,
+} from "../shared/env-validator";
 
 // ============================================================================
 // 타입 정의
@@ -66,11 +71,11 @@ interface FaceMatch {
 
 // 환경 변수에서 읽거나 기본값 사용
 const getMinSimilarityThreshold = (env: IndexFacesEnvironment): number => {
-  return parseFloat(env.MIN_SIMILARITY_THRESHOLD || "95.0");
+  return parseFloatEnv(env.MIN_SIMILARITY_THRESHOLD, 95.0);
 };
 
 const getRequiredVotes = (env: IndexFacesEnvironment): number => {
-  return parseInt(env.REQUIRED_VOTES || "2", 10);
+  return parseIntEnv(env.REQUIRED_VOTES, 2);
 };
 
 // ============================================================================
@@ -388,13 +393,11 @@ async function indexFacesAndMatch(
         (match) => match.Face?.FaceId !== faceId
       );
 
-      for (const match of otherMatches) {
+      // 병렬 처리: 모든 매칭된 얼굴의 bib 조회를 동시에 수행
+      const bibVotePromises = otherMatches.map(async (match) => {
         const matchedFaceId = match.Face?.FaceId;
-        const similarity = match.Similarity ?? 0;
+        if (!matchedFaceId) return null;
 
-        if (!matchedFaceId) continue;
-
-        // 매칭된 기존 얼굴의 bib 조회
         const existingBib = await findExistingBibForFace(
           photoFacesTableName,
           organizerId,
@@ -403,11 +406,22 @@ async function indexFacesAndMatch(
         );
 
         if (existingBib && existingBib !== "NONE") {
-          const vote = votesByBib.get(existingBib) ?? { votes: 0, topSim: 0 };
-          vote.votes += 1;
-          vote.topSim = Math.max(vote.topSim, similarity);
-          votesByBib.set(existingBib, vote);
+          return { bib: existingBib, similarity: match.Similarity ?? 0 };
         }
+
+        return null;
+      });
+
+      const bibVotes = (await Promise.all(bibVotePromises)).filter(
+        (v) => v !== null
+      ) as { bib: string; similarity: number }[];
+
+      // 득표 집계
+      for (const { bib, similarity } of bibVotes) {
+        const vote = votesByBib.get(bib) ?? { votes: 0, topSim: 0 };
+        vote.votes += 1;
+        vote.topSim = Math.max(vote.topSim, similarity);
+        votesByBib.set(bib, vote);
       }
     } catch (error: any) {
       console.error(`Error searching faces for ${faceId}:`, error);
@@ -586,16 +600,22 @@ export const handler = async (
   event: SQSEvent,
   context: Context
 ): Promise<void> => {
-  const env = process.env as unknown as IndexFacesEnvironment;
+  const rawEnv = process.env as Record<string, string | undefined>;
 
   // 환경 변수 검증
-  if (
-    !env.PHOTOS_TABLE_NAME ||
-    !env.PHOTO_FACES_TABLE_NAME ||
-    !env.PHOTOS_BUCKET_NAME
-  ) {
-    throw new Error("Missing required environment variables");
+  const envValidation = validateEnv<IndexFacesEnvironment>(rawEnv, [
+    "PHOTOS_TABLE_NAME",
+    "PHOTO_FACES_TABLE_NAME",
+    "PHOTOS_BUCKET_NAME",
+  ]);
+
+  if (!envValidation.success || !envValidation.env) {
+    throw new Error(
+      envValidation.error || "Missing required environment variables"
+    );
   }
+
+  const env = envValidation.env;
 
   // SQS 메시지 일괄 처리
   const promises = event.Records.map((record) => processMessage(record, env));

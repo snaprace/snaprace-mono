@@ -21,6 +21,7 @@ import {
   TextDetection,
 } from "@aws-sdk/client-rekognition";
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
+import { validateEnv, parseFloatEnv } from "../shared/env-validator";
 
 // ============================================================================
 // 타입 정의
@@ -245,19 +246,24 @@ export const handler = async (
   event: EventBridgeEvent,
   context: Context
 ): Promise<{ statusCode: number; body: string }> => {
-  const env = process.env as unknown as DetectTextEnvironment;
+  const rawEnv = process.env as Record<string, string | undefined>;
 
   // 환경 변수 검증
-  if (
-    !env.PHOTOS_TABLE_NAME ||
-    !env.RUNNERS_TABLE_NAME ||
-    !env.QUEUE_URL ||
-    !env.CLOUDFRONT_DOMAIN_NAME
-  ) {
-    throw new Error("Missing required environment variables");
+  const envValidation = validateEnv<DetectTextEnvironment>(rawEnv, [
+    "PHOTOS_TABLE_NAME",
+    "RUNNERS_TABLE_NAME",
+    "QUEUE_URL",
+    "CLOUDFRONT_DOMAIN_NAME",
+  ]);
+
+  if (!envValidation.success || !envValidation.env) {
+    throw new Error(
+      envValidation.error || "Missing required environment variables"
+    );
   }
 
-  const minConfidence = parseFloat(env.MIN_TEXT_CONFIDENCE || "90.0");
+  const env = envValidation.env;
+  const minConfidence = parseFloatEnv(env.MIN_TEXT_CONFIDENCE, 90.0);
   const detail = event.detail;
 
   if (!detail) {
@@ -312,7 +318,7 @@ export const handler = async (
 
     // 2. 유효한 bib 번호 로드 (이벤트별)
     const validBibs = await loadValidBibsForEvent(
-      env.RUNNERS_TABLE_NAME,
+      env.RUNNERS_TABLE_NAME!,
       organizer_id,
       event_id
     );
@@ -325,7 +331,7 @@ export const handler = async (
       bibMatches.size === 1 ? Array.from(bibMatches)[0] : undefined;
 
     // 5. CloudFront URL 생성
-    const cloudfrontUrl = `https://${env.CLOUDFRONT_DOMAIN_NAME}/${encodeURIComponent(rawImageKey)}`;
+    const cloudfrontUrl = `https://${env.CLOUDFRONT_DOMAIN_NAME!}/${encodeURIComponent(rawImageKey)}`;
 
     // 6. DynamoDB에 사진 정보 저장
     const now = new Date().toISOString();
@@ -363,7 +369,7 @@ export const handler = async (
     try {
       await dynamoClient.send(
         new PutCommand({
-          TableName: env.PHOTOS_TABLE_NAME,
+          TableName: env.PHOTOS_TABLE_NAME!,
           Item: photoItem,
           ConditionExpression:
             "attribute_not_exists(pk) AND attribute_not_exists(sk)",
@@ -395,7 +401,7 @@ export const handler = async (
 
     await sqsClient.send(
       new SendMessageCommand({
-        QueueUrl: env.QUEUE_URL,
+        QueueUrl: env.QUEUE_URL!,
         MessageBody: JSON.stringify(messageBody),
       })
     );
