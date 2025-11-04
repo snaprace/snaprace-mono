@@ -152,7 +152,8 @@ export class PhotoProcessingStack extends cdk.Stack {
     });
 
     const photoQueue = new sqs.Queue(this, "PhotoQueue", {
-      visibilityTimeout: Duration.seconds(120),
+      // Lambda timeout(5분)의 6배 이상 필요: 300초 * 6 = 1800초 (30분)
+      visibilityTimeout: Duration.minutes(30),
       deadLetterQueue: {
         queue: photoDLQ,
         maxReceiveCount: 5,
@@ -187,6 +188,7 @@ export class PhotoProcessingStack extends cdk.Stack {
 
     // detect-text Lambda 함수 생성
     const detectTextFunction = new lambda.Function(this, "DetectTextFunction", {
+      functionName: "photo-detect-text",
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: "index.handler",
       code: lambda.Code.fromAsset(
@@ -254,6 +256,7 @@ export class PhotoProcessingStack extends cdk.Stack {
 
     // index-faces Lambda 함수 생성
     const indexFacesFunction = new lambda.Function(this, "IndexFacesFunction", {
+      functionName: "photo-index-faces",
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: "index.handler",
       code: lambda.Code.fromAsset(
@@ -266,7 +269,7 @@ export class PhotoProcessingStack extends cdk.Stack {
         PHOTOS_TABLE_NAME: photosTable.tableName,
         PHOTO_FACES_TABLE_NAME: photoFacesTable.tableName,
         PHOTOS_BUCKET_NAME: photosBucket.bucketName,
-        MIN_SIMILARITY_THRESHOLD: "95.0", // 얼굴 매칭 최소 유사도 (%)
+        MIN_SIMILARITY_THRESHOLD: "90.0", // 얼굴 매칭 최소 유사도 (%)
         REQUIRED_VOTES: "2", // 얼굴 매칭 최소 득표수
       },
       logRetention: cdk.aws_logs.RetentionDays.ONE_WEEK,
@@ -307,6 +310,7 @@ export class PhotoProcessingStack extends cdk.Stack {
       this,
       "FindBySelfieFunction",
       {
+        functionName: "photo-find-by-selfie",
         runtime: lambda.Runtime.NODEJS_20_X,
         handler: "index.handler",
         code: lambda.Code.fromAsset(
@@ -319,7 +323,7 @@ export class PhotoProcessingStack extends cdk.Stack {
           PHOTOS_TABLE_NAME: photosTable.tableName,
           PHOTO_FACES_TABLE_NAME: photoFacesTable.tableName,
           PHOTOS_BUCKET_NAME: photosBucket.bucketName,
-          MIN_SIMILARITY_THRESHOLD: "95.0", // 얼굴 매칭 최소 유사도 (%)
+          MIN_SIMILARITY_THRESHOLD: "90.0", // 얼굴 매칭 최소 유사도 (%)
         },
         logRetention: cdk.aws_logs.RetentionDays.ONE_WEEK,
         tracing: lambda.Tracing.ACTIVE,

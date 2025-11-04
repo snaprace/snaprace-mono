@@ -240,6 +240,9 @@ importers:
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.3.1
+      ulid:
+        specifier: ^3.0.1
+        version: 3.0.1
       use-debounce:
         specifier: ^10.0.6
         version: 10.0.6(react@19.0.0)
@@ -5193,6 +5196,10 @@ packages:
   uglify-js@3.19.3:
     resolution: {integrity: sha512-v3Xu+yuwBXisp6QYTcH4UbH+xYJXqnq2m/LtQVWKWzYc1iehYnLixoQDN9FH6/j9/oybfd6W9Ghwkl8+UMKTKQ==}
     engines: {node: '>=0.8.0'}
+    hasBin: true
+
+  ulid@3.0.1:
+    resolution: {integrity: sha512-dPJyqPzx8preQhqq24bBG1YNkvigm87K8kVEHCD+ruZg24t6IFEFv00xMWfxcC4djmFtiTLdFuADn4+DOz6R7Q==}
     hasBin: true
 
   unbox-primitive@1.1.0:
@@ -11141,6 +11148,8 @@ snapshots:
 
   uglify-js@3.19.3:
     optional: true
+
+  ulid@3.0.1: {}
 
   unbox-primitive@1.1.0:
     dependencies:
