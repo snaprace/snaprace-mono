@@ -67,15 +67,43 @@ export default function EventPhotoPage() {
 
   const galleryQuery = api.galleries.getByBibNumber.useQuery(
     { eventId: event, bibNumber },
-    { enabled: !!event && !isAllPhotos && !!bibNumber },
+    {
+      enabled:
+        !!event && !isAllPhotos && !!bibNumber && !event.includes("test"),
+    },
   );
 
   const allPhotosQuery = api.photos.getByEventId.useQuery(
     { eventId: event },
-    { enabled: !!event && isAllPhotos },
+    { enabled: !!event && isAllPhotos && !event.includes("test") },
   );
 
+  const photosV2Query = api.photosV2.getByEventId.useQuery({
+    organizerId: eventQuery.data?.organization_id ?? "",
+    eventId: event,
+  });
+
+  const galleryV2Query = api.photosV2.getByBib.useQuery(
+    {
+      organizerId: eventQuery.data?.organization_id ?? "",
+      eventId: event,
+      bibNumber: bibNumber,
+    },
+    { enabled: !!event && !isAllPhotos && !!bibNumber },
+  );
+
+  const photosV2 = useMemo(() => {
+    if (photosV2Query.data) {
+      return photosV2Query.data.map((photo) => photo.imageUrl);
+    }
+    return [];
+  }, [photosV2Query.data]);
+
   const photos = useMemo(() => {
+    if (isAllPhotos && event.includes("test")) {
+      return photosV2;
+    }
+
     if (isAllPhotos && allPhotosQuery.data) {
       const allPhotos: string[] = [];
       if (allPhotosQuery.data) {
@@ -86,6 +114,14 @@ export default function EventPhotoPage() {
       return allPhotos;
     }
 
+    if (isAllPhotos && event.includes("test")) {
+      return [...(galleryV2Query.data?.map((photo) => photo.imageUrl) ?? [])];
+    }
+
+    if (!isAllPhotos && event.includes("test")) {
+      return [...(galleryV2Query.data?.map((photo) => photo.imageUrl) ?? [])];
+    }
+
     if (!isAllPhotos && galleryQuery.data) {
       const data = galleryQuery.data;
       const selfiePhotos = data.selfie_matched_photos ?? [];
@@ -94,7 +130,7 @@ export default function EventPhotoPage() {
     }
 
     return [];
-  }, [isAllPhotos, allPhotosQuery.data, galleryQuery.data]);
+  }, [isAllPhotos, allPhotosQuery.data, galleryQuery.data, photosV2Query.data]);
 
   const {
     searchBib,

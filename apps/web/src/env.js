@@ -26,6 +26,8 @@ export const env = createEnv({
     AUTH_URL: z.string().url().optional(),
     // Crisp
     CRISP_WEBSITE_ID: z.string(),
+    // API Gateway for photo processing
+    PHOTO_API_GATEWAY_URL: z.string().url().optional(),
   },
 
   /**
@@ -58,6 +60,8 @@ export const env = createEnv({
     AUTH_URL: process.env.AUTH_URL,
     // Crisp
     CRISP_WEBSITE_ID: process.env.CRISP_WEBSITE_ID,
+    // API Gateway for photo processing
+    PHOTO_API_GATEWAY_URL: process.env.PHOTO_API_GATEWAY_URL,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

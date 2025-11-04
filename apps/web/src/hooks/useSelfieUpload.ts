@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import axios from "axios";
+import { api } from "@/trpc/react";
 
 interface SelfieUploadParams {
   eventId: string;
@@ -26,6 +27,10 @@ export function useSelfieUpload({
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isProcessed, setIsProcessed] = useState(false);
 
+  // eventId에 "test"가 포함되어 있으면 새로운 tRPC API 사용
+  const useNewApi = eventId.includes("test");
+  const findBySelfieMutation = api.photosV2.findBySelfie.useMutation();
+
   const convertToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -46,6 +51,32 @@ export function useSelfieUpload({
   const callLambdaFunction = async (
     base64Image: string,
   ): Promise<LambdaResponse> => {
+    // eventId에 "test"가 포함되어 있으면 새로운 tRPC API 사용
+    if (useNewApi) {
+      console.log("organizerId", organizerId);
+      console.log("eventId", eventId);
+      console.log("bibNumber", bibNumber);
+      const result = await findBySelfieMutation.mutateAsync({
+        image: base64Image,
+        organizerId,
+        eventId,
+        bibNumber,
+      });
+
+      console.log("result", result);
+
+      setIsProcessed(true);
+
+      // 새로운 응답 형식을 기존 형식으로 변환
+      return {
+        message: result.message,
+        selfie_matched_photos: result.photos.map(
+          (photo: { imageUrl: string }) => photo.imageUrl,
+        ),
+      };
+    }
+
+    // 기존 Lambda 엔드포인트 사용
     const payload = {
       image: base64Image,
       bib_number: bibNumber,
