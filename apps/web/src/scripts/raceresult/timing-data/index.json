@@ -1,0 +1,13 @@
+{
+  "event_id": "run-for-liberty-5k",
+  "event_name": "Run for Liberty 5K",
+  "organization_id": "winningeventsgroup",
+  "result_sets": [
+    {
+      "id": "run-for-liberty-5k-5k",
+      "category": "5K",
+      "s3_key": "winningeventsgroup/run-for-liberty-5k/results/5k.json"
+    }
+  ],
+  "updated_at": "2025-11-02T09:41:25.910Z"
+}
