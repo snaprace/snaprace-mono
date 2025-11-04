@@ -3,12 +3,12 @@
   "compilerOptions": {
     "types": ["node", "aws-lambda"],
     "moduleDetection": "force",
-    "baseUrl": "..",
+    "baseUrl": ".",
     "paths": {
-      "shared/*": ["shared/*"]
+      "/opt/nodejs/shared/*": ["../common-layer/nodejs/shared/*"]
     }
   },
-  "include": ["**/*.ts", "../shared/**/*.ts"],
-  "exclude": ["node_modules", "shared"]
+  "include": ["**/*.ts", "../common-layer/nodejs/shared/**/*.ts"],
+  "exclude": ["node_modules"]
 }
 

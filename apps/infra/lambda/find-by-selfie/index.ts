@@ -24,13 +24,13 @@ import {
   SearchFacesByImageCommand,
   FaceMatch,
 } from "@aws-sdk/client-rekognition";
-import { validateEnv, parseFloatEnv } from "shared/env-validator";
+import { validateEnv, parseFloatEnv } from "/opt/nodejs/shared/env-validator";
 import {
   successResponse,
   errorResponse,
   badRequestResponse,
   internalServerErrorResponse,
-} from "shared/api-response";
+} from "/opt/nodejs/shared/api-response";
 
 // ============================================================================
 // 타입 정의

@@ -31,7 +31,11 @@ import {
   CreateCollectionCommand,
   DescribeCollectionCommand,
 } from "@aws-sdk/client-rekognition";
-import { validateEnv, parseFloatEnv, parseIntEnv } from "shared/env-validator";
+import {
+  validateEnv,
+  parseFloatEnv,
+  parseIntEnv,
+} from "/opt/nodejs/shared/env-validator";
 
 // ============================================================================
 // 타입 정의

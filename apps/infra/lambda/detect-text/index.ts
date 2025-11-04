@@ -21,7 +21,7 @@ import {
   TextDetection,
 } from "@aws-sdk/client-rekognition";
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
-import { validateEnv, parseFloatEnv } from "shared/env-validator";
+import { validateEnv, parseFloatEnv } from "/opt/nodejs/shared/env-validator";
 
 // ============================================================================
 // 타입 정의
