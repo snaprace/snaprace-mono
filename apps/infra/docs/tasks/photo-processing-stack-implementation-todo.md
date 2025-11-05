@@ -24,8 +24,8 @@
 
 - [ ] Phase 1: 핵심 워크플로우 (Week 1-2)
   - [x] **Week 1 Part 1-2: Common Layer 완료** (1.1-1.6) ✅✅
-  - [ ] Week 1 Part 3: Starter Lambda (2.1-2.7) ⏳ 다음
-  - [ ] Week 1 Part 4: Detect Text Lambda (3.1-3.8)
+  - [x] **Week 1 Part 3: Starter Lambda 완료** (2.1-2.7) ✅✅
+  - [ ] Week 1 Part 4: Detect Text Lambda (3.1-3.8) ⏳ 다음
 
 ### ⏭️ 예정
 
@@ -153,68 +153,64 @@
 
 ---
 
-#### 2️⃣ Starter Lambda (`lambda/photo-process/starter-lambda/`)
+#### 2️⃣ Starter Lambda (`lambda/photo-process/starter-lambda/`) ✅
 
 **목표**: S3 이벤트 수신 → EventPhotos 초기화 → Step Functions 실행
 
-- [ ] **2.1 프로젝트 구조 생성**
-  - [ ] `index.ts` 생성
-  - [ ] `tsconfig.json` 생성 (Common Layer 참조)
-  - [ ] `package.json` 생성
+- [x] **2.1 프로젝트 구조 생성** ✅
+  - [x] `index.ts` 생성
+  - [x] `tsconfig.json` 생성 (Common Layer 참조)
+  - [x] `package.json` 생성
 
-- [ ] **2.2 핵심 로직 구현**
-  - [ ] S3Event 타입 정의 및 파싱
-    ```typescript
-    import { S3Event } from "aws-lambda";
-    ```
-  - [ ] S3 경로 파싱 로직
+- [x] **2.2 핵심 로직 구현** ✅
+  - [x] S3Event 타입 정의 및 파싱
+  - [x] S3 경로 파싱 로직
     - 정규식: `/^([^/]+)\/([^/]+)\/photos\/raw\/(.+)$/`
     - organizer, eventId, filename 추출
     - 유효성 검증
-  - [ ] URL 디코딩 처리
+  - [x] URL 디코딩 처리
     - `decodeURIComponent()` 적용
     - `+` → 공백 변환
 
-- [ ] **2.3 멱등성 체크**
-  - [ ] EventPhotos 테이블 조회
+- [x] **2.3 멱등성 체크** ✅
+  - [x] EventPhotos 테이블 조회
     - `getEventPhoto()` 호출
-  - [ ] ProcessingStatus 확인
+  - [x] ProcessingStatus 확인
     - PENDING이 아니면 스킵
     - 이미 처리 중이면 로그 출력
 
-- [ ] **2.4 EventPhotos 초기화**
-  - [ ] DynamoDB PutItem
+- [x] **2.4 EventPhotos 초기화** ✅
+  - [x] DynamoDB PutItem
     - EventKey, S3ObjectKey 설정
     - UploadTimestamp 기록
     - ProcessingStatus = PENDING
-  - [ ] ConditionExpression 설정
-    - `attribute_not_exists(S3ObjectKey)`
-    - 중복 방지
+  - [x] ConditionalCheckFailedException 에러 처리
+    - Race condition 처리
 
-- [ ] **2.5 Step Functions 실행**
-  - [ ] AWS SDK Step Functions 클라이언트 초기화
-    ```typescript
-    import { SFNClient, StartExecutionCommand } from "@aws-sdk/client-sfn";
-    ```
-  - [ ] StartExecution 호출
+- [x] **2.5 Step Functions 실행** ✅
+  - [x] AWS SDK Step Functions 클라이언트 초기화
+  - [x] StartExecution 호출
     - stateMachineArn 환경 변수에서 가져오기
-    - input JSON 생성
-    - executionName 자동 생성 (objectKey 기반)
-  - [ ] 에러 처리
+    - input JSON 생성 (StepFunctionInput)
+    - executionName 자동 생성
+  - [x] 에러 처리
     - ExecutionAlreadyExists 예외 처리
 
-- [ ] **2.6 로깅**
-  - [ ] Lambda Powertools Logger 적용
-    ```typescript
-    import { Logger } from "@aws-lambda-powertools/logger";
-    ```
-  - [ ] 구조화된 로그 추가
+- [x] **2.6 로깅** ✅
+  - [x] Lambda Powertools Logger 적용
+  - [x] 구조화된 로그 추가
     - 처리 시작
     - S3 경로 파싱 결과
     - Step Functions 실행 ARN
     - 에러 로그
 
-- [ ] **2.7 단위 테스트 (선택적)**
+- [x] **2.7 CDK Stack 통합** ✅
+  - [x] Lambda Function 정의
+  - [x] Common Layer 연결
+  - [x] 환경 변수 설정
+  - [x] IAM 권한 부여 (S3, DynamoDB)
+
+- [ ] **2.8 단위 테스트 (선택적, 추후 진행)**
   - [ ] S3 경로 파싱 테스트
   - [ ] 멱등성 테스트
   - [ ] 에러 처리 테스트

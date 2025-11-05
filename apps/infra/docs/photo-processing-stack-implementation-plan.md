@@ -50,12 +50,20 @@
   - CDK Layer 정의 완료 (번들링 설정 포함)
   - 공통 환경 변수 객체 정의 완료
 
+- **Starter Lambda** ✅:
+  - S3 Event 파싱 및 경로 추출
+  - Idempotency 체크 (ProcessingStatus 확인)
+  - EventPhotos 초기화 (PENDING 상태)
+  - Step Functions 실행
+  - 구조화된 로깅 (Lambda Powertools)
+  - CDK Stack 통합 (권한 부여 포함)
+
 #### 🚧 구현 예정 항목
 
-- Lambda 함수 4개
+- Lambda 함수 3개 (Detect Text, Index Faces, DB Update)
 - Step Functions State Machine
 - API Gateway (검색 API)
-- S3 Event Notification
+- S3 Event Notification (Starter Lambda 연결)
 - Rekognition Collection (자동 생성)
 
 ### 1.3 기존 아키텍처와의 주요 차이점

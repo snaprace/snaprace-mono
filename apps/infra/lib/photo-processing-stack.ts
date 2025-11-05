@@ -132,8 +132,32 @@ export class PhotoProcessingStack extends cdk.Stack {
       MAX_FACES_PER_PHOTO: "10",
     };
 
-    // TODO: Lambda 함수 정의
+    // ============================================================================
+    // Lambda Functions
+    // ============================================================================
+
+    // 1. Starter Lambda (S3 Event Handler)
+    const starterLambda = new lambda.Function(this, "StarterLambda", {
+      functionName: "photo-processing-starter",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: "index.handler",
+      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/photo-process/starter-lambda")),
+      layers: [commonLayer],
+      environment: {
+        ...commonEnv,
+        STATE_MACHINE_ARN: "", // Step Functions 생성 후 업데이트 필요
+      },
+      timeout: Duration.seconds(30),
+      memorySize: 256,
+      description: "Handles S3 upload events and initiates photo processing workflow",
+    });
+
+    // Starter Lambda 권한 부여
+    photosBucket.grantRead(starterLambda);
+    eventPhotosTable.grantReadWriteData(starterLambda);
+    // Step Functions 실행 권한은 State Machine 생성 후 추가
+
     // TODO: Step Functions State Machine
-    // TODO: S3 Event Notification
+    // TODO: S3 Event Notification (Starter Lambda 연결)
   }
 }
