@@ -2,10 +2,17 @@
   "name": "common-layer",
   "version": "1.0.0",
   "description": "Common dependencies for Lambda functions",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.654.0",
     "@aws-sdk/lib-dynamodb": "^3.654.0",
     "@aws-sdk/client-rekognition": "^3.654.0",
     "@aws-sdk/client-sqs": "^3.654.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
   }
 }

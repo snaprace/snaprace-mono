@@ -66,4 +66,3 @@ export function internalServerErrorResponse(
 ): APIGatewayProxyResult {
   return errorResponse(error, 500, additionalData);
 }
-
