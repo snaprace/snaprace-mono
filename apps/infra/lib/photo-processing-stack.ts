@@ -218,7 +218,33 @@ export class PhotoProcessingStack extends cdk.Stack {
       })
     );
 
-    // TODO: DB Update Lambda
+    // 4. DB Update Lambda (Runners PhotoKeys Update)
+    const dbUpdateLambda = new lambda.Function(this, "DbUpdateLambda", {
+      functionName: "photo-processing-db-update",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: "index.handler",
+      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/photo-process/db-update")),
+      layers: [commonLayer],
+      environment: {
+        ...commonEnv,
+      },
+      timeout: Duration.seconds(30),
+      memorySize: 256,
+      description: "Updates Runners table PhotoKeys with detected photos",
+    });
+
+    // DB Update Lambda 권한 부여
+    eventPhotosTable.grantReadWriteData(dbUpdateLambda);
+    runnersTable.grantReadWriteData(dbUpdateLambda); // PhotoKeys 업데이트용
+
+    // DynamoDB DescribeTable 권한 (테이블 존재 여부 확인)
+    dbUpdateLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["dynamodb:DescribeTable"],
+        resources: [runnersTable.tableArn],
+      })
+    );
+
     // TODO: Step Functions State Machine
     // TODO: S3 Event Notification (Starter Lambda 연결)
   }

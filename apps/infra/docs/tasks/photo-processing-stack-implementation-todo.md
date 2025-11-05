@@ -27,7 +27,8 @@
   - [x] **Week 1 Part 3: Starter Lambda 완료** (2.1-2.7) ✅✅
   - [x] **Week 1 Part 4: Detect Text Lambda 완료** (3.1-3.9) ✅✅
   - [x] **Week 2 Part 1: Index Faces Lambda 완료** (4.1-4.9) ✅✅
-  - [ ] Week 2 Part 2: DB Update Lambda (5.1-5.7) ⏳ 다음
+  - [x] **Week 2 Part 2: DB Update Lambda 완료** (5.1-5.7) ✅✅
+  - [ ] Week 2 Part 3: Step Functions State Machine (6.1-6.5) ⏳ 다음
 
 ### ⏭️ 예정
 
@@ -337,62 +338,53 @@
 
 ---
 
-#### 5️⃣ DB Update Lambda (`lambda/photo-process/db-update/`)
+#### 5️⃣ DB Update Lambda (`lambda/photo-process/db-update/`) ✅
 
 **목표**: Runners 테이블 PhotoKeys 업데이트 (StringSet ADD)
 
-- [ ] **5.1 프로젝트 구조 생성**
-  - [ ] `index.ts` 생성
-  - [ ] `tsconfig.json` 생성
-  - [ ] `package.json` 생성
+- [x] **5.1 프로젝트 구조 생성** ✅
+  - [x] `index.ts` 생성
+  - [x] `tsconfig.json` 생성
+  - [x] `package.json` 생성
 
-- [ ] **5.2 Runners 테이블 존재 여부 확인**
-  - [ ] DescribeTable 호출
-    ```typescript
-    await dynamodb.describeTable({ TableName: process.env.RUNNERS_TABLE! });
-    ```
-  - [ ] 에러 처리
-    - ResourceNotFoundException → SKIPPED 반환
-    - 경고 로그 출력
-    ```typescript
-    if (error.name === "ResourceNotFoundException") {
-      logger.warn("Runners table not found. Skipping PhotoKeys update.");
-      return { status: "SKIPPED", reason: "NO_RUNNERS_TABLE" };
-    }
-    ```
+- [x] **5.2 Runners 테이블 존재 여부 확인** ✅
+  - [x] `checkTableExists()` Helper 사용
+  - [x] 환경 변수 설정 확인
+  - [x] 테이블 없을 경우 SKIPPED 처리
+  - [x] 경고 로그 출력
 
-- [ ] **5.3 각 Bib Number에 대해 PhotoKeys 업데이트**
-  - [ ] 루프 처리
-    ```typescript
-    for (const bib of detectedBibs) {
-      // UpdateItem
-    }
-    ```
-  - [ ] UpdateItem 실행 (StringSet ADD)
-    ```typescript
-    UpdateExpression: "ADD PhotoKeys :key"
-    ExpressionAttributeValues: {
-      ":key": dynamodb.createSet([objectKey])
-    }
-    ```
-  - [ ] 개별 에러 처리
+- [x] **5.3 각 Bib Number에 대해 PhotoKeys 업데이트** ✅
+  - [x] 루프 처리 (감지된 Bib별로)
+  - [x] `updateRunnerPhotoKeys()` Helper 호출 (StringSet ADD)
+  - [x] 개별 에러 처리
     - Bib가 Runners에 없어도 계속 진행
     - 경고 로그만 출력
-  - [ ] 성공한 Bib 목록 수집
+  - [x] 성공/실패한 Bib 목록 수집
 
-- [ ] **5.4 로깅**
-  - [ ] 처리 시작/종료 로그
-  - [ ] 업데이트한 Bib 수
-  - [ ] 개별 Bib 업데이트 결과
-  - [ ] 에러 로그
+- [x] **5.4 EventPhotos 최종 상태 업데이트** ✅
+  - [x] ProcessingStatus = COMPLETED
+  - [x] 모든 경우에 COMPLETED 처리
+    - Runners 업데이트 성공 시
+    - Runners 테이블 없을 시
+    - Bib 없을 시
 
-- [ ] **5.5 반환값 구성**
-  ```typescript
-  return {
-    updatedBibs: [...updatedBibList],
-    status: "SUCCESS",
-  };
-  ```
+- [x] **5.5 로깅** ✅
+  - [x] Lambda Powertools Logger 사용
+  - [x] 처리 시작/종료 로그
+  - [x] 업데이트한 Bib 수
+  - [x] 개별 Bib 업데이트 결과
+  - [x] 에러 로그
+
+- [x] **5.6 반환값 구성 및 Idempotency** ✅
+  - [x] DbUpdateResult 타입 정의
+  - [x] updatedBibs, runnersTableStatus 반환
+  - [x] Idempotency 체크 (COMPLETED 상태면 스킵)
+
+- [x] **5.7 CDK Stack 통합** ✅
+  - [x] Lambda Function 정의
+  - [x] Common Layer 연결
+  - [x] 환경 변수 설정
+  - [x] IAM 권한 부여 (DynamoDB DescribeTable, ReadWrite)
 
 ---
 

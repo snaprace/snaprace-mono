@@ -76,10 +76,17 @@
   - Idempotency 지원
   - CDK Stack 통합 (Collection 관리 권한 포함)
 
+- **DB Update Lambda** ✅:
+  - Runners 테이블 존재 여부 확인
+  - 감지된 Bib별 PhotoKeys 업데이트 (StringSet ADD)
+  - 개별 Bib 에러 처리 (계속 진행)
+  - EventPhotos 최종 상태 업데이트 (COMPLETED)
+  - Idempotency 지원
+  - CDK Stack 통합 (DynamoDB DescribeTable 권한 포함)
+
 #### 🚧 구현 예정 항목
 
-- Lambda 함수 1개 (DB Update)
-- Step Functions State Machine
+- Step Functions State Machine (Lambda 오케스트레이션)
 - API Gateway (검색 API)
 - S3 Event Notification (Starter Lambda 연결)
 
