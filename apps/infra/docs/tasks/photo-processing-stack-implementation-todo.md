@@ -30,14 +30,14 @@
   - [x] **Week 2 Part 1: DB Update Lambda** (5.1-5.7) ✅
   - [x] **Week 2 Part 2: Step Functions State Machine** (6.1-6.6) ✅
   - [x] **Week 2 Part 3: S3 Event Notification** (7.1-7.2) ✅
+- [x] **Phase 2: 검색 API 구현 완료** (Week 3) 🎉🎉
+  - [x] **API Gateway 설정** (1.1-1.3) ✅
+  - [x] **Search by Bib Lambda** (2.1-2.6) ✅
+  - [x] **Search by Selfie Lambda** (3.1-3.6) ✅
 
 ### ⏭️ 예정
 
-- [ ] Phase 2: 검색 API (Week 3)
-  - [ ] Bib Number 검색 API
-  - [ ] Selfie 검색 API
-- [ ] Phase 3: CDK 배포 및 테스트 (Week 4)
-- [ ] Phase 4: 모니터링 및 최적화 (Week 5)
+- [ ] Phase 3: CDK 배포 및 E2E 테스트 (Week 4)
 
 ---
 
@@ -545,66 +545,50 @@
 
 ---
 
-## 🔍 Phase 2: 검색 API (Week 3)
+## 🔍 Phase 2: 검색 API (Week 3) ✅
 
 ### 목표
 
-- API Gateway 구성
-- Bib 검색 Lambda 구현
-- Selfie 검색 Lambda 구현
+- ✅ API Gateway 구성
+- ✅ Bib 검색 Lambda 구현
+- ✅ Selfie 검색 Lambda 구현
 
 ### TODO
 
-#### 1️⃣ API Gateway 설정 (`lib/photo-processing-stack.ts`)
+#### 1️⃣ API Gateway 설정 (`lib/photo-processing-stack.ts`) ✅
 
-- [ ] **1.1 REST API 생성**
-  - [ ] RestApi 정의
-    ```typescript
-    const api = new apigateway.RestApi(this, "PhotoSearchAPI", {
-      restApiName: "Photo Search API",
-      description: "SnapRace Photo Search API",
-      deployOptions: {
-        stageName: "prod",
-        tracingEnabled: true,
-      },
-    });
-    ```
+- [x] **1.1 REST API 생성** ✅
+  - [x] RestApi 정의 (SnapRace Photo Search API)
+  - [x] Stage: prod, X-Ray tracing 활성화
+  - [x] CloudWatch Logs 활성화 (INFO level)
 
-- [ ] **1.2 CORS 설정**
-  - [ ] defaultCorsPreflightOptions 설정
-    ```typescript
-    defaultCorsPreflightOptions: {
-      allowOrigins: ["http://localhost:3000", "https://snap-race.com"],
-      allowMethods: ["GET", "POST", "OPTIONS"],
-      allowHeaders: ["Content-Type", "X-Amz-Date", "Authorization"],
-      allowCredentials: false,
-    }
-    ```
+- [x] **1.2 CORS 설정** ✅
+  - [x] allowOrigins: localhost:3000, snap-race.com
+  - [x] allowMethods: GET, POST, OPTIONS
+  - [x] allowHeaders: 표준 헤더 + Authorization
+  - [x] allowCredentials: false
 
-- [ ] **1.3 리소스 구조 생성**
-  - [ ] `/search` 리소스
-  - [ ] `/search/bib` 리소스
-  - [ ] `/search/selfie` 리소스
+- [x] **1.3 리소스 구조 생성** ✅
+  - [x] `/search` 리소스
+  - [x] `/search/bib` 리소스 (GET)
+  - [x] `/search/selfie` 리소스 (POST)
 
 ---
 
-#### 2️⃣ Bib 검색 Lambda (`lambda/search-api/search-by-bib/`)
+#### 2️⃣ Bib 검색 Lambda (`lambda/search-api/search-by-bib/`) ✅
 
-- [ ] **2.1 프로젝트 구조 생성**
-  - [ ] `index.ts` 생성
-  - [ ] `tsconfig.json` 생성
-  - [ ] `package.json` 생성
+- [x] **2.1 프로젝트 구조 생성** ✅
+  - [x] `index.ts` (148줄)
+  - [x] `tsconfig.json`
+  - [x] `package.json`
 
-- [ ] **2.2 입력 검증**
-  - [ ] Query Parameters 파싱
-    - organizer
-    - eventId
-    - bibNumber
-  - [ ] 유효성 검증
-    - 필수 파라미터 체크
-    - bibNumber 숫자 검증
+- [x] **2.2 입력 검증** ✅
+  - [x] Query Parameters 파싱 (organizer, eventId, bibNumber)
+  - [x] 환경 변수 검증
+  - [x] 필수 파라미터 체크
+  - [x] bibNumber 숫자 형식 검증
 
-- [ ] **2.3 Runners 테이블 우선 조회 (최적화)**
+- [x] **2.3 Runners 테이블 우선 조회 (최적화)** ✅
   - [ ] GetItem 호출
     ```typescript
     const runner = await dynamodb.getItem({

@@ -14,6 +14,8 @@ import {
   DetectFacesCommandOutput,
   IndexFacesCommandOutput,
   SearchFacesByImageCommandOutput,
+  Attribute,
+  QualityFilter,
 } from "@aws-sdk/client-rekognition";
 
 // Rekognition 클라이언트 초기화
@@ -25,11 +27,7 @@ const collectionCache = new Set<string>();
 /**
  * DetectText API 래퍼
  */
-export async function detectText(
-  bucket: string,
-  objectKey: string,
-  retries = 3
-): Promise<DetectTextCommandOutput> {
+export async function detectText(bucket: string, objectKey: string, retries = 3): Promise<DetectTextCommandOutput> {
   let lastError: Error | undefined;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -76,7 +74,7 @@ export async function detectText(
 export async function detectFaces(
   bucket: string,
   objectKey: string,
-  attributes: string[] = ["ALL"],
+  attributes: Attribute[] = [Attribute.ALL],
   retries = 3
 ): Promise<DetectFacesCommandOutput> {
   let lastError: Error | undefined;
@@ -127,8 +125,8 @@ export async function indexFaces(
   objectKey: string,
   externalImageId: string,
   maxFaces = 10,
-  qualityFilter: "AUTO" | "NONE" = "AUTO",
-  detectionAttributes: string[] = ["ALL"],
+  qualityFilter: QualityFilter | "AUTO" | "NONE" = QualityFilter.AUTO,
+  detectionAttributes: Attribute[] = [Attribute.ALL],
   retries = 3
 ): Promise<IndexFacesCommandOutput> {
   let lastError: Error | undefined;
@@ -320,4 +318,3 @@ export function formatRekognitionError(error: any): string {
 
   return error.message || "Unknown Rekognition error";
 }
-

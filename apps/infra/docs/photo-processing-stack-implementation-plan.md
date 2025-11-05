@@ -112,11 +112,42 @@ Step Functions State Machine
   └─ DbUpdate Lambda → Runners PhotoKeys 업데이트
 ```
 
+- **API Gateway & Search APIs** ✅:
+  - REST API 생성 (prod stage, X-Ray tracing)
+  - CORS 설정 (localhost:3000, snap-race.com)
+  - 리소스 구조: /search/bib (GET), /search/selfie (POST)
+
+- **Search by Bib Lambda** ✅ (148줄):
+  - Query Parameters 검증 (organizer, eventId, bibNumber)
+  - Runners 테이블 우선 조회 (최적화)
+  - PhotoBibIndex Fallback
+  - 구조화된 응답 (photoKeys, photoCount, source)
+
+- **Search by Selfie Lambda** ✅ (172줄):
+  - Base64 이미지 검증
+  - Rekognition SearchFacesByImage
+  - ExternalImageId로 사진 경로 추출
+  - Similarity 기준 정렬
+  - ResourceNotFoundException 처리
+
+#### 🎉 Phase 2 완료!
+
+**구현된 전체 시스템:**
+
+```
+[ Phase 1: Photo Processing Workflow ]
+S3 Upload → Starter → Step Functions (DetectText → IndexFaces → DbUpdate)
+
+[ Phase 2: Search APIs ]
+GET  /search/bib?organizer={}&eventId={}&bibNumber={}
+POST /search/selfie { organizer, eventId, selfieImage }
+```
+
 #### 🚧 구현 예정 항목
 
-- API Gateway (검색 API)
-  - Bib Number 검색
-  - Selfie 검색
+- CDK 배포 및 E2E 테스트
+- 환경 변수 최종 설정
+- 통합 테스트
 
 ### 1.3 기존 아키텍처와의 주요 차이점
 

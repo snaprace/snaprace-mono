@@ -21,5 +21,12 @@
     "skipLibCheck": true,
     "typeRoots": ["./node_modules/@types"]
   },
-  "exclude": ["node_modules", "cdk.out"]
+  "exclude": [
+    "node_modules",
+    "cdk.out",
+    "lambda/detect-text/**",
+    "lambda/find-by-selfie/**",
+    "lambda/index-faces/**",
+    "lambda/shared/**"
+  ]
 }

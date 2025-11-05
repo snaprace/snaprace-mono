@@ -1,5 +1,6 @@
 import { Context } from "aws-lambda";
 import { Logger } from "@aws-lambda-powertools/logger";
+import { Attribute, QualityFilter } from "@aws-sdk/client-rekognition";
 
 // Common Layer imports
 import { detectFaces, indexFaces, ensureCollectionExists } from "../../common-layer/nodejs/shared/rekognition-helper";
@@ -78,7 +79,7 @@ export async function handler(input: StepFunctionInput, context: Context): Promi
       objectKey: input.objectKey,
     });
 
-    const detectResult = await detectFaces(input.bucket, input.objectKey, ["ALL"]);
+    const detectResult = await detectFaces(input.bucket, input.objectKey, [Attribute.ALL]);
 
     const faceCount = detectResult.FaceDetails?.length || 0;
 
@@ -133,8 +134,8 @@ export async function handler(input: StepFunctionInput, context: Context): Promi
       input.objectKey,
       input.objectKey, // ExternalImageId로 S3 경로 사용
       config.maxFacesPerPhoto,
-      "AUTO", // qualityFilter
-      ["ALL"] // detectionAttributes
+      QualityFilter.AUTO, // qualityFilter
+      [Attribute.ALL] // detectionAttributes
     );
 
     const faceRecords = indexResult.FaceRecords || [];

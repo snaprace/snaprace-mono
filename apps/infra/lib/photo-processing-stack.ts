@@ -338,5 +338,116 @@ export class PhotoProcessingStack extends cdk.Stack {
       value: "Configured for s3:ObjectCreated:* events",
       description: "S3 Event Notification Status",
     });
+
+    // ============================================================================
+    // Search API Lambda Functions
+    // ============================================================================
+
+    // 1. Search by Bib Lambda
+    const searchByBibLambda = new lambda.Function(this, "SearchByBibLambda", {
+      functionName: "photo-search-by-bib",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: "index.handler",
+      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/search-api/search-by-bib")),
+      layers: [commonLayer],
+      environment: {
+        ...commonEnv,
+      },
+      timeout: Duration.seconds(30),
+      memorySize: 256,
+      description: "Search photos by Bib number",
+    });
+
+    // Search by Bib Lambda 권한
+    photoBibIndexTable.grantReadData(searchByBibLambda);
+    runnersTable.grantReadData(searchByBibLambda);
+
+    // 2. Search by Selfie Lambda
+    const searchBySelfieLambda = new lambda.Function(this, "SearchBySelfieLambda", {
+      functionName: "photo-search-by-selfie",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: "index.handler",
+      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/search-api/search-by-selfie")),
+      layers: [commonLayer],
+      environment: {
+        ...commonEnv,
+      },
+      timeout: Duration.seconds(30),
+      memorySize: 512,
+      description: "Search photos by selfie using facial recognition",
+    });
+
+    // Search by Selfie Lambda 권한
+    runnersTable.grantReadWriteData(searchBySelfieLambda); // 선택적으로 PhotoKeys 업데이트
+
+    // Rekognition 권한
+    searchBySelfieLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["rekognition:SearchFacesByImage"],
+        resources: ["*"],
+      })
+    );
+
+    // ============================================================================
+    // API Gateway
+    // ============================================================================
+
+    const api = new apigateway.RestApi(this, "PhotoSearchAPI", {
+      restApiName: "SnapRace Photo Search API",
+      description: "API for searching photos by Bib number or selfie",
+      deployOptions: {
+        stageName: "prod",
+        tracingEnabled: true,
+        loggingLevel: apigateway.MethodLoggingLevel.INFO,
+        dataTraceEnabled: true,
+      },
+      defaultCorsPreflightOptions: {
+        allowOrigins: ["http://localhost:3000", "https://snap-race.com"],
+        allowMethods: ["GET", "POST", "OPTIONS"],
+        allowHeaders: ["Content-Type", "X-Amz-Date", "Authorization", "X-Api-Key", "X-Amz-Security-Token"],
+        allowCredentials: false,
+      },
+    });
+
+    // API 리소스 구조
+    const searchResource = api.root.addResource("search");
+    const bibResource = searchResource.addResource("bib");
+    const selfieResource = searchResource.addResource("selfie");
+
+    // GET /search/bib
+    bibResource.addMethod("GET", new apigateway.LambdaIntegration(searchByBibLambda), {
+      apiKeyRequired: false,
+    });
+
+    // POST /search/selfie
+    selfieResource.addMethod("POST", new apigateway.LambdaIntegration(searchBySelfieLambda), {
+      apiKeyRequired: false,
+    });
+
+    // ============================================================================
+    // API Gateway Outputs
+    // ============================================================================
+
+    new cdk.CfnOutput(this, "ApiGatewayUrl", {
+      value: api.url,
+      description: "Photo Search API URL",
+      exportName: "PhotoSearchApiUrl",
+    });
+
+    new cdk.CfnOutput(this, "ApiGatewayId", {
+      value: api.restApiId,
+      description: "Photo Search API ID",
+      exportName: "PhotoSearchApiId",
+    });
+
+    new cdk.CfnOutput(this, "SearchByBibEndpoint", {
+      value: `${api.url}search/bib?organizer={org}&eventId={event}&bibNumber={bib}`,
+      description: "Search by Bib Number Endpoint",
+    });
+
+    new cdk.CfnOutput(this, "SearchBySelfieEndpoint", {
+      value: `${api.url}search/selfie`,
+      description: "Search by Selfie Endpoint (POST)",
+    });
   }
 }
