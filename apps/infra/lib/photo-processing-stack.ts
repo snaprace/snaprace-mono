@@ -9,6 +9,9 @@ import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
+import * as sfn from "aws-cdk-lib/aws-stepfunctions";
+import * as tasks from "aws-cdk-lib/aws-stepfunctions-tasks";
+import * as logs from "aws-cdk-lib/aws-logs";
 import { RemovalPolicy, Duration } from "aws-cdk-lib";
 import * as rekognition from "aws-cdk-lib/aws-rekognition";
 import * as path from "path";
@@ -133,31 +136,10 @@ export class PhotoProcessingStack extends cdk.Stack {
     };
 
     // ============================================================================
-    // Lambda Functions
+    // Lambda Functions (Processing)
     // ============================================================================
 
-    // 1. Starter Lambda (S3 Event Handler)
-    const starterLambda = new lambda.Function(this, "StarterLambda", {
-      functionName: "photo-processing-starter",
-      runtime: lambda.Runtime.NODEJS_18_X,
-      handler: "index.handler",
-      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/photo-process/starter-lambda")),
-      layers: [commonLayer],
-      environment: {
-        ...commonEnv,
-        STATE_MACHINE_ARN: "", // Step Functions 생성 후 업데이트 필요
-      },
-      timeout: Duration.seconds(30),
-      memorySize: 256,
-      description: "Handles S3 upload events and initiates photo processing workflow",
-    });
-
-    // Starter Lambda 권한 부여
-    photosBucket.grantRead(starterLambda);
-    eventPhotosTable.grantReadWriteData(starterLambda);
-    // Step Functions 실행 권한은 State Machine 생성 후 추가
-
-    // 2. Detect Text Lambda (Bib Number Extraction)
+    // 1. Detect Text Lambda (Bib Number Extraction)
     const detectTextLambda = new lambda.Function(this, "DetectTextLambda", {
       functionName: "photo-processing-detect-text",
       runtime: lambda.Runtime.NODEJS_18_X,
@@ -186,7 +168,7 @@ export class PhotoProcessingStack extends cdk.Stack {
       })
     );
 
-    // 3. Index Faces Lambda (Face Detection & Indexing)
+    // 2. Index Faces Lambda (Face Detection & Indexing)
     const indexFacesLambda = new lambda.Function(this, "IndexFacesLambda", {
       functionName: "photo-processing-index-faces",
       runtime: lambda.Runtime.NODEJS_18_X,
@@ -218,7 +200,7 @@ export class PhotoProcessingStack extends cdk.Stack {
       })
     );
 
-    // 4. DB Update Lambda (Runners PhotoKeys Update)
+    // 3. DB Update Lambda (Runners PhotoKeys Update)
     const dbUpdateLambda = new lambda.Function(this, "DbUpdateLambda", {
       functionName: "photo-processing-db-update",
       runtime: lambda.Runtime.NODEJS_18_X,
@@ -245,7 +227,95 @@ export class PhotoProcessingStack extends cdk.Stack {
       })
     );
 
-    // TODO: Step Functions State Machine
+    // ============================================================================
+    // Step Functions State Machine
+    // ============================================================================
+
+    // Step Functions Tasks 정의
+    const detectTextTask = new tasks.LambdaInvoke(this, "DetectTextTask", {
+      lambdaFunction: detectTextLambda,
+      outputPath: "$.Payload",
+      retryOnServiceExceptions: true,
+      resultPath: "$",
+    });
+
+    const indexFacesTask = new tasks.LambdaInvoke(this, "IndexFacesTask", {
+      lambdaFunction: indexFacesLambda,
+      outputPath: "$.Payload",
+      retryOnServiceExceptions: true,
+      resultPath: "$",
+    });
+
+    const dbUpdateTask = new tasks.LambdaInvoke(this, "DbUpdateTask", {
+      lambdaFunction: dbUpdateLambda,
+      outputPath: "$.Payload",
+      retryOnServiceExceptions: true,
+      resultPath: "$",
+    });
+
+    // State Machine 정의 (체인 구성)
+    const definition = detectTextTask.next(indexFacesTask).next(dbUpdateTask);
+
+    // CloudWatch Log Group
+    const stateMachineLogGroup = new logs.LogGroup(this, "StateMachineLogGroup", {
+      logGroupName: "/aws/stepfunctions/photo-processing",
+      removalPolicy,
+      retention: logs.RetentionDays.ONE_WEEK,
+    });
+
+    // State Machine 생성
+    const stateMachine = new sfn.StateMachine(this, "PhotoProcessingStateMachine", {
+      stateMachineName: "photo-processing-workflow",
+      definition,
+      timeout: Duration.minutes(5),
+      tracingEnabled: true,
+      logs: {
+        destination: stateMachineLogGroup,
+        level: sfn.LogLevel.ALL,
+        includeExecutionData: true,
+      },
+    });
+
+    // ============================================================================
+    // Starter Lambda (S3 Event Handler)
+    // ============================================================================
+
+    const starterLambda = new lambda.Function(this, "StarterLambda", {
+      functionName: "photo-processing-starter",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: "index.handler",
+      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/photo-process/starter-lambda")),
+      layers: [commonLayer],
+      environment: {
+        ...commonEnv,
+        STATE_MACHINE_ARN: stateMachine.stateMachineArn,
+      },
+      timeout: Duration.seconds(30),
+      memorySize: 256,
+      description: "Handles S3 upload events and initiates photo processing workflow",
+    });
+
+    // Starter Lambda 권한 부여
+    photosBucket.grantRead(starterLambda);
+    eventPhotosTable.grantReadWriteData(starterLambda);
+    stateMachine.grantStartExecution(starterLambda);
+
+    // ============================================================================
+    // Outputs
+    // ============================================================================
+
+    new cdk.CfnOutput(this, "StateMachineArn", {
+      value: stateMachine.stateMachineArn,
+      description: "Photo Processing State Machine ARN",
+      exportName: "PhotoProcessingStateMachineArn",
+    });
+
+    new cdk.CfnOutput(this, "PhotosBucketName", {
+      value: photosBucket.bucketName,
+      description: "Photos S3 Bucket Name",
+      exportName: "PhotosBucketName",
+    });
+
     // TODO: S3 Event Notification (Starter Lambda 연결)
   }
 }

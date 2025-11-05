@@ -22,13 +22,13 @@
 
 ### 🚧 진행 중
 
-- [ ] Phase 1: 핵심 워크플로우 (Week 1-2)
+- [x] **Phase 1: 핵심 워크플로우 완료** (Week 1-2) ✅✅✅
   - [x] **Week 1 Part 1-2: Common Layer 완료** (1.1-1.6) ✅✅
   - [x] **Week 1 Part 3: Starter Lambda 완료** (2.1-2.7) ✅✅
   - [x] **Week 1 Part 4: Detect Text Lambda 완료** (3.1-3.9) ✅✅
   - [x] **Week 2 Part 1: Index Faces Lambda 완료** (4.1-4.9) ✅✅
   - [x] **Week 2 Part 2: DB Update Lambda 완료** (5.1-5.7) ✅✅
-  - [ ] Week 2 Part 3: Step Functions State Machine (6.1-6.5) ⏳ 다음
+  - [x] **Week 2 Part 3: Step Functions State Machine 완료** (6.1-6.6) ✅✅
 
 ### ⏭️ 예정
 
@@ -388,11 +388,11 @@
 
 ---
 
-#### 6️⃣ Step Functions State Machine (`lib/photo-processing-stack.ts`)
+#### 6️⃣ Step Functions State Machine (`lib/photo-processing-stack.ts`) ✅
 
 **목표**: Lambda 체인 오케스트레이션
 
-- [ ] **6.1 Lambda 함수 정의 (CDK)**
+- [x] **6.1 Lambda 함수 정의 (CDK)** ✅
   - [ ] Common Layer 정의
     ```typescript
     const commonLayer = new lambda.LayerVersion(this, "CommonLayer", {
@@ -416,65 +416,45 @@
     - 메모리: 128MB
     - 타임아웃: 1분
 
-- [ ] **6.2 IAM 권한 설정**
-  - [ ] Starter Lambda
+- [x] **6.2 IAM 권한 설정** ✅
+  - [x] Starter Lambda
     - S3 읽기 권한
     - DynamoDB 읽기/쓰기 (EventPhotos)
     - Step Functions StartExecution
-  - [ ] Detect Text Lambda
+  - [x] Detect Text Lambda
     - Rekognition DetectText
     - DynamoDB 읽기/쓰기 (EventPhotos, PhotoBibIndex, RunnersV2)
-  - [ ] Index Faces Lambda
+  - [x] Index Faces Lambda
     - Rekognition DetectFaces, IndexFaces, DescribeCollection, CreateCollection
     - DynamoDB 읽기/쓰기 (EventPhotos)
-  - [ ] DB Update Lambda
+  - [x] DB Update Lambda
     - DynamoDB 읽기/쓰기 (RunnersV2)
     - DynamoDB DescribeTable
 
-- [ ] **6.3 Step Functions Tasks 정의**
-  - [ ] Detect Text Task
-    ```typescript
-    const detectTextTask = new tasks.LambdaInvoke(this, "DetectText", {
-      lambdaFunction: detectTextLambda,
-      outputPath: "$.Payload",
-      retryOnServiceExceptions: true,
-      retry: [
-        {
-          errors: ["States.ALL"],
-          interval: Duration.seconds(2),
-          maxAttempts: 3,
-          backoffRate: 2,
-        },
-      ],
-    });
-    ```
-  - [ ] Index Faces Task (동일 패턴)
-  - [ ] DB Update Task (동일 패턴)
+- [x] **6.3 Step Functions Tasks 정의** ✅
+  - [x] Detect Text Task (LambdaInvoke)
+  - [x] Index Faces Task (LambdaInvoke)
+  - [x] DB Update Task (LambdaInvoke)
+  - [x] outputPath: "$.Payload" 설정
+  - [x] retryOnServiceExceptions: true
 
-- [ ] **6.4 State Machine 정의**
-  - [ ] Definition 체인 구성
-    ```typescript
-    const definition = detectTextTask.next(indexFacesTask).next(dbUpdateTask);
-    ```
-  - [ ] State Machine 생성
-    ```typescript
-    const stateMachine = new sfn.StateMachine(this, "PhotoProcessingStateMachine", {
-      definition,
-      timeout: Duration.minutes(5),
-      tracingEnabled: true,
-    });
-    ```
-  - [ ] 환경 변수에 ARN 추가
-    - Starter Lambda에 STATE_MACHINE_ARN 전달
+- [x] **6.4 State Machine 정의** ✅
+  - [x] Definition 체인 구성 (detectTextTask → indexFacesTask → dbUpdateTask)
+  - [x] State Machine 생성
+  - [x] Timeout: 5분
+  - [x] X-Ray tracing 활성화
+  - [x] Starter Lambda에 STATE_MACHINE_ARN 전달
 
-- [ ] **6.5 CloudWatch 로그 설정**
-  - [ ] State Machine 로그 활성화
-    ```typescript
-    logs: {
-      destination: new logs.LogGroup(this, "StateMachineLogGroup"),
-      level: sfn.LogLevel.ALL,
-    }
-    ```
+- [x] **6.5 CloudWatch Logs 설정** ✅
+  - [x] Log Group 생성 (/aws/stepfunctions/photo-processing)
+  - [x] Retention: 1주일
+  - [x] State Machine에 로깅 설정
+    - LogLevel.ALL
+    - includeExecutionData: true
+
+- [x] **6.6 Outputs 추가** ✅
+  - [x] StateMachineArn export
+  - [x] PhotosBucketName export
 
 ---
 

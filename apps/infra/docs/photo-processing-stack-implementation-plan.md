@@ -84,9 +84,16 @@
   - Idempotency 지원
   - CDK Stack 통합 (DynamoDB DescribeTable 권한 포함)
 
+- **Step Functions State Machine** ✅:
+  - Lambda Tasks 정의 (DetectText → IndexFaces → DbUpdate)
+  - State Machine 체인 구성
+  - CloudWatch Logs 통합 (LogLevel.ALL, 1주일 보관)
+  - X-Ray 트레이싱 활성화
+  - Starter Lambda에 STATE_MACHINE_ARN 전달
+  - 5분 타임아웃 설정
+
 #### 🚧 구현 예정 항목
 
-- Step Functions State Machine (Lambda 오케스트레이션)
 - API Gateway (검색 API)
 - S3 Event Notification (Starter Lambda 연결)
 
