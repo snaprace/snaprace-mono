@@ -92,10 +92,31 @@
   - Starter Lambda에 STATE_MACHINE_ARN 전달
   - 5분 타임아웃 설정
 
+- **S3 Event Notification** ✅:
+  - OBJECT_CREATED 이벤트 → Starter Lambda 트리거
+  - 자동 워크플로우 시작
+  - 모든 조직자/이벤트 지원 (경로 검증은 Lambda에서)
+
+#### 🎉 Phase 1 완료!
+
+**구현된 전체 워크플로우:**
+
+```
+S3 Upload (photos/raw/)
+  ↓ (Event Notification)
+Starter Lambda
+  ↓ (StartExecution)
+Step Functions State Machine
+  ├─ DetectText Lambda → Bib 추출 & 인덱싱
+  ├─ IndexFaces Lambda → 얼굴 인덱싱
+  └─ DbUpdate Lambda → Runners PhotoKeys 업데이트
+```
+
 #### 🚧 구현 예정 항목
 
 - API Gateway (검색 API)
-- S3 Event Notification (Starter Lambda 연결)
+  - Bib Number 검색
+  - Selfie 검색
 
 ### 1.3 기존 아키텍처와의 주요 차이점
 

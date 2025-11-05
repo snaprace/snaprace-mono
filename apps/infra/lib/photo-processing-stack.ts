@@ -4,6 +4,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
+import * as s3n from "aws-cdk-lib/aws-s3-notifications";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
@@ -316,6 +317,26 @@ export class PhotoProcessingStack extends cdk.Stack {
       exportName: "PhotosBucketName",
     });
 
-    // TODO: S3 Event Notification (Starter Lambda 연결)
+    new cdk.CfnOutput(this, "StarterLambdaName", {
+      value: starterLambda.functionName,
+      description: "Starter Lambda Function Name",
+      exportName: "StarterLambdaName",
+    });
+
+    // ============================================================================
+    // S3 Event Notification (Starter Lambda 자동 실행)
+    // ============================================================================
+
+    // S3 객체 생성 이벤트를 Starter Lambda에 연결
+    // photos/raw/ 경로에 업로드되는 이미지 파일만 처리
+    photosBucket.addEventNotification(s3.EventType.OBJECT_CREATED, new s3n.LambdaDestination(starterLambda), {
+      prefix: "", // 모든 조직자/이벤트
+      suffix: "", // 모든 파일 (Starter Lambda에서 경로 검증)
+    });
+
+    new cdk.CfnOutput(this, "EventNotificationStatus", {
+      value: "Configured for s3:ObjectCreated:* events",
+      description: "S3 Event Notification Status",
+    });
   }
 }

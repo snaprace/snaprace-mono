@@ -20,20 +20,23 @@
   - [x] 1.4 Bib Extractor (`bib-extractor.ts`)
   - [x] 1.5 환경 변수 Validator (`env-validator.ts`)
 
-### 🚧 진행 중
+### ✅ 완료
 
-- [x] **Phase 1: 핵심 워크플로우 완료** (Week 1-2) ✅✅✅
-  - [x] **Week 1 Part 1-2: Common Layer 완료** (1.1-1.6) ✅✅
-  - [x] **Week 1 Part 3: Starter Lambda 완료** (2.1-2.7) ✅✅
-  - [x] **Week 1 Part 4: Detect Text Lambda 완료** (3.1-3.9) ✅✅
-  - [x] **Week 2 Part 1: Index Faces Lambda 완료** (4.1-4.9) ✅✅
-  - [x] **Week 2 Part 2: DB Update Lambda 완료** (5.1-5.7) ✅✅
-  - [x] **Week 2 Part 3: Step Functions State Machine 완료** (6.1-6.6) ✅✅
+- [x] **Phase 1: 핵심 워크플로우 완료** (Week 1-2) 🎉🎉🎉
+  - [x] **Week 1 Part 1: Common Layer** (1.1-1.6) ✅
+  - [x] **Week 1 Part 2: Starter Lambda** (2.1-2.7) ✅
+  - [x] **Week 1 Part 3: Detect Text Lambda** (3.1-3.9) ✅
+  - [x] **Week 1 Part 4: Index Faces Lambda** (4.1-4.9) ✅
+  - [x] **Week 2 Part 1: DB Update Lambda** (5.1-5.7) ✅
+  - [x] **Week 2 Part 2: Step Functions State Machine** (6.1-6.6) ✅
+  - [x] **Week 2 Part 3: S3 Event Notification** (7.1-7.2) ✅
 
 ### ⏭️ 예정
 
 - [ ] Phase 2: 검색 API (Week 3)
-- [ ] Phase 3: Runners 통합 최적화 (Week 4)
+  - [ ] Bib Number 검색 API
+  - [ ] Selfie 검색 API
+- [ ] Phase 3: CDK 배포 및 테스트 (Week 4)
 - [ ] Phase 4: 모니터링 및 최적화 (Week 5)
 
 ---
@@ -458,26 +461,19 @@
 
 ---
 
-#### 7️⃣ S3 Event Notification (`lib/photo-processing-stack.ts`)
+#### 7️⃣ S3 Event Notification (`lib/photo-processing-stack.ts`) ✅
 
 **목표**: S3 업로드 → Starter Lambda 트리거
 
-- [ ] **7.1 S3 Event Notification 설정**
-  - [ ] EventType 설정
-    ```typescript
-    photosBucket.addEventNotification(s3.EventType.OBJECT_CREATED, new s3n.LambdaDestination(starterLambda), {
-      prefix: "",
-      suffix: "/photos/raw/",
-    });
-    ```
-  - [ ] Prefix/Suffix 필터 추가
-    - `/photos/raw/` 경로만 트리거
+- [x] **7.1 S3 Event Notification 설정** ✅
+  - [x] EventType: OBJECT_CREATED
+  - [x] LambdaDestination으로 Starter Lambda 연결
+  - [x] Prefix/Suffix 필터 (Starter Lambda에서 경로 검증)
+  - [x] Output 추가 (EventNotificationStatus)
 
-- [ ] **7.2 Starter Lambda에 S3 권한 추가**
-  - [ ] S3 읽기 권한
-    ```typescript
-    photosBucket.grantRead(starterLambda);
-    ```
+- [x] **7.2 Starter Lambda에 S3 권한** ✅
+  - [x] S3 읽기 권한 부여 (이미 설정됨)
+  - [x] S3 Event 수신 권한 (자동 부여됨)
 
 ---
 
