@@ -26,7 +26,8 @@
   - [x] **Week 1 Part 1-2: Common Layer 완료** (1.1-1.6) ✅✅
   - [x] **Week 1 Part 3: Starter Lambda 완료** (2.1-2.7) ✅✅
   - [x] **Week 1 Part 4: Detect Text Lambda 완료** (3.1-3.9) ✅✅
-  - [ ] Week 2 Part 1: Index Faces Lambda (4.1-4.8) ⏳ 다음
+  - [x] **Week 2 Part 1: Index Faces Lambda 완료** (4.1-4.9) ✅✅
+  - [ ] Week 2 Part 2: DB Update Lambda (5.1-5.7) ⏳ 다음
 
 ### ⏭️ 예정
 
@@ -278,92 +279,61 @@
 
 ### Week 2: Index Faces & DB Update & Step Functions
 
-#### 4️⃣ Index Faces Lambda (`lambda/photo-process/index-faces/`)
+#### 4️⃣ Index Faces Lambda (`lambda/photo-process/index-faces/`) ✅
 
 **목표**: Rekognition Collection 생성 → IndexFaces → EventPhotos 업데이트
 
-- [ ] **4.1 프로젝트 구조 생성**
-  - [ ] `index.ts` 생성
-  - [ ] `tsconfig.json` 생성
-  - [ ] `package.json` 생성
+- [x] **4.1 프로젝트 구조 생성** ✅
+  - [x] `index.ts` 생성
+  - [x] `tsconfig.json` 생성
+  - [x] `package.json` 생성
 
-- [ ] **4.2 조건부 IndexFaces (최적화)**
-  - [ ] DetectFaces 사전 확인
-    ```typescript
-    const detectResult = await rekognition.detectFaces({
-      Image: { S3Object: { Bucket: bucket, Name: objectKey } },
-    });
-    ```
-  - [ ] 얼굴 수 체크
-    - 0개면 스킵
-    - 로그 출력 후 조기 반환
-    ```typescript
-    if (detectResult.FaceDetails.length === 0) {
-      return { faceIds: [], faceCount: 0 };
-    }
-    ```
+- [x] **4.2 조건부 IndexFaces (최적화)** ✅
+  - [x] DetectFaces 사전 확인 (Common Layer Helper 사용)
+  - [x] 얼굴 수 체크 (0개면 스킵)
+  - [x] 로그 출력 및 조기 반환
+  - [x] 얼굴 없을 경우 EventPhotos 업데이트
 
-- [ ] **4.3 Rekognition Collection 생성/확인**
-  - [ ] Collection ID 생성
-    ```typescript
-    const collectionId = `${organizer}-${eventId}`;
-    ```
-  - [ ] `ensureCollectionExists()` 호출
-    - DescribeCollection 시도
-    - ResourceNotFoundException → CreateCollection
-    - 캐싱 처리 (Set 사용)
-  - [ ] 에러 처리
-    - ResourceAlreadyExistsException 무시
+- [x] **4.3 Rekognition Collection 생성/확인** ✅
+  - [x] Collection ID 생성 (prefix-organizer-eventId)
+  - [x] `ensureCollectionExists()` Helper 호출
+  - [x] 캐싱 처리 (Common Layer에서 구현)
+  - [x] 에러 처리
 
-- [ ] **4.4 IndexFaces 호출**
-  - [ ] API 호출
-    ```typescript
-    const response = await rekognition.indexFaces({
-      CollectionId: collectionId,
-      Image: { S3Object: { Bucket: bucket, Name: objectKey } },
-      ExternalImageId: objectKey, // ← 핵심
-      DetectionAttributes: ["ALL"],
-      MaxFaces: 10,
-      QualityFilter: "AUTO",
-    });
-    ```
-  - [ ] FaceRecords 파싱
-    - FaceId 배열 추출
-  - [ ] 에러 처리
-    - InvalidImageFormatException
-    - ImageTooLargeException
+- [x] **4.4 IndexFaces 호출** ✅
+  - [x] `indexFaces()` Helper 호출
+  - [x] ExternalImageId에 S3 경로 사용
+  - [x] MaxFaces, QualityFilter 설정
+  - [x] FaceRecords 파싱 (FaceId 배열 추출)
+  - [x] UnindexedFaces 로깅 (디버깅용)
 
-- [ ] **4.5 그룹 사진 감지**
-  - [ ] isGroupPhoto 플래그 계산
-    ```typescript
-    const isGroupPhoto = detectedBibs.length > 1 && faceIds.length > 1;
-    ```
-  - [ ] 로그 출력
+- [x] **4.5 그룹 사진 감지** ✅
+  - [x] isGroupPhoto 플래그 계산
+    - detectedBibs > 1 && faceIds > 1
+  - [x] 로그 출력
 
-- [ ] **4.6 EventPhotos 테이블 업데이트**
-  - [ ] UpdateItem 실행
-    ```typescript
-    UpdateExpression: "SET FaceIds = :faceIds, ProcessingStatus = :status, isGroupPhoto = :isGroup";
-    ```
-  - [ ] FaceIds 배열 저장
-  - [ ] ProcessingStatus = FACES_INDEXED
-  - [ ] isGroupPhoto 플래그 저장
+- [x] **4.6 EventPhotos 테이블 업데이트** ✅
+  - [x] `updateEventPhoto()` Helper 호출
+  - [x] FaceIds, isGroupPhoto 저장
+  - [x] ProcessingStatus = FACES_INDEXED
 
-- [ ] **4.7 로깅**
-  - [ ] 처리 시작/종료 로그
-  - [ ] 감지된 얼굴 수
-  - [ ] Collection ID
-  - [ ] 그룹 사진 여부
-  - [ ] 에러 로그
+- [x] **4.7 로깅** ✅
+  - [x] Lambda Powertools Logger 사용
+  - [x] 처리 시작/종료 로그
+  - [x] 감지된 얼굴 수, Collection ID
+  - [x] 그룹 사진 여부
+  - [x] 에러 로그
 
-- [ ] **4.8 반환값 구성**
-  ```typescript
-  return {
-    faceIds,
-    faceCount: faceIds.length,
-    isGroupPhoto,
-  };
-  ```
+- [x] **4.8 반환값 구성 및 Idempotency** ✅
+  - [x] StepFunctionInput에 faceIds 추가
+  - [x] Idempotency 체크 (FACES_INDEXED 상태면 스킵)
+  - [x] 에러 발생 시 이전 상태 유지
+
+- [x] **4.9 CDK Stack 통합** ✅
+  - [x] Lambda Function 정의
+  - [x] Common Layer 연결
+  - [x] 환경 변수 설정
+  - [x] IAM 권한 부여 (S3, DynamoDB, Rekognition)
 
 ---
 

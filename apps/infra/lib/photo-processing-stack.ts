@@ -186,7 +186,38 @@ export class PhotoProcessingStack extends cdk.Stack {
       })
     );
 
-    // TODO: Index Faces Lambda
+    // 3. Index Faces Lambda (Face Detection & Indexing)
+    const indexFacesLambda = new lambda.Function(this, "IndexFacesLambda", {
+      functionName: "photo-processing-index-faces",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: "index.handler",
+      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/photo-process/index-faces")),
+      layers: [commonLayer],
+      environment: {
+        ...commonEnv,
+      },
+      timeout: Duration.seconds(60),
+      memorySize: 512,
+      description: "Indexes faces from race photos to Rekognition Collection",
+    });
+
+    // Index Faces Lambda 권한 부여
+    photosBucket.grantRead(indexFacesLambda);
+    eventPhotosTable.grantReadWriteData(indexFacesLambda);
+
+    // Rekognition 권한 (DetectFaces, IndexFaces, Collection 관리)
+    indexFacesLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "rekognition:DetectFaces",
+          "rekognition:IndexFaces",
+          "rekognition:CreateCollection",
+          "rekognition:DescribeCollection",
+        ],
+        resources: ["*"],
+      })
+    );
+
     // TODO: DB Update Lambda
     // TODO: Step Functions State Machine
     // TODO: S3 Event Notification (Starter Lambda 연결)

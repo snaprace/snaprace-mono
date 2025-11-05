@@ -67,13 +67,21 @@
   - Idempotency 지원
   - CDK Stack 통합 (Rekognition 권한 포함)
 
+- **Index Faces Lambda** ✅:
+  - DetectFaces 사전 체크 (비용 최적화)
+  - Rekognition Collection 자동 생성/확인
+  - IndexFaces API 호출 (ExternalImageId = S3 경로)
+  - 그룹 사진 감지 (detectedBibs > 1 && faceIds > 1)
+  - EventPhotos 업데이트 (FACES_INDEXED, isGroupPhoto)
+  - Idempotency 지원
+  - CDK Stack 통합 (Collection 관리 권한 포함)
+
 #### 🚧 구현 예정 항목
 
-- Lambda 함수 2개 (Index Faces, DB Update)
+- Lambda 함수 1개 (DB Update)
 - Step Functions State Machine
 - API Gateway (검색 API)
 - S3 Event Notification (Starter Lambda 연결)
-- Rekognition Collection (자동 생성)
 
 ### 1.3 기존 아키텍처와의 주요 차이점
 
