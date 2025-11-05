@@ -61,66 +61,32 @@ function parseS3ObjectKey(objectKey: string): ParsedS3Path {
 async function processS3Record(record: S3EventRecord, env: StarterLambdaEnv): Promise<void> {
   const bucket = record.s3.bucket.name;
   const objectKey = record.s3.object.key;
-  const objectSize = record.s3.object.size;
-
-  logger.info("Processing S3 record", {
-    bucket,
-    objectKey,
-    objectSize,
-    eventTime: record.eventTime,
-  });
 
   // 1. S3 경로 파싱
   const parsed = parseS3ObjectKey(objectKey);
-  logger.info("Parsed S3 path", {
-    organizer: parsed.organizer,
-    eventId: parsed.eventId,
-    filename: parsed.filename,
-    objectKey: parsed.objectKey,
-  });
 
   // 2. Idempotency 체크 - 이미 처리 중인 사진인지 확인
   const existingPhoto = await getEventPhoto(env.EVENT_PHOTOS_TABLE, parsed.organizer, parsed.eventId, parsed.objectKey);
 
-  if (existingPhoto) {
-    if (existingPhoto.ProcessingStatus !== ProcessingStatus.PENDING) {
-      logger.info("Photo already being processed or completed, skipping", {
-        objectKey: parsed.objectKey,
-        currentStatus: existingPhoto.ProcessingStatus,
-      });
-      return;
-    }
-    logger.info("Photo exists with PENDING status, will re-trigger", {
-      objectKey: parsed.objectKey,
-    });
+  if (existingPhoto && existingPhoto.processing_status !== ProcessingStatus.PENDING) {
+    return; // 이미 처리 중이거나 완료됨
   }
 
   // 3. EventPhotos 초기화 (PENDING 상태로)
-  const uploadTimestamp = Date.now();
+  const nowISO = new Date().toISOString();
   const eventKey = `ORG#${parsed.organizer}#EVT#${parsed.eventId}`;
 
   try {
     await putEventPhoto(env.EVENT_PHOTOS_TABLE, {
-      EventKey: eventKey,
-      S3ObjectKey: parsed.objectKey,
-      UploadTimestamp: uploadTimestamp,
-      ProcessingStatus: ProcessingStatus.PENDING,
-      createdAt: uploadTimestamp,
-      updatedAt: uploadTimestamp,
-    });
-
-    logger.info("Initialized EventPhoto record", {
-      eventKey,
-      objectKey: parsed.objectKey,
-      status: ProcessingStatus.PENDING,
+      event_key: eventKey,
+      s3_path: parsed.objectKey,
+      processing_status: ProcessingStatus.PENDING,
+      created_at: nowISO,
+      updated_at: nowISO,
     });
   } catch (error: any) {
     // ConditionalCheckFailedException은 이미 다른 실행에서 생성한 경우
-    if (error.name === "ConditionalCheckFailedException") {
-      logger.warn("Photo record already exists (race condition), continuing", {
-        objectKey: parsed.objectKey,
-      });
-    } else {
+    if (error.name !== "ConditionalCheckFailedException") {
       throw error;
     }
   }
@@ -131,7 +97,6 @@ async function processS3Record(record: S3EventRecord, env: StarterLambdaEnv): Pr
     objectKey: parsed.objectKey,
     organizer: parsed.organizer,
     eventId: parsed.eventId,
-    uploadTimestamp,
   };
 
   // 5. Step Functions 실행
@@ -144,27 +109,13 @@ async function processS3Record(record: S3EventRecord, env: StarterLambdaEnv): Pr
       input: JSON.stringify(stepFunctionInput),
     });
 
-    const result = await sfnClient.send(command);
-
-    logger.info("Started Step Functions execution", {
-      executionArn: result.executionArn,
-      executionName,
-      input: stepFunctionInput,
-    });
+    await sfnClient.send(command);
   } catch (error: any) {
     if (error.name === "ExecutionAlreadyExists") {
-      logger.warn("Step Functions execution already exists, skipping", {
-        executionName,
-        objectKey: parsed.objectKey,
-      });
-    } else {
-      logger.error("Failed to start Step Functions execution", {
-        error: error.message,
-        executionName,
-        objectKey: parsed.objectKey,
-      });
-      throw error;
+      return; // 이미 실행 중
     }
+    logger.error("Failed to start Step Functions", { error: error.message, objectKey: parsed.objectKey });
+    throw error;
   }
 }
 
@@ -181,19 +132,11 @@ export async function handler(event: S3Event, context: Context): Promise<{ statu
   ]);
 
   if (!envValidation.success) {
-    logger.error("Environment validation failed", {
-      error: envValidation.error,
-    });
+    logger.error("Environment validation failed", { error: envValidation.error });
     throw new Error(envValidation.error || "Environment validation failed");
   }
 
   const env = envValidation.env as StarterLambdaEnv;
-
-  logger.info("Starter Lambda invoked", {
-    recordCount: event.Records.length,
-    requestId: context.awsRequestId,
-  });
-
   const errors: Array<{ objectKey: string; error: string }> = [];
 
   // 각 S3 레코드 처리
@@ -202,37 +145,19 @@ export async function handler(event: S3Event, context: Context): Promise<{ statu
       await processS3Record(record, env);
     } catch (error: any) {
       const objectKey = record.s3.object.key;
-      logger.error("Failed to process S3 record", {
-        objectKey,
-        error: error.message,
-        stack: error.stack,
-      });
-      errors.push({
-        objectKey,
-        error: error.message,
-      });
+      logger.error("Failed to process S3 record", { objectKey, error: error.message });
+      errors.push({ objectKey, error: error.message });
     }
   }
 
   // 결과 반환
   if (errors.length > 0) {
-    logger.error("Some records failed to process", {
-      totalRecords: event.Records.length,
-      failedRecords: errors.length,
-      errors,
-    });
-
-    // 부분 실패는 성공으로 처리 (재시도 방지)
     return successResponse({
       processed: event.Records.length - errors.length,
       failed: errors.length,
       errors,
     });
   }
-
-  logger.info("All records processed successfully", {
-    totalRecords: event.Records.length,
-  });
 
   return successResponse({
     processed: event.Records.length,

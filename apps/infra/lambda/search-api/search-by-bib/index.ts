@@ -75,22 +75,27 @@ export async function handler(event: APIGatewayProxyEvent, context: Context): Pr
 
         const runner = await getRunner(env.RUNNERS_TABLE, organizer, eventId, bibNumber);
 
-        if (runner && runner.PhotoKeys && runner.PhotoKeys.length > 0) {
-          photoKeys = runner.PhotoKeys;
+        if (runner && runner.PhotoKeys) {
+          // PhotoKeys가 Set인 경우 배열로 변환
+          const keys = runner.PhotoKeys instanceof Set ? Array.from(runner.PhotoKeys) : runner.PhotoKeys;
 
-          logger.info("Found photos in Runners table", {
-            bibNumber,
-            photoCount: photoKeys.length,
-          });
+          if (keys.length > 0) {
+            photoKeys = keys;
 
-          return successResponse({
-            bibNumber,
-            organizer,
-            eventId,
-            photoKeys,
-            photoCount: photoKeys.length,
-            source: "runners_table",
-          });
+            logger.info("Found photos in Runners table", {
+              bibNumber,
+              photoCount: photoKeys.length,
+            });
+
+            return successResponse({
+              bibNumber,
+              organizer,
+              eventId,
+              photoKeys,
+              photoCount: photoKeys.length,
+              source: "runners_table",
+            });
+          }
         }
 
         logger.debug("No photos found in Runners table, falling back to PhotoBibIndex", {

@@ -9,9 +9,7 @@ import { QueryCommand, DynamoDBClient } from "@aws-sdk/client-dynamodb";
 const dynamoClient = new DynamoDBClient({});
 
 // 워터마크 필터링 상수
-const WATERMARK_MIN_WIDTH = 0.02; // 이미지 width의 2% 미만이면 워터마크
-const WATERMARK_MIN_HEIGHT = 0.01; // 이미지 height의 1% 미만이면 워터마크
-const WATERMARK_BOTTOM_THRESHOLD = 0.65; // 하단 35% (Top > 0.65)
+const WATERMARK_BOTTOM_THRESHOLD = 0.75; // 하단 25% (Top > 0.75)
 const WATERMARK_LEFT_THRESHOLD = 0.3; // 좌측 30%
 const WATERMARK_RIGHT_THRESHOLD = 0.7; // 우측 30%
 
@@ -24,7 +22,6 @@ export interface BibExtractionConfig {
   bibNumberMax?: number; // 최대 Bib 번호 (default: 99999)
   watermarkFilterEnabled?: boolean; // 워터마크 필터링 활성화 (default: true)
   watermarkAreaThreshold?: number; // 워터마크 영역 임계값 (default: 0.35)
-  minTextHeightPx?: number; // 최소 텍스트 높이 (픽셀, default: 50)
 }
 
 /**
@@ -36,7 +33,6 @@ const DEFAULT_CONFIG: Required<BibExtractionConfig> = {
   bibNumberMax: 99999,
   watermarkFilterEnabled: true,
   watermarkAreaThreshold: 0.35,
-  minTextHeightPx: 50,
 };
 
 /**
@@ -63,7 +59,9 @@ export function extractBibNumbersFromText(
 
     // 필터 1: 숫자만 추출
     const numericText = text.replace(/\D/g, "");
-    if (!numericText) continue;
+    if (!numericText) {
+      continue;
+    }
 
     const bibNumber = parseInt(numericText, 10);
 
@@ -80,14 +78,6 @@ export function extractBibNumbersFromText(
     // 필터 4: 워터마크 영역 제외
     if (cfg.watermarkFilterEnabled && geometry) {
       if (isWatermarkArea(geometry, imageWidth, imageHeight, cfg)) {
-        continue;
-      }
-    }
-
-    // 필터 5: 크기 기반 필터링 (픽셀 단위)
-    if (imageHeight && geometry && cfg.minTextHeightPx > 0) {
-      const textHeightPx = (geometry.Height ?? 0) * imageHeight;
-      if (textHeightPx < cfg.minTextHeightPx) {
         continue;
       }
     }
@@ -120,17 +110,11 @@ export function isWatermarkArea(
   const height = boundingBox.Height ?? 0;
   const bottom = top + height;
 
-  // 1. 텍스트 크기가 너무 작으면 워터마크일 가능성 높음
-  if (width < WATERMARK_MIN_WIDTH || height < WATERMARK_MIN_HEIGHT) {
-    return true;
-  }
-
-  // 2. 좌하단 구역 필터링: 하단 35% + 좌측 30%
+  // 1. 좌하단 구역 필터링: 하단 25% + 좌측 30%
   const isInBottomLeft = bottom > WATERMARK_BOTTOM_THRESHOLD && left < WATERMARK_LEFT_THRESHOLD;
 
-  // 3. 우하단 구역 필터링: 하단 35% + 우측 30%
-  const isInBottomRight =
-    bottom > WATERMARK_BOTTOM_THRESHOLD && left + width > WATERMARK_RIGHT_THRESHOLD;
+  // 2. 우하단 구역 필터링: 하단 25% + 우측 30%
+  const isInBottomRight = bottom > WATERMARK_BOTTOM_THRESHOLD && left + width > WATERMARK_RIGHT_THRESHOLD;
 
   return isInBottomLeft || isInBottomRight;
 }
@@ -193,10 +177,7 @@ export async function loadValidBibsForEvent(
 /**
  * 감지된 Bib와 유효한 Bib 매칭
  */
-export function filterBibsByValidList(
-  detectedBibs: string[],
-  validBibs: Set<string>
-): string[] {
+export function filterBibsByValidList(detectedBibs: string[], validBibs: Set<string>): string[] {
   if (validBibs.size === 0) {
     // validBibs가 비어있으면 모든 Bib 반환 (Runners 테이블 없음)
     return detectedBibs;
@@ -258,4 +239,3 @@ export function findBibMatches(
 
   return new Set(validBibsList);
 }
-

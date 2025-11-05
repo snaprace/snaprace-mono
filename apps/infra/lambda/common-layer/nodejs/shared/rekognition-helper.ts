@@ -276,6 +276,23 @@ export function isCollectionCached(collectionId: string): boolean {
 }
 
 /**
+ * ExternalImageId를 Rekognition 정규식 패턴에 맞게 변환
+ * 허용 패턴: [a-zA-Z0-9_.\\-:]+
+ * 
+ * @param objectKey S3 객체 키
+ * @returns sanitize된 ExternalImageId
+ */
+export function sanitizeExternalImageId(objectKey: string): string {
+  // 슬래시(/)를 콜론(:)으로 변환 (경로 구조 유지)
+  // 공백을 언더스코어(_)로 변환
+  // 기타 허용되지 않는 문자를 언더스코어(_)로 변환
+  return objectKey
+    .replace(/\//g, ':')  // / -> :
+    .replace(/\s+/g, '_') // 공백 -> _
+    .replace(/[^a-zA-Z0-9_.\-:]/g, '_'); // 허용되지 않는 문자 -> _
+}
+
+/**
  * 지연 함수
  */
 function sleep(ms: number): Promise<void> {

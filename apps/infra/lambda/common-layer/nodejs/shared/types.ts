@@ -19,7 +19,6 @@ export interface StepFunctionInput {
   objectKey: string;
   organizer: string;
   eventId: string;
-  uploadTimestamp: number;
   imageWidth?: number;
   imageHeight?: number;
   detectedBibs?: string[];
@@ -41,26 +40,25 @@ export enum ProcessingStatus {
  */
 export interface EventPhoto {
   // Primary Keys
-  EventKey: string; // PK: "ORG#{organizer}#EVT#{eventId}"
-  S3ObjectKey: string; // SK: S3 객체 경로
+  event_key: string; // PK: "ORG#{organizer}#EVT#{eventId}"
+  s3_path: string; // SK: S3 객체 경로
 
   // 메타데이터
-  UploadTimestamp: number; // Unix timestamp
-  ImageWidth?: number;
-  ImageHeight?: number;
-  RekognitionImageId?: string;
+  image_width?: number;
+  image_height?: number;
+  rekognition_image_id?: string;
 
   // 처리 상태
-  ProcessingStatus: ProcessingStatus;
+  processing_status: ProcessingStatus;
 
   // 감지된 데이터
-  DetectedBibs?: string[]; // 감지된 Bib Number 목록
-  FaceIds?: string[]; // 감지된 얼굴 ID 목록
-  isGroupPhoto?: boolean; // 그룹 사진 여부
+  detected_bibs?: string[]; // 감지된 Bib Number 목록
+  face_ids?: string[]; // 감지된 얼굴 ID 목록
+  is_group_photo?: boolean; // 그룹 사진 여부
 
   // 타임스탬프
-  createdAt?: number;
-  updatedAt?: number;
+  created_at: string; // ISO 8601 format - 레코드 생성 시간
+  updated_at: string; // ISO 8601 format - 마지막 업데이트 시간
 }
 
 /**
@@ -68,11 +66,11 @@ export interface EventPhoto {
  */
 export interface PhotoBibIndex {
   // Primary Keys
-  EventBibKey: string; // PK: "ORG#{organizer}#EVT#{eventId}#BIB#{bibNumber}"
-  S3ObjectKey: string; // SK: S3 객체 경로
+  event_bib_key: string; // PK: "ORG#{organizer}#EVT#{eventId}#BIB#{bibNumber}"
+  s3_path: string; // SK: S3 객체 경로
 
   // 메타데이터
-  IndexedAt: number; // Unix timestamp
+  indexed_at: string; // ISO 8601 format
 }
 
 /**
@@ -110,7 +108,7 @@ export interface Runner {
   sk: string; // "BIB#{bibNumber}"
   name?: string;
   finish_time_sec?: number;
-  PhotoKeys?: string[]; // StringSet
+  PhotoKeys?: Set<string> | string[]; // StringSet - DynamoDBDocumentClient는 Set<string>으로 반환하지만, 호환성을 위해 string[]도 허용
 }
 
 /**

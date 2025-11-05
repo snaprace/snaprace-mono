@@ -13,28 +13,22 @@ import {
 import { ulid } from "ulid";
 /**
  * RunnerItem 타입 정의 (RunnersV2 테이블용)
- * apps/infra/lambda/shared/types.ts와 동일
+ * photo-processing-stack.ts의 테이블 정의와 일치
  */
 interface RunnerItem {
   // === 기본 키 (필수) ===
-  pk: string; // "ORG#org123#EVT#event456"
+  pk: string; // "ORG#<org>#EVT#<event>#RUNNER#<runner_id>"
   sk: string; // "BIB#0001" (제로 패딩)
 
-  // === GSI 키 (GSI 사용 시 필수) ===
-  gsi1pk?: string; // "RUNNER#runner789"
-  gsi1sk?: string; // "EVT#org123#event456"
-
-  // === 프로젝션된 속성 (GSI에서 사용) ===
+  // === 속성 ===
   bib_number: string; // "1" (제로 패딩 제거된 실제 번호)
   name: string; // "John Doe"
   finish_time_sec?: number; // 3600 (1시간 = 3600초)
   event_id: string; // "event456"
   event_date: string; // "8/28/25"
   event_name: string; // "Happy Hour Hustle Week4 2025"
-
-  // === 선택적 편의 필드 ===
-  organizer_id?: string; // "org123" (pk에서 파싱 가능하지만 편의를 위해)
-  runner_id?: string; // "runner789" (gsi1pk에서 파싱 가능하지만 편의를 위해)
+  organizer_id: string; // "org123"
+  runner_id: string; // "runner789" (ULID)
 }
 
 interface RaceResultRecord {
@@ -159,26 +153,18 @@ function transformToRunnerItem(
   const zeroPaddedBib = zeroPadBib(record.Bib);
   const finishTimeSec = parseTimeToSeconds(record["Course Time Chip"]);
 
-  // pk: "ORG#org123#EVT#event456"
-  const pk = `ORG#${eventInfo.organizerId}#EVT#${eventInfo.eventId}`;
+  // ULID 생성 (각 러너마다 고유한 ID)
+  const runnerId = ulid();
+
+  // pk: "ORG#<org>#EVT#<event>#RUNNER#<runner_id>"
+  const pk = `ORG#${eventInfo.organizerId}#EVT#${eventInfo.eventId}#RUNNER#${runnerId}`;
 
   // sk: "BIB#0001" (제로 패딩)
   const sk = `BIB#${zeroPaddedBib}`;
 
-  // ULID 생성 (각 러너마다 고유한 ID)
-  const runnerId = ulid();
-
-  // gsi1pk: "RUNNER#<ulid>"
-  const gsi1pk = `RUNNER#${runnerId}`;
-
-  // gsi1sk: "EVT#<organizer_id>#<event_id>"
-  const gsi1sk = `EVT#${eventInfo.organizerId}#${eventInfo.eventId}`;
-
   const runnerItem: RunnerItem = {
     pk,
     sk,
-    gsi1pk,
-    gsi1sk,
     bib_number: bibNumber,
     name: record.Name,
     event_id: eventInfo.eventId,

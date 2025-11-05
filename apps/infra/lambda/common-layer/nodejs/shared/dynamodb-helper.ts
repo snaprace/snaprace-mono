@@ -2,15 +2,16 @@
  * DynamoDB Helper 함수들
  */
 
+import { DynamoDBClient, DescribeTableCommand } from "@aws-sdk/client-dynamodb";
 import {
-  DynamoDBClient,
-  GetItemCommand,
-  PutItemCommand,
-  UpdateItemCommand,
+  DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+  UpdateCommand,
   QueryCommand,
-  DescribeTableCommand,
-} from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+  BatchWriteCommand,
+  BatchGetCommand,
+} from "@aws-sdk/lib-dynamodb";
 import {
   EventPhoto,
   PhotoBibIndex,
@@ -43,11 +44,11 @@ export async function getEventPhoto(
 ): Promise<EventPhoto | null> {
   try {
     const response = await docClient.send(
-      new GetItemCommand({
+      new GetCommand({
         TableName: tableName,
         Key: {
-          EventKey: { S: `ORG#${organizer}#EVT#${eventId}` },
-          S3ObjectKey: { S: objectKey },
+          event_key: `ORG#${organizer}#EVT#${eventId}`,
+          s3_path: objectKey,
         },
       })
     );
@@ -56,8 +57,7 @@ export async function getEventPhoto(
       return null;
     }
 
-    // Item을 EventPhoto 타입으로 변환
-    return unmarshallEventPhoto(response.Item);
+    return response.Item as EventPhoto;
   } catch (error: any) {
     if (error.name === "ResourceNotFoundException") {
       console.warn(`Table ${tableName} not found`);
@@ -70,21 +70,18 @@ export async function getEventPhoto(
 /**
  * EventPhotos 테이블에 사진 저장 (멱등성 보장)
  */
-export async function putEventPhoto(
-  tableName: string,
-  photo: EventPhoto
-): Promise<void> {
+export async function putEventPhoto(tableName: string, photo: EventPhoto): Promise<void> {
   try {
     await docClient.send(
-      new PutItemCommand({
+      new PutCommand({
         TableName: tableName,
-        Item: marshallEventPhoto(photo),
-        ConditionExpression: "attribute_not_exists(S3ObjectKey)",
+        Item: photo,
+        ConditionExpression: "attribute_not_exists(s3_path)",
       })
     );
   } catch (error: any) {
     if (error.name === "ConditionalCheckFailedException") {
-      console.warn(`Photo ${photo.S3ObjectKey} already exists`);
+      console.warn(`Photo ${photo.s3_path} already exists`);
       return;
     }
     throw error;
@@ -108,67 +105,63 @@ export async function updateEventPhoto(
 
   let valueIndex = 0;
 
-  if (updates.ProcessingStatus !== undefined) {
+  if (updates.processing_status !== undefined) {
     updateExpressions.push(`#status = :val${valueIndex}`);
-    expressionAttributeNames["#status"] = "ProcessingStatus";
-    expressionAttributeValues[`:val${valueIndex}`] = { S: updates.ProcessingStatus };
+    expressionAttributeNames["#status"] = "processing_status";
+    expressionAttributeValues[`:val${valueIndex}`] = updates.processing_status;
     valueIndex++;
   }
 
-  if (updates.DetectedBibs !== undefined) {
+  if (updates.detected_bibs !== undefined) {
     updateExpressions.push(`#bibs = :val${valueIndex}`);
-    expressionAttributeNames["#bibs"] = "DetectedBibs";
-    expressionAttributeValues[`:val${valueIndex}`] = {
-      L: updates.DetectedBibs.map((bib) => ({ S: bib })),
-    };
+    expressionAttributeNames["#bibs"] = "detected_bibs";
+    expressionAttributeValues[`:val${valueIndex}`] = updates.detected_bibs;
     valueIndex++;
   }
 
-  if (updates.FaceIds !== undefined) {
+  if (updates.face_ids !== undefined) {
     updateExpressions.push(`#faceIds = :val${valueIndex}`);
-    expressionAttributeNames["#faceIds"] = "FaceIds";
-    expressionAttributeValues[`:val${valueIndex}`] = {
-      L: updates.FaceIds.map((id) => ({ S: id })),
-    };
+    expressionAttributeNames["#faceIds"] = "face_ids";
+    expressionAttributeValues[`:val${valueIndex}`] = updates.face_ids;
     valueIndex++;
   }
 
-  if (updates.isGroupPhoto !== undefined) {
+  if (updates.is_group_photo !== undefined) {
     updateExpressions.push(`#isGroup = :val${valueIndex}`);
-    expressionAttributeNames["#isGroup"] = "isGroupPhoto";
-    expressionAttributeValues[`:val${valueIndex}`] = { BOOL: updates.isGroupPhoto };
+    expressionAttributeNames["#isGroup"] = "is_group_photo";
+    expressionAttributeValues[`:val${valueIndex}`] = updates.is_group_photo;
     valueIndex++;
   }
 
-  if (updates.ImageWidth !== undefined) {
+  if (updates.image_width !== undefined) {
     updateExpressions.push(`#width = :val${valueIndex}`);
-    expressionAttributeNames["#width"] = "ImageWidth";
-    expressionAttributeValues[`:val${valueIndex}`] = { N: String(updates.ImageWidth) };
+    expressionAttributeNames["#width"] = "image_width";
+    expressionAttributeValues[`:val${valueIndex}`] = updates.image_width;
     valueIndex++;
   }
 
-  if (updates.ImageHeight !== undefined) {
+  if (updates.image_height !== undefined) {
     updateExpressions.push(`#height = :val${valueIndex}`);
-    expressionAttributeNames["#height"] = "ImageHeight";
-    expressionAttributeValues[`:val${valueIndex}`] = { N: String(updates.ImageHeight) };
+    expressionAttributeNames["#height"] = "image_height";
+    expressionAttributeValues[`:val${valueIndex}`] = updates.image_height;
     valueIndex++;
   }
 
-  // updatedAt 자동 추가
+  // updated_at 자동 추가
   updateExpressions.push(`#updatedAt = :val${valueIndex}`);
-  expressionAttributeNames["#updatedAt"] = "updatedAt";
-  expressionAttributeValues[`:val${valueIndex}`] = { N: String(Date.now()) };
+  expressionAttributeNames["#updatedAt"] = "updated_at";
+  expressionAttributeValues[`:val${valueIndex}`] = new Date().toISOString();
 
   if (updateExpressions.length === 0) {
     return;
   }
 
   await docClient.send(
-    new UpdateItemCommand({
+    new UpdateCommand({
       TableName: tableName,
       Key: {
-        EventKey: { S: `ORG#${organizer}#EVT#${eventId}` },
-        S3ObjectKey: { S: objectKey },
+        event_key: `ORG#${organizer}#EVT#${eventId}`,
+        s3_path: objectKey,
       },
       UpdateExpression: `SET ${updateExpressions.join(", ")}`,
       ExpressionAttributeNames: expressionAttributeNames,
@@ -190,9 +183,9 @@ export async function queryPhotoBibIndex(
     const response = await docClient.send(
       new QueryCommand({
         TableName: tableName,
-        KeyConditionExpression: "EventBibKey = :key",
+        KeyConditionExpression: "event_bib_key = :key",
         ExpressionAttributeValues: {
-          ":key": { S: `ORG#${organizer}#EVT#${eventId}#BIB#${bibNumber}` },
+          ":key": `ORG#${organizer}#EVT#${eventId}#BIB#${bibNumber}`,
         },
       })
     );
@@ -201,7 +194,7 @@ export async function queryPhotoBibIndex(
       return [];
     }
 
-    return response.Items.map((item) => item.S3ObjectKey.S!);
+    return response.Items.map((item) => item.s3_path as string);
   } catch (error: any) {
     if (error.name === "ResourceNotFoundException") {
       console.warn(`Table ${tableName} not found`);
@@ -221,8 +214,6 @@ export async function batchPutPhotoBibIndex(
   objectKey: string,
   bibNumbers: string[]
 ): Promise<void> {
-  const { BatchWriteItemCommand } = await import("@aws-sdk/client-dynamodb");
-
   // 25개씩 배치 처리
   const batchSize = 25;
   for (let i = 0; i < bibNumbers.length; i += batchSize) {
@@ -231,15 +222,15 @@ export async function batchPutPhotoBibIndex(
     const requestItems = batch.map((bib) => ({
       PutRequest: {
         Item: {
-          EventBibKey: { S: `ORG#${organizer}#EVT#${eventId}#BIB#${bib}` },
-          S3ObjectKey: { S: objectKey },
-          IndexedAt: { N: String(Date.now()) },
+          event_bib_key: `ORG#${organizer}#EVT#${eventId}#BIB#${bib}`,
+          s3_path: objectKey,
+          indexed_at: new Date().toISOString(),
         },
       },
     }));
 
     await docClient.send(
-      new BatchWriteItemCommand({
+      new BatchWriteCommand({
         RequestItems: {
           [tableName]: requestItems,
         },
@@ -259,11 +250,11 @@ export async function getRunner(
 ): Promise<Runner | null> {
   try {
     const response = await docClient.send(
-      new GetItemCommand({
+      new GetCommand({
         TableName: tableName,
         Key: {
-          pk: { S: `ORG#${organizer}#EVT#${eventId}` },
-          sk: { S: `BIB#${bibNumber}` },
+          pk: `ORG#${organizer}#EVT#${eventId}`,
+          sk: `BIB#${bibNumber}`,
         },
       })
     );
@@ -272,7 +263,14 @@ export async function getRunner(
       return null;
     }
 
-    return unmarshallRunner(response.Item);
+    const runner = response.Item as Runner;
+
+    // PhotoKeys가 Set<string>인 경우 배열로 변환 (호환성)
+    if (runner.PhotoKeys && runner.PhotoKeys instanceof Set) {
+      runner.PhotoKeys = Array.from(runner.PhotoKeys);
+    }
+
+    return runner;
   } catch (error: any) {
     if (error.name === "ResourceNotFoundException") {
       console.warn(`Table ${tableName} not found`);
@@ -294,15 +292,15 @@ export async function updateRunnerPhotoKeys(
 ): Promise<void> {
   try {
     await docClient.send(
-      new UpdateItemCommand({
+      new UpdateCommand({
         TableName: tableName,
         Key: {
-          pk: { S: `ORG#${organizer}#EVT#${eventId}` },
-          sk: { S: `BIB#${bibNumber}` },
+          pk: `ORG#${organizer}#EVT#${eventId}`,
+          sk: `BIB#${bibNumber}`,
         },
         UpdateExpression: "ADD PhotoKeys :keys",
         ExpressionAttributeValues: {
-          ":keys": { SS: photoKeys },
+          ":keys": new Set(photoKeys),
         },
       })
     );
@@ -325,7 +323,7 @@ export async function updateRunnerPhotoKeys(
  */
 export async function checkTableExists(tableName: string): Promise<boolean> {
   try {
-    await docClient.send(
+    await client.send(
       new DescribeTableCommand({
         TableName: tableName,
       })
@@ -348,8 +346,6 @@ export async function batchGetEventPhotos(
   eventId: string,
   objectKeys: string[]
 ): Promise<EventPhoto[]> {
-  const { BatchGetItemCommand } = await import("@aws-sdk/client-dynamodb");
-
   const eventKey = `ORG#${organizer}#EVT#${eventId}`;
   const results: EventPhoto[] = [];
 
@@ -359,12 +355,12 @@ export async function batchGetEventPhotos(
     const batch = objectKeys.slice(i, i + batchSize);
 
     const response = await docClient.send(
-      new BatchGetItemCommand({
+      new BatchGetCommand({
         RequestItems: {
           [tableName]: {
             Keys: batch.map((key) => ({
-              EventKey: { S: eventKey },
-              S3ObjectKey: { S: key },
+              event_key: eventKey,
+              s3_path: key,
             })),
           },
         },
@@ -372,80 +368,10 @@ export async function batchGetEventPhotos(
     );
 
     if (response.Responses?.[tableName]) {
-      const photos = response.Responses[tableName].map(unmarshallEventPhoto);
+      const photos = response.Responses[tableName] as EventPhoto[];
       results.push(...photos);
     }
   }
 
   return results;
 }
-
-/**
- * Unmarshall helpers
- */
-function unmarshallEventPhoto(item: Record<string, any>): EventPhoto {
-  return {
-    EventKey: item.EventKey.S!,
-    S3ObjectKey: item.S3ObjectKey.S!,
-    UploadTimestamp: Number(item.UploadTimestamp?.N || 0),
-    ImageWidth: item.ImageWidth?.N ? Number(item.ImageWidth.N) : undefined,
-    ImageHeight: item.ImageHeight?.N ? Number(item.ImageHeight.N) : undefined,
-    RekognitionImageId: item.RekognitionImageId?.S,
-    ProcessingStatus: item.ProcessingStatus?.S as ProcessingStatus,
-    DetectedBibs: item.DetectedBibs?.L?.map((v: any) => v.S!) || [],
-    FaceIds: item.FaceIds?.L?.map((v: any) => v.S!) || [],
-    isGroupPhoto: item.isGroupPhoto?.BOOL,
-    createdAt: item.createdAt?.N ? Number(item.createdAt.N) : undefined,
-    updatedAt: item.updatedAt?.N ? Number(item.updatedAt.N) : undefined,
-  };
-}
-
-function unmarshallRunner(item: Record<string, any>): Runner {
-  return {
-    pk: item.pk.S!,
-    sk: item.sk.S!,
-    name: item.name?.S,
-    finish_time_sec: item.finish_time_sec?.N ? Number(item.finish_time_sec.N) : undefined,
-    PhotoKeys: item.PhotoKeys?.SS || [],
-  };
-}
-
-/**
- * Marshall helpers
- */
-function marshallEventPhoto(photo: EventPhoto): Record<string, any> {
-  const item: Record<string, any> = {
-    EventKey: { S: photo.EventKey },
-    S3ObjectKey: { S: photo.S3ObjectKey },
-    UploadTimestamp: { N: String(photo.UploadTimestamp) },
-    ProcessingStatus: { S: photo.ProcessingStatus },
-  };
-
-  if (photo.ImageWidth !== undefined) {
-    item.ImageWidth = { N: String(photo.ImageWidth) };
-  }
-  if (photo.ImageHeight !== undefined) {
-    item.ImageHeight = { N: String(photo.ImageHeight) };
-  }
-  if (photo.RekognitionImageId) {
-    item.RekognitionImageId = { S: photo.RekognitionImageId };
-  }
-  if (photo.DetectedBibs && photo.DetectedBibs.length > 0) {
-    item.DetectedBibs = { L: photo.DetectedBibs.map((bib) => ({ S: bib })) };
-  }
-  if (photo.FaceIds && photo.FaceIds.length > 0) {
-    item.FaceIds = { L: photo.FaceIds.map((id) => ({ S: id })) };
-  }
-  if (photo.isGroupPhoto !== undefined) {
-    item.isGroupPhoto = { BOOL: photo.isGroupPhoto };
-  }
-  if (photo.createdAt !== undefined) {
-    item.createdAt = { N: String(photo.createdAt) };
-  }
-  if (photo.updatedAt !== undefined) {
-    item.updatedAt = { N: String(photo.updatedAt) };
-  }
-
-  return item;
-}
-

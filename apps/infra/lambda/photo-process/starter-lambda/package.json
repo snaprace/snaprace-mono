@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@aws-lambda-powertools/logger": "^2.28.1",
-    "@aws-sdk/client-sfn": "^3.654.0"
+    "@aws-sdk/client-sfn": "^3.922.0"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.130",

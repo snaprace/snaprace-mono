@@ -3,6 +3,7 @@ import { Construct } from "constructs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as nodejs from "aws-cdk-lib/aws-lambda-nodejs";
 import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3n from "aws-cdk-lib/aws-s3-notifications";
 import * as sqs from "aws-cdk-lib/aws-sqs";
@@ -41,8 +42,8 @@ export class PhotoProcessingStack extends cdk.Stack {
     // 1. EventPhotos table
     const eventPhotosTable = new dynamodb.TableV2(this, "EventPhotosTable", {
       tableName: "EventPhotos",
-      partitionKey: { name: "EventKey", type: dynamodb.AttributeType.STRING }, // "ORG#<org>#EVT#<event>"
-      sortKey: { name: "S3ObjectKey", type: dynamodb.AttributeType.STRING }, // S3 객체 경로
+      partitionKey: { name: "event_key", type: dynamodb.AttributeType.STRING }, // "ORG#<org>#EVT#<event>"
+      sortKey: { name: "s3_path", type: dynamodb.AttributeType.STRING }, // S3 객체 경로
       removalPolicy,
     });
 
@@ -50,11 +51,11 @@ export class PhotoProcessingStack extends cdk.Stack {
     const photoBibIndexTable = new dynamodb.TableV2(this, "PhotoBibIndexTable", {
       tableName: "PhotoBibIndex",
       partitionKey: {
-        name: "EventBibKey", // "ORG#<org>#EVT#<event>#BIB#<bib>"
+        name: "event_bib_key", // "ORG#<org>#EVT#<event>#BIB#<bib>"
         type: dynamodb.AttributeType.STRING,
       },
       sortKey: {
-        name: "S3ObjectKey", // "S3ObjectKey"
+        name: "s3_path", // "s3_path"
         type: dynamodb.AttributeType.STRING,
       },
       removalPolicy,
@@ -81,16 +82,17 @@ export class PhotoProcessingStack extends cdk.Stack {
     // ============================================================================
     // Lambda Layer (Common Layer)
     // ============================================================================
+    // CDK가 자동으로 npm install을 실행하도록 bundling 설정
+    // npm 캐시 권한 문제 해결을 위해 /tmp에 캐시 설정
     const commonLayer = new lambda.LayerVersion(this, "CommonLayer", {
-      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/common-layer/nodejs"), {
+      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/common-layer"), {
         bundling: {
-          image: lambda.Runtime.NODEJS_18_X.bundlingImage,
+          image: lambda.Runtime.NODEJS_20_X.bundlingImage,
           command: [
             "bash",
             "-c",
             [
-              "mkdir -p /asset-output/nodejs",
-              "cp -r /asset-input/* /asset-output/nodejs/",
+              "cp -r /asset-input/* /asset-output/",
               "cd /asset-output/nodejs",
               "npm install --production --cache /tmp/.npm",
             ].join(" && "),
@@ -142,11 +144,11 @@ export class PhotoProcessingStack extends cdk.Stack {
     // ============================================================================
 
     // 1. Detect Text Lambda (Bib Number Extraction)
-    const detectTextLambda = new lambda.Function(this, "DetectTextLambda", {
+    const detectTextLambda = new nodejs.NodejsFunction(this, "DetectTextLambda", {
       functionName: "photo-processing-detect-text",
       runtime: lambda.Runtime.NODEJS_18_X,
-      handler: "index.handler",
-      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/photo-process/detect-text")),
+      handler: "handler",
+      entry: path.join(__dirname, "../lambda/photo-process/detect-text/index.ts"),
       layers: [commonLayer],
       environment: {
         ...commonEnv,
@@ -154,6 +156,10 @@ export class PhotoProcessingStack extends cdk.Stack {
       timeout: Duration.seconds(60),
       memorySize: 512,
       description: "Detects text and extracts Bib numbers from race photos using Rekognition",
+      bundling: {
+        externalModules: ["@aws-sdk/*"],
+        nodeModules: [],
+      },
     });
 
     // Detect Text Lambda 권한 부여
@@ -171,11 +177,11 @@ export class PhotoProcessingStack extends cdk.Stack {
     );
 
     // 2. Index Faces Lambda (Face Detection & Indexing)
-    const indexFacesLambda = new lambda.Function(this, "IndexFacesLambda", {
+    const indexFacesLambda = new nodejs.NodejsFunction(this, "IndexFacesLambda", {
       functionName: "photo-processing-index-faces",
       runtime: lambda.Runtime.NODEJS_18_X,
-      handler: "index.handler",
-      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/photo-process/index-faces")),
+      handler: "handler",
+      entry: path.join(__dirname, "../lambda/photo-process/index-faces/index.ts"),
       layers: [commonLayer],
       environment: {
         ...commonEnv,
@@ -183,6 +189,10 @@ export class PhotoProcessingStack extends cdk.Stack {
       timeout: Duration.seconds(60),
       memorySize: 512,
       description: "Indexes faces from race photos to Rekognition Collection",
+      bundling: {
+        externalModules: ["@aws-sdk/*"],
+        nodeModules: [],
+      },
     });
 
     // Index Faces Lambda 권한 부여
@@ -203,11 +213,11 @@ export class PhotoProcessingStack extends cdk.Stack {
     );
 
     // 3. DB Update Lambda (Runners PhotoKeys Update)
-    const dbUpdateLambda = new lambda.Function(this, "DbUpdateLambda", {
+    const dbUpdateLambda = new nodejs.NodejsFunction(this, "DbUpdateLambda", {
       functionName: "photo-processing-db-update",
       runtime: lambda.Runtime.NODEJS_18_X,
-      handler: "index.handler",
-      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/photo-process/db-update")),
+      handler: "handler",
+      entry: path.join(__dirname, "../lambda/photo-process/db-update/index.ts"),
       layers: [commonLayer],
       environment: {
         ...commonEnv,
@@ -215,6 +225,10 @@ export class PhotoProcessingStack extends cdk.Stack {
       timeout: Duration.seconds(30),
       memorySize: 256,
       description: "Updates Runners table PhotoKeys with detected photos",
+      bundling: {
+        externalModules: ["@aws-sdk/*"],
+        nodeModules: [],
+      },
     });
 
     // DB Update Lambda 권한 부여
@@ -273,8 +287,8 @@ export class PhotoProcessingStack extends cdk.Stack {
       tracingEnabled: true,
       logs: {
         destination: stateMachineLogGroup,
-        level: sfn.LogLevel.ALL,
-        includeExecutionData: true,
+        level: sfn.LogLevel.ERROR, // 에러만 로깅 (정상 처리 시 로그 최소화)
+        includeExecutionData: false, // 실행 데이터 제외 (로그 용량 절감)
       },
     });
 
@@ -282,11 +296,11 @@ export class PhotoProcessingStack extends cdk.Stack {
     // Starter Lambda (S3 Event Handler)
     // ============================================================================
 
-    const starterLambda = new lambda.Function(this, "StarterLambda", {
+    const starterLambda = new nodejs.NodejsFunction(this, "StarterLambda", {
       functionName: "photo-processing-starter",
       runtime: lambda.Runtime.NODEJS_18_X,
-      handler: "index.handler",
-      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/photo-process/starter-lambda")),
+      handler: "handler",
+      entry: path.join(__dirname, "../lambda/photo-process/starter-lambda/index.ts"),
       layers: [commonLayer],
       environment: {
         ...commonEnv,
@@ -295,6 +309,10 @@ export class PhotoProcessingStack extends cdk.Stack {
       timeout: Duration.seconds(30),
       memorySize: 256,
       description: "Handles S3 upload events and initiates photo processing workflow",
+      bundling: {
+        externalModules: ["@aws-sdk/*"],
+        nodeModules: [],
+      },
     });
 
     // Starter Lambda 권한 부여
@@ -342,11 +360,11 @@ export class PhotoProcessingStack extends cdk.Stack {
     // ============================================================================
 
     // 1. Search by Bib Lambda
-    const searchByBibLambda = new lambda.Function(this, "SearchByBibLambda", {
+    const searchByBibLambda = new nodejs.NodejsFunction(this, "SearchByBibLambda", {
       functionName: "photo-search-by-bib",
       runtime: lambda.Runtime.NODEJS_18_X,
-      handler: "index.handler",
-      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/search-api/search-by-bib")),
+      handler: "handler",
+      entry: path.join(__dirname, "../lambda/search-api/search-by-bib/index.ts"),
       layers: [commonLayer],
       environment: {
         ...commonEnv,
@@ -354,6 +372,10 @@ export class PhotoProcessingStack extends cdk.Stack {
       timeout: Duration.seconds(30),
       memorySize: 256,
       description: "Search photos by Bib number",
+      bundling: {
+        externalModules: ["@aws-sdk/*"],
+        nodeModules: [],
+      },
     });
 
     // Search by Bib Lambda 권한
@@ -361,11 +383,11 @@ export class PhotoProcessingStack extends cdk.Stack {
     runnersTable.grantReadData(searchByBibLambda);
 
     // 2. Search by Selfie Lambda
-    const searchBySelfieLambda = new lambda.Function(this, "SearchBySelfieLambda", {
+    const searchBySelfieLambda = new nodejs.NodejsFunction(this, "SearchBySelfieLambda", {
       functionName: "photo-search-by-selfie",
       runtime: lambda.Runtime.NODEJS_18_X,
-      handler: "index.handler",
-      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/search-api/search-by-selfie")),
+      handler: "handler",
+      entry: path.join(__dirname, "../lambda/search-api/search-by-selfie/index.ts"),
       layers: [commonLayer],
       environment: {
         ...commonEnv,
@@ -373,6 +395,10 @@ export class PhotoProcessingStack extends cdk.Stack {
       timeout: Duration.seconds(30),
       memorySize: 512,
       description: "Search photos by selfie using facial recognition",
+      bundling: {
+        externalModules: ["@aws-sdk/*"],
+        nodeModules: [],
+      },
     });
 
     // Search by Selfie Lambda 권한

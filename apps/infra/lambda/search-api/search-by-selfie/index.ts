@@ -101,8 +101,8 @@ export async function handler(event: APIGatewayProxyEvent, context: Context): Pr
     const searchResult = await searchFacesByImage(
       collectionId,
       imageBuffer,
-      config.minFaceConfidence,
-      10 // maxFaces
+      10, // maxFaces
+      config.minFaceConfidence // faceMatchThreshold
     );
 
     const faceMatches = searchResult.FaceMatches || [];
