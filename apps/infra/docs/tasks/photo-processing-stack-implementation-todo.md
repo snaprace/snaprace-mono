@@ -25,7 +25,8 @@
 - [ ] Phase 1: 핵심 워크플로우 (Week 1-2)
   - [x] **Week 1 Part 1-2: Common Layer 완료** (1.1-1.6) ✅✅
   - [x] **Week 1 Part 3: Starter Lambda 완료** (2.1-2.7) ✅✅
-  - [ ] Week 1 Part 4: Detect Text Lambda (3.1-3.8) ⏳ 다음
+  - [x] **Week 1 Part 4: Detect Text Lambda 완료** (3.1-3.9) ✅✅
+  - [ ] Week 2 Part 1: Index Faces Lambda (4.1-4.8) ⏳ 다음
 
 ### ⏭️ 예정
 
@@ -217,92 +218,61 @@
 
 ---
 
-#### 3️⃣ Detect Text Lambda (`lambda/photo-process/detect-text/`)
+#### 3️⃣ Detect Text Lambda (`lambda/photo-process/detect-text/`) ✅
 
 **목표**: Rekognition DetectText → Bib 추출 → PhotoBibIndex 인덱싱
 
-- [ ] **3.1 프로젝트 구조 생성**
-  - [ ] `index.ts` 생성
-  - [ ] `tsconfig.json` 생성 (Common Layer 참조)
-  - [ ] `package.json` 생성
+- [x] **3.1 프로젝트 구조 생성** ✅
+  - [x] `index.ts` 생성
+  - [x] `tsconfig.json` 생성 (Common Layer 참조)
+  - [x] `package.json` 생성
 
-- [ ] **3.2 Rekognition DetectText 호출**
-  - [ ] 입력 검증
-    - bucket, objectKey 확인
-  - [ ] DetectText API 호출
-    ```typescript
-    const response = await rekognition.detectText({
-      Image: { S3Object: { Bucket: bucket, Name: objectKey } },
-    });
-    ```
-  - [ ] 응답 파싱
-    - TextDetections 배열 추출
-    - LINE 타입만 필터링
+- [x] **3.2 Rekognition DetectText 호출** ✅
+  - [x] 입력 검증 (StepFunctionInput)
+  - [x] DetectText Helper 호출
+  - [x] 응답 파싱 (TextDetections 배열)
+  - [x] 이미지 크기 추출 (입력 또는 기본값)
 
-- [ ] **3.3 Bib Number 추출 (3단계 필터링)**
-  - [ ] 1단계: 숫자만 필터링
-    - 정규식: `/^\d+$/`
-    - 1-99999 범위 체크
-  - [ ] 2단계: 워터마크 영역 제외
-    - `isWatermarkArea()` 호출
-    - 하단 35% 구역 제외
-  - [ ] 3단계: 크기 기반 필터링
-    - `BoundingBox.Height * imageHeight` 계산
-    - 50px 미만 제외
-  - [ ] 4단계: 신뢰도 기반 필터링
-    - Confidence < 90% 제외
-  - [ ] 중복 제거
-    - Set 사용
+- [x] **3.3 Bib Number 추출 (5단계 필터링)** ✅
+  - [x] Common Layer의 `extractBibNumbersFromText()` 사용
+  - [x] 1단계: 숫자 필터링 (1-99999 범위)
+  - [x] 2단계: 신뢰도 기반 필터링 (90%)
+  - [x] 3단계: 워터마크 영역 제외 (하단 35%)
+  - [x] 4단계: 크기 기반 필터링 (50px 이상)
+  - [x] 5단계: 중복 제거 (Set)
 
-- [ ] **3.4 Runners 테이블로 검증 (선택적)**
-  - [ ] Runners 테이블 존재 여부 확인
-    - `describeTable()` 호출
-    - ResourceNotFoundException 처리
-  - [ ] 유효한 Bib 목록 로드
-    - `loadValidBibsForEvent()` 호출
-  - [ ] 감지된 Bib와 매칭
-    - 유효한 Bib만 필터링
-    - Runners 없으면 모든 Bib 사용
+- [x] **3.4 Runners 테이블로 검증 (선택적)** ✅
+  - [x] Runners 테이블 설정 확인
+  - [x] `loadValidBibsForEvent()` 호출
+  - [x] `filterBibsByValidList()` 호출
+  - [x] 에러 처리 (Runners 없으면 모든 Bib 사용)
 
-- [ ] **3.5 PhotoBibIndex 테이블 인덱싱**
-  - [ ] BatchWriteItem 준비
-    ```typescript
-    const batchWrites = validBibs.map((bib) => ({
-      PutRequest: {
-        Item: {
-          EventBibKey: `ORG#${organizer}#EVT#${eventId}#BIB#${bib}`,
-          S3ObjectKey: objectKey,
-          IndexedAt: Date.now(),
-        },
-      },
-    }));
-    ```
-  - [ ] BatchWriteItem 실행
-    - 최대 25개씩 배치
-    - UnprocessedItems 재시도 로직
-  - [ ] 에러 처리
+- [x] **3.5 PhotoBibIndex 테이블 인덱싱** ✅
+  - [x] `batchPutPhotoBibIndex()` Helper 호출
+  - [x] Bib별로 인덱스 레코드 생성
+  - [x] BatchWriteItem 실행 (최대 25개 배치)
 
-- [ ] **3.6 EventPhotos 테이블 업데이트**
-  - [ ] UpdateItem 실행
-    ```typescript
-    UpdateExpression: "SET DetectedBibs = :bibs, ProcessingStatus = :status";
-    ```
-  - [ ] DetectedBibs 배열 저장
-  - [ ] ProcessingStatus = TEXT_DETECTED
+- [x] **3.6 EventPhotos 테이블 업데이트** ✅
+  - [x] `updateEventPhoto()` 호출
+  - [x] DetectedBibs, ImageWidth, ImageHeight 저장
+  - [x] ProcessingStatus = TEXT_DETECTED
 
-- [ ] **3.7 로깅**
-  - [ ] 처리 시작/종료 로그
-  - [ ] 감지된 Bib 수
-  - [ ] 필터링 단계별 결과
-  - [ ] 에러 로그
+- [x] **3.7 로깅** ✅
+  - [x] Lambda Powertools Logger 사용
+  - [x] 처리 시작/종료 로그
+  - [x] 감지된 Bib 수, 필터링 결과
+  - [x] 에러 로그
 
-- [ ] **3.8 반환값 구성**
-  ```typescript
-  return {
-    detectedBibs: validBibs,
-    bibCount: validBibs.length,
-  };
-  ```
+- [x] **3.8 반환값 구성 및 Idempotency** ✅
+  - [x] StepFunctionInput에 detectedBibs, imageWidth, imageHeight 추가
+  - [x] Idempotency 체크 (이미 TEXT_DETECTED 상태이면 스킵)
+  - [x] 에러 발생 시 상태 유지
+
+- [x] **3.9 CDK Stack 통합** ✅
+  - [x] Lambda Function 정의
+  - [x] Common Layer 연결
+  - [x] 환경 변수 설정
+  - [x] IAM 권한 부여 (S3, DynamoDB, Rekognition)
 
 ---
 

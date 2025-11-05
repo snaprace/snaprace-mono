@@ -157,6 +157,37 @@ export class PhotoProcessingStack extends cdk.Stack {
     eventPhotosTable.grantReadWriteData(starterLambda);
     // Step Functions 실행 권한은 State Machine 생성 후 추가
 
+    // 2. Detect Text Lambda (Bib Number Extraction)
+    const detectTextLambda = new lambda.Function(this, "DetectTextLambda", {
+      functionName: "photo-processing-detect-text",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: "index.handler",
+      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/photo-process/detect-text")),
+      layers: [commonLayer],
+      environment: {
+        ...commonEnv,
+      },
+      timeout: Duration.seconds(60),
+      memorySize: 512,
+      description: "Detects text and extracts Bib numbers from race photos using Rekognition",
+    });
+
+    // Detect Text Lambda 권한 부여
+    photosBucket.grantRead(detectTextLambda);
+    eventPhotosTable.grantReadWriteData(detectTextLambda);
+    photoBibIndexTable.grantReadWriteData(detectTextLambda);
+    runnersTable.grantReadData(detectTextLambda); // Bib 검증용 (선택적)
+
+    // Rekognition 권한
+    detectTextLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["rekognition:DetectText"],
+        resources: ["*"],
+      })
+    );
+
+    // TODO: Index Faces Lambda
+    // TODO: DB Update Lambda
     // TODO: Step Functions State Machine
     // TODO: S3 Event Notification (Starter Lambda 연결)
   }

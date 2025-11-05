@@ -58,9 +58,18 @@
   - 구조화된 로깅 (Lambda Powertools)
   - CDK Stack 통합 (권한 부여 포함)
 
+- **Detect Text Lambda** ✅:
+  - Rekognition DetectText API 호출
+  - 5단계 Bib Number 필터링 (숫자, 신뢰도, 워터마크, 크기, 중복)
+  - Runners 테이블 기반 Bib 검증 (선택적)
+  - PhotoBibIndex 배치 인덱싱
+  - EventPhotos 업데이트 (TEXT_DETECTED)
+  - Idempotency 지원
+  - CDK Stack 통합 (Rekognition 권한 포함)
+
 #### 🚧 구현 예정 항목
 
-- Lambda 함수 3개 (Detect Text, Index Faces, DB Update)
+- Lambda 함수 2개 (Index Faces, DB Update)
 - Step Functions State Machine
 - API Gateway (검색 API)
 - S3 Event Notification (Starter Lambda 연결)
