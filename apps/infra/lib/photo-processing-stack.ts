@@ -13,6 +13,7 @@ import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as sfn from "aws-cdk-lib/aws-stepfunctions";
 import * as tasks from "aws-cdk-lib/aws-stepfunctions-tasks";
 import * as logs from "aws-cdk-lib/aws-logs";
+import { DefinitionBody } from "aws-cdk-lib/aws-stepfunctions";
 import { RemovalPolicy, Duration } from "aws-cdk-lib";
 import * as rekognition from "aws-cdk-lib/aws-rekognition";
 import * as path from "path";
@@ -91,7 +92,7 @@ export class PhotoProcessingStack extends cdk.Stack {
               "mkdir -p /asset-output/nodejs",
               "cp -r /asset-input/* /asset-output/nodejs/",
               "cd /asset-output/nodejs",
-              "npm install --production",
+              "npm install --production --cache /tmp/.npm",
             ].join(" && "),
           ],
         },
@@ -106,7 +107,7 @@ export class PhotoProcessingStack extends cdk.Stack {
     // ============================================================================
     const commonEnv: Record<string, string> = {
       // 공통
-      AWS_REGION: this.region,
+      // AWS_REGION: this.region,
       STAGE: "dev",
       LOG_LEVEL: "INFO",
 
@@ -267,7 +268,7 @@ export class PhotoProcessingStack extends cdk.Stack {
     // State Machine 생성
     const stateMachine = new sfn.StateMachine(this, "PhotoProcessingStateMachine", {
       stateMachineName: "photo-processing-workflow",
-      definition,
+      definitionBody: DefinitionBody.fromChainable(definition),
       timeout: Duration.minutes(5),
       tracingEnabled: true,
       logs: {
@@ -328,11 +329,8 @@ export class PhotoProcessingStack extends cdk.Stack {
     // ============================================================================
 
     // S3 객체 생성 이벤트를 Starter Lambda에 연결
-    // photos/raw/ 경로에 업로드되는 이미지 파일만 처리
-    photosBucket.addEventNotification(s3.EventType.OBJECT_CREATED, new s3n.LambdaDestination(starterLambda), {
-      prefix: "", // 모든 조직자/이벤트
-      suffix: "", // 모든 파일 (Starter Lambda에서 경로 검증)
-    });
+    // 모든 파일 처리 (Starter Lambda에서 경로 검증)
+    photosBucket.addEventNotification(s3.EventType.OBJECT_CREATED, new s3n.LambdaDestination(starterLambda));
 
     new cdk.CfnOutput(this, "EventNotificationStatus", {
       value: "Configured for s3:ObjectCreated:* events",
