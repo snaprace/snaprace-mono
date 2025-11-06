@@ -43,6 +43,8 @@ export function InfinitePhotoGrid({
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const rafIdRef = useRef<number>(0);
 
+  const testEvent = event?.includes("test");
+
   const [isGridReady, setIsGridReady] = useState(false);
   const [containerWidth, setContainerWidth] = useState(0);
   const [visibleCount, setVisibleCount] = useState(0);

@@ -111,8 +111,18 @@ export async function handler(event: APIGatewayProxyEvent, context: Context): Pr
       matchCount: faceMatches.length,
     });
 
-    // 5. ExternalImageId에서 S3 경로 추출
-    const photoKeys = faceMatches.map((match) => match.Face?.ExternalImageId).filter((id): id is string => !!id);
+    // 5. ExternalImageId에서 S3 경로 추출 및 역변환
+    // ExternalImageId는 sanitize된 형태 (: 사용, 공백은 _ 변환)
+    // 원본 S3 경로로 복원: : -> /, 파일명의 _ -> 공백 (URL 인코딩)
+    const sanitizedPhotoKeys = faceMatches
+      .map((match) => match.Face?.ExternalImageId)
+      .filter((id): id is string => !!id);
+
+    // sanitize된 경로를 원본 S3 경로로 복원
+    // 1. : -> / 변환, 2. 파일명의 _ -> 공백 복원, 3. URL 인코딩
+    const photoKeys = sanitizedPhotoKeys.map((key) =>
+      key.replace(/:/g, "/").replace(/([^/]+)$/, (filename) => encodeURIComponent(filename.replace(/_/g, " ")))
+    );
 
     // 중복 제거
     const uniquePhotoKeys = [...new Set(photoKeys)];

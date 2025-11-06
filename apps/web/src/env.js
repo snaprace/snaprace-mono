@@ -20,6 +20,9 @@ export const env = createEnv({
     DYNAMO_ORGANIZATIONS_TABLE: z.string(),
     DYNAMO_TIMING_RESULTS_TABLE: z.string(),
     DYNAMO_RUNNERS_TABLE: z.string().optional(), // 스크립트 전용, 빌드 시 불필요
+    DYNAMO_EVENT_PHOTOS_TABLE: z.string().optional(), // V2 Photo Processing
+    DYNAMO_PHOTO_BIB_INDEX_TABLE: z.string().optional(), // V2 Photo Processing
+    PHOTO_SEARCH_API_URL: z.string().optional(), // Photo Search API Gateway URL
     BUCKET: z.string(),
     // Auth.js (NextAuth) configuration
     AUTH_SECRET: z.string(),
@@ -53,6 +56,9 @@ export const env = createEnv({
     DYNAMO_ORGANIZATIONS_TABLE: process.env.DYNAMO_ORGANIZATIONS_TABLE,
     DYNAMO_TIMING_RESULTS_TABLE: process.env.DYNAMO_TIMING_RESULTS_TABLE,
     DYNAMO_RUNNERS_TABLE: process.env.DYNAMO_RUNNERS_TABLE,
+    DYNAMO_EVENT_PHOTOS_TABLE: process.env.DYNAMO_EVENT_PHOTOS_TABLE,
+    DYNAMO_PHOTO_BIB_INDEX_TABLE: process.env.DYNAMO_PHOTO_BIB_INDEX_TABLE,
+    PHOTO_SEARCH_API_URL: process.env.PHOTO_SEARCH_API_URL,
     BUCKET: process.env.BUCKET,
     AUTH_SECRET: process.env.AUTH_SECRET,
     AUTH_URL: process.env.AUTH_URL,

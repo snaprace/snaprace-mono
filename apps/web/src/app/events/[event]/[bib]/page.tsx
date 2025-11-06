@@ -65,17 +65,56 @@ export default function EventPhotoPage() {
     { enabled: !!event },
   );
 
+  const testEvent = eventQuery.data?.event_id.includes("test");
+  const cloudfrontUrl = "https://images.snap-race.com/";
+
   const galleryQuery = api.galleries.getByBibNumber.useQuery(
     { eventId: event, bibNumber },
-    { enabled: !!event && !isAllPhotos && !!bibNumber },
+    { enabled: !!event && !isAllPhotos && !!bibNumber && !testEvent },
   );
 
   const allPhotosQuery = api.photos.getByEventId.useQuery(
     { eventId: event },
-    { enabled: !!event && isAllPhotos },
+    { enabled: !!event && isAllPhotos && !testEvent },
+  );
+
+  const allPhotosQueryV2 = api.photos.getByEventV2.useQuery(
+    { organizer: eventQuery.data?.organization_id ?? "", eventId: event },
+    {
+      enabled:
+        !!eventQuery.data?.organization_id &&
+        !!event &&
+        isAllPhotos &&
+        testEvent,
+    },
+  );
+
+  const bibPhotosQueryV2 = api.photos.getByBibV2.useQuery(
+    {
+      organizer: eventQuery.data?.organization_id ?? "",
+      eventId: event,
+      bibNumber,
+    },
+    { enabled: !!event && !isAllPhotos && !!bibNumber },
   );
 
   const photos = useMemo(() => {
+    if (testEvent && isAllPhotos && allPhotosQueryV2.data) {
+      return (
+        allPhotosQueryV2.data?.map((photo) =>
+          encodeURI(cloudfrontUrl + photo.s3Path),
+        ) ?? []
+      );
+    }
+
+    if (testEvent && !isAllPhotos && bibPhotosQueryV2.data) {
+      return (
+        bibPhotosQueryV2.data.map((photo) =>
+          encodeURI(cloudfrontUrl + photo.s3Path),
+        ) ?? []
+      );
+    }
+
     if (isAllPhotos && allPhotosQuery.data) {
       const allPhotos: string[] = [];
       if (allPhotosQuery.data) {
@@ -94,7 +133,14 @@ export default function EventPhotoPage() {
     }
 
     return [];
-  }, [isAllPhotos, allPhotosQuery.data, galleryQuery.data]);
+  }, [
+    isAllPhotos,
+    allPhotosQuery.data,
+    galleryQuery.data,
+    testEvent,
+    allPhotosQueryV2.data,
+    bibPhotosQueryV2.data,
+  ]);
 
   const {
     searchBib,
@@ -134,12 +180,19 @@ export default function EventPhotoPage() {
       photos,
     });
 
-  const { isProcessed, isProcessing, uploadSelfie, uploadedFile, reset } =
-    useSelfieUpload({
-      eventId: event,
-      bibNumber,
-      organizerId: eventQuery.data?.organization_id ?? "",
-    });
+  const {
+    isProcessed,
+    isProcessing,
+    uploadSelfie,
+    uploadedFile,
+    reset,
+    response,
+  } = useSelfieUpload({
+    eventId: event,
+    bibNumber,
+    organizerId: eventQuery.data?.organization_id ?? "",
+    existingPhotos: !isAllPhotos ? photos : undefined,
+  });
 
   const handleLabelClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -240,11 +293,19 @@ export default function EventPhotoPage() {
   };
 
   const selfieMatchedSet = useMemo(() => {
+    if (testEvent && !isAllPhotos && response?.selfie_matched_photos) {
+      return new Set(response?.selfie_matched_photos ?? []);
+    }
     if (!isAllPhotos && galleryQuery.data?.selfie_matched_photos?.length) {
       return new Set(galleryQuery.data.selfie_matched_photos);
     }
     return new Set<string>();
-  }, [isAllPhotos, galleryQuery.data?.selfie_matched_photos]);
+  }, [
+    isAllPhotos,
+    galleryQuery.data?.selfie_matched_photos,
+    testEvent,
+    response?.selfie_matched_photos,
+  ]);
 
   const isLoading =
     eventQuery.isLoading || galleryQuery.isLoading || allPhotosQuery.isLoading;
@@ -259,14 +320,15 @@ export default function EventPhotoPage() {
   const isUploading =
     isProcessing || galleryQuery.isLoading || galleryQuery.isFetching;
 
-  const selfieMatchedCount = Array.isArray(
-    galleryQuery.data?.selfie_matched_photos,
-  )
-    ? galleryQuery.data.selfie_matched_photos.length
-    : 0;
+  const selfieMatchedCount = testEvent
+    ? (response?.selfie_matched_photos?.length ?? 0)
+    : Array.isArray(galleryQuery.data?.selfie_matched_photos)
+      ? galleryQuery.data.selfie_matched_photos.length
+      : 0;
 
-  const selfieEnhanced =
-    typeof galleryQuery.data?.selfie_enhanced === "boolean"
+  const selfieEnhanced = testEvent
+    ? (response?.selfie_matched_photos?.length ?? 0) > 0
+    : typeof galleryQuery.data?.selfie_enhanced === "boolean"
       ? galleryQuery.data.selfie_enhanced
       : false;
 
@@ -439,7 +501,11 @@ export default function EventPhotoPage() {
           <MasonryPhotoSkeleton />
         ) : photos.length > 0 ? (
           <InfinitePhotoGrid
-            photos={photos}
+            photos={
+              testEvent && selfieEnhanced
+                ? [...(response?.selfie_matched_photos ?? []), ...photos]
+                : photos
+            }
             columnCount={columnCount}
             isMobile={isMobile}
             onPhotoClick={handlePhotoClick}

@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import axios from "axios";
+import { api } from "@/trpc/react";
 
 interface SelfieUploadParams {
   eventId: string;
   bibNumber: string;
   organizerId: string;
+  existingPhotos?: string[];
 }
 
 interface LambdaResponse {
@@ -21,10 +23,19 @@ export function useSelfieUpload({
   eventId,
   bibNumber,
   organizerId,
+  existingPhotos,
 }: SelfieUploadParams) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isProcessed, setIsProcessed] = useState(false);
+
+  const [response, setResponse] = useState<LambdaResponse | null>(null);
+
+  const testEvent = eventId.includes("test");
+  const cloudfrontUrl = "https://images.snap-race.com/";
+
+  // tRPC mutation for V2 Photo Processing Stack
+  const searchBySelfieMutation = api.photos.searchBySelfie.useMutation();
 
   const convertToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -104,18 +115,64 @@ export function useSelfieUpload({
 
     try {
       const base64Image = await convertToBase64(file);
-      const matchedResult = await callLambdaFunction(base64Image);
 
-      if (matchedResult.selfie_matched_photos.length > 0) {
-        toast.success(matchedResult?.message ?? "Successfully matched photos!");
-      } else {
-        toast.info(
-          matchedResult.message ??
-            "No additional photos found. Try a different photo with clearer face visibility.",
+      if (testEvent) {
+        // V2 Photo Processing Stack 사용 (tRPC useMutation)
+        const result = await searchBySelfieMutation.mutateAsync({
+          organizer: organizerId,
+          eventId: eventId,
+          selfieImage: base64Image,
+        });
+
+        const selfieMatchedPhotos = result.photoKeys.map(
+          (photoKey) => cloudfrontUrl + photoKey,
         );
-      }
 
-      return matchedResult.selfie_matched_photos.length > 0;
+        console.log("existingPhotos", existingPhotos);
+        console.log("selfieMatchedPhotos", selfieMatchedPhotos);
+
+        const existingSet = new Set(existingPhotos ?? []);
+        const uniqueSelfieMatchedPhotos = selfieMatchedPhotos.filter(
+          (photo) => !existingSet.has(photo),
+        );
+
+        console.log("uniqueSelfieMatchedPhotos", uniqueSelfieMatchedPhotos);
+
+        setIsProcessed(true);
+
+        if (uniqueSelfieMatchedPhotos.length > 0) {
+          toast.success(
+            `Successfully matched ${uniqueSelfieMatchedPhotos.length} photos!`,
+          );
+        } else {
+          toast.info(result.message);
+        }
+
+        setResponse({
+          message: result.message,
+          selfie_matched_photos: uniqueSelfieMatchedPhotos,
+        });
+
+        return uniqueSelfieMatchedPhotos.length > 0;
+      } else {
+        // 기존 Lambda 함수 사용
+        const matchedResult = await callLambdaFunction(base64Image);
+
+        if (matchedResult.selfie_matched_photos.length > 0) {
+          toast.success(
+            matchedResult?.message ?? "Successfully matched photos!",
+          );
+        } else {
+          toast.info(
+            matchedResult.message ??
+              "No additional photos found. Try a different photo with clearer face visibility.",
+          );
+        }
+
+        setResponse(matchedResult);
+
+        return matchedResult.selfie_matched_photos.length > 0;
+      }
     } catch (error) {
       console.error("Selfie upload error:", error);
       const message = error instanceof Error ? error.message : "Unknown error";
@@ -138,5 +195,6 @@ export function useSelfieUpload({
     isProcessed,
     uploadedFile,
     reset,
+    response,
   };
 }

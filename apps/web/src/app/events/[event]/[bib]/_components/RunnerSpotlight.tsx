@@ -52,12 +52,12 @@ export function RunnerSpotlight({
 }: RunnerSpotlightProps) {
   const timingEnabled = !isAllPhotos && bibNumber.length > 0;
 
+  const testEvent = eventId.includes("test");
+
   const timingQuery = api.results.getTimingByBib.useQuery(
     { eventId, bib: bibNumber },
     {
-      enabled: timingEnabled,
-      staleTime: 60_000,
-      retry: 1,
+      enabled: timingEnabled && !testEvent,
     },
   );
 
