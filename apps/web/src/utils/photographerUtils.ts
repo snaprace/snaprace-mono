@@ -35,7 +35,7 @@ export function extractInstagramId(photoUrl: string): string | null {
 
     // Instagram 아이디 추출 (영문자, 숫자, 점, 언더스코어만)
     // 하이픈(-), 공백, 기타 특수문자가 나오면 중단
-    const match = afterAt.match(/^[a-zA-Z0-9._]+/);
+    const match = /^[a-zA-Z0-9._]+/.exec(afterAt);
 
     if (!match) return null;
 
@@ -43,7 +43,7 @@ export function extractInstagramId(photoUrl: string): string | null {
 
     // 언더스코어나 점 다음에 대문자 2개 이상 연속이 나오면 거기서 끊기
     // 예: agulosso_OMRC → agulosso
-    const uppercaseAcronymMatch = instagramId.match(/^(.+?)[._]([A-Z]{2,}.*)/);
+    const uppercaseAcronymMatch = /^(.+?)[._]([A-Z]{2,}.*)/.exec(instagramId);
     if (uppercaseAcronymMatch) {
       instagramId = uppercaseAcronymMatch[1] || instagramId;
     }

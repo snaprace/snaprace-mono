@@ -187,7 +187,7 @@ export const photosRouter = createTRPCRouter({
       }
 
       // Base64 이미지 검증
-      if (!selfieImage.match(/^[A-Za-z0-9+/]+=*$/)) {
+      if (!/^[A-Za-z0-9+/]+=*$/.exec(selfieImage)) {
         throw new Error("Invalid base64 image format");
       }
 
