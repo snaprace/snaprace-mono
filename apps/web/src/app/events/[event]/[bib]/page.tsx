@@ -65,17 +65,56 @@ export default function EventPhotoPage() {
     { enabled: !!event },
   );
 
+  const faceSearchOnly = eventQuery.data?.face_search_only ?? false;
+  const cloudfrontUrl = "https://images.snap-race.com/";
+
   const galleryQuery = api.galleries.getByBibNumber.useQuery(
     { eventId: event, bibNumber },
-    { enabled: !!event && !isAllPhotos && !!bibNumber },
+    { enabled: !!event && !isAllPhotos && !!bibNumber && !faceSearchOnly },
   );
 
   const allPhotosQuery = api.photos.getByEventId.useQuery(
     { eventId: event },
-    { enabled: !!event && isAllPhotos },
+    { enabled: !!event && isAllPhotos && !faceSearchOnly },
+  );
+
+  const allPhotosQueryV2 = api.photos.getByEventV2.useQuery(
+    { organizer: eventQuery.data?.organization_id ?? "", eventId: event },
+    {
+      enabled:
+        !!eventQuery.data?.organization_id &&
+        !!event &&
+        isAllPhotos &&
+        faceSearchOnly,
+    },
+  );
+
+  const bibPhotosQueryV2 = api.photos.getByBibV2.useQuery(
+    {
+      organizer: eventQuery.data?.organization_id ?? "",
+      eventId: event,
+      bibNumber,
+    },
+    { enabled: !!event && !isAllPhotos && !!bibNumber && faceSearchOnly },
   );
 
   const photos = useMemo(() => {
+    if (faceSearchOnly && isAllPhotos && allPhotosQueryV2.data) {
+      return (
+        allPhotosQueryV2.data?.map((photo) =>
+          encodeURI(cloudfrontUrl + photo.s3Path),
+        ) ?? []
+      );
+    }
+
+    if (faceSearchOnly && !isAllPhotos && bibPhotosQueryV2.data) {
+      return (
+        bibPhotosQueryV2.data.map((photo) =>
+          encodeURI(cloudfrontUrl + photo.s3Path),
+        ) ?? []
+      );
+    }
+
     if (isAllPhotos && allPhotosQuery.data) {
       const allPhotos: string[] = [];
       if (allPhotosQuery.data) {
@@ -94,7 +133,14 @@ export default function EventPhotoPage() {
     }
 
     return [];
-  }, [isAllPhotos, allPhotosQuery.data, galleryQuery.data]);
+  }, [
+    isAllPhotos,
+    allPhotosQuery.data,
+    galleryQuery.data,
+    faceSearchOnly,
+    allPhotosQueryV2.data,
+    bibPhotosQueryV2.data,
+  ]);
 
   const {
     searchBib,
@@ -134,17 +180,26 @@ export default function EventPhotoPage() {
       photos,
     });
 
-  const { isProcessed, isProcessing, uploadSelfie, uploadedFile, reset } =
-    useSelfieUpload({
-      eventId: event,
-      bibNumber,
-      organizerId: eventQuery.data?.organization_id ?? "",
-    });
+  const {
+    isProcessed,
+    isProcessing,
+    uploadSelfie,
+    uploadedFile,
+    reset,
+    response,
+    hasError: selfieUploadError,
+  } = useSelfieUpload({
+    eventId: event,
+    bibNumber,
+    organizerId: eventQuery.data?.organization_id ?? "",
+    existingPhotos: !isAllPhotos ? photos : undefined,
+    faceSearchOnly: eventQuery.data?.face_search_only ?? false,
+  });
 
   const handleLabelClick = (e: React.MouseEvent) => {
     e.preventDefault();
 
-    if (!bibNumber || isUploading) return;
+    if (!(bibNumber || faceSearchOnly) || isUploading) return;
 
     if (hasFacialRecognitionConsent(event)) {
       fileInputRef.current?.click();
@@ -170,10 +225,18 @@ export default function EventPhotoPage() {
         const startedAt = performance.now();
 
         // Upload selfie and then refetch gallery only on success
-        await uploadSelfie(file);
-        const { data } = await galleryQuery.refetch();
+        const uploadResult = await uploadSelfie(file);
 
-        const matchedCount = data?.selfie_matched_photos?.length ?? 0;
+        let matchedCount = 0;
+        if (faceSearchOnly) {
+          // faceSearchOnly일 때는 uploadSelfie 반환값에서 직접 가져옴
+          matchedCount = uploadResult.matchedPhotos.length;
+        } else if (!isAllPhotos) {
+          // 일반 이벤트이고 bibNumber가 있을 때만 galleryQuery refetch
+          const { data } = await galleryQuery.refetch();
+          matchedCount = data?.selfie_matched_photos?.length ?? 0;
+        }
+
         const latencyMs = Math.round(performance.now() - startedAt);
         trackSelfieUpload({
           event_id: event,
@@ -240,14 +303,72 @@ export default function EventPhotoPage() {
   };
 
   const selfieMatchedSet = useMemo(() => {
+    if (faceSearchOnly && response?.selfie_matched_photos) {
+      return new Set(response.selfie_matched_photos);
+    }
     if (!isAllPhotos && galleryQuery.data?.selfie_matched_photos?.length) {
       return new Set(galleryQuery.data.selfie_matched_photos);
     }
     return new Set<string>();
-  }, [isAllPhotos, galleryQuery.data?.selfie_matched_photos]);
+  }, [
+    isAllPhotos,
+    galleryQuery.data?.selfie_matched_photos,
+    faceSearchOnly,
+    response?.selfie_matched_photos,
+  ]);
 
   const isLoading =
-    eventQuery.isLoading || galleryQuery.isLoading || allPhotosQuery.isLoading;
+    eventQuery.isLoading ||
+    galleryQuery.isLoading ||
+    allPhotosQuery.isLoading ||
+    allPhotosQueryV2.isLoading ||
+    bibPhotosQueryV2.isLoading;
+
+  const isUploading =
+    isProcessing || galleryQuery.isLoading || galleryQuery.isFetching;
+
+  const selfieMatchedCount = faceSearchOnly
+    ? (response?.selfie_matched_photos?.length ?? 0)
+    : Array.isArray(galleryQuery.data?.selfie_matched_photos)
+      ? galleryQuery.data.selfie_matched_photos.length
+      : 0;
+
+  const selfieEnhanced = faceSearchOnly
+    ? (response?.selfie_matched_photos?.length ?? 0) > 0
+    : typeof galleryQuery.data?.selfie_enhanced === "boolean"
+      ? galleryQuery.data.selfie_enhanced
+      : false;
+
+  const displayedPhotos = useMemo(() => {
+    if (
+      faceSearchOnly &&
+      isAllPhotos &&
+      response?.selfie_matched_photos?.length
+    ) {
+      return response.selfie_matched_photos;
+    }
+    if (
+      faceSearchOnly &&
+      !isAllPhotos &&
+      response?.selfie_matched_photos?.length
+    ) {
+      return [...(response.selfie_matched_photos ?? []), ...photos];
+    }
+    if (faceSearchOnly && selfieEnhanced) {
+      return [...(response?.selfie_matched_photos ?? []), ...photos];
+    }
+    return photos;
+  }, [
+    faceSearchOnly,
+    isAllPhotos,
+    response?.selfie_matched_photos,
+    selfieEnhanced,
+    photos,
+  ]);
+
+  console.log(photos);
+
+  const displayedPhotoCount = displayedPhotos.length;
 
   const hasError =
     eventQuery.error || galleryQuery.error || allPhotosQuery.error;
@@ -255,20 +376,6 @@ export default function EventPhotoPage() {
   if (hasError) {
     return <ErrorState message="Failed to load event data" />;
   }
-
-  const isUploading =
-    isProcessing || galleryQuery.isLoading || galleryQuery.isFetching;
-
-  const selfieMatchedCount = Array.isArray(
-    galleryQuery.data?.selfie_matched_photos,
-  )
-    ? galleryQuery.data.selfie_matched_photos.length
-    : 0;
-
-  const selfieEnhanced =
-    typeof galleryQuery.data?.selfie_enhanced === "boolean"
-      ? galleryQuery.data.selfie_enhanced
-      : false;
 
   return (
     <div className="min-h-screen bg-white">
@@ -310,38 +417,41 @@ export default function EventPhotoPage() {
                       "All Photos"
                     )}
                     {" • "}
-                    {photos.length} photo{photos.length !== 1 ? "s" : ""}
+                    {displayedPhotoCount} photo
+                    {displayedPhotoCount !== 1 ? "s" : ""}
                   </p>
                 </div>
               )}
             </div>
 
-            <div className="w-10 md:w-auto">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden"
-                onClick={() => router.push("/")}
-                aria-label="Open search"
-              >
-                <Search className="h-4 w-4" />
-              </Button>
-              <form
-                onSubmit={handleBibSearch}
-                className="hidden items-center gap-2 md:flex"
-              >
-                <Input
-                  type="text"
-                  placeholder="Enter bib"
-                  value={searchBib}
-                  onChange={(e) => setSearchBib(e.target.value)}
-                  className="w-[100px] border border-gray-200"
-                />
-                <Button type="submit" size="sm" disabled={!searchBib.trim()}>
-                  <Search />
+            {!faceSearchOnly && (
+              <div className="w-10 md:w-auto">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="md:hidden"
+                  onClick={() => router.push("/")}
+                  aria-label="Open search"
+                >
+                  <Search className="h-4 w-4" />
                 </Button>
-              </form>
-            </div>
+                <form
+                  onSubmit={handleBibSearch}
+                  className="hidden items-center gap-2 md:flex"
+                >
+                  <Input
+                    type="text"
+                    placeholder="Enter bib"
+                    value={searchBib}
+                    onChange={(e) => setSearchBib(e.target.value)}
+                    className="w-[100px] border border-gray-200"
+                  />
+                  <Button type="submit" size="sm" disabled={!searchBib.trim()}>
+                    <Search />
+                  </Button>
+                </form>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -358,6 +468,7 @@ export default function EventPhotoPage() {
         selfieEnhanced={selfieEnhanced}
         selfieMatchedCount={selfieMatchedCount}
         isProcessed={isProcessed}
+        hasError={selfieUploadError}
         inputRef={fileInputRef}
         onLabelClick={handleLabelClick}
         onFileChange={handleFileUpload}
@@ -437,9 +548,9 @@ export default function EventPhotoPage() {
       <div className="mt-4 w-full px-[4px] sm:px-[20px]">
         {isLoading ? (
           <MasonryPhotoSkeleton />
-        ) : photos.length > 0 ? (
+        ) : displayedPhotos.length > 0 ? (
           <InfinitePhotoGrid
-            photos={photos}
+            photos={displayedPhotos}
             columnCount={columnCount}
             isMobile={isMobile}
             onPhotoClick={handlePhotoClick}
@@ -504,8 +615,8 @@ export default function EventPhotoPage() {
       <PhotoSingleView
         isOpen={isModalOpen}
         onClose={handleCloseSingleView}
-        photos={photos}
-        currentIndex={Math.min(currentPhotoIndex, photos.length - 1)}
+        photos={displayedPhotos}
+        currentIndex={Math.min(currentPhotoIndex, displayedPhotos.length - 1)}
         onIndexChange={handlePhotoIndexChange}
         event={event}
         bibNumber={bibNumber}

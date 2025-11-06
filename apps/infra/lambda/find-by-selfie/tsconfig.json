@@ -11,4 +11,3 @@
   "include": ["**/*.ts", "../common-layer/nodejs/shared/**/*.ts"],
   "exclude": ["node_modules"]
 }
-

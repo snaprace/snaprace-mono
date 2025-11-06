@@ -8,24 +8,29 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md}\""
   },
   "devDependencies": {
-    "@types/jest": "^29.5.14",
-    "@types/node": "22.7.9",
-    "@types/aws-lambda": "^8.10.145",
     "@aws-sdk/client-dynamodb": "^3.654.0",
-    "@aws-sdk/lib-dynamodb": "^3.654.0",
     "@aws-sdk/client-rekognition": "^3.654.0",
     "@aws-sdk/client-sqs": "^3.654.0",
+    "@aws-sdk/lib-dynamodb": "^3.654.0",
+    "@types/aws-lambda": "^8.10.145",
+    "@types/jest": "^29.5.14",
+    "@types/node": "22.7.9",
+    "aws-cdk": "2.1031.0",
     "jest": "^29.7.0",
     "ts-jest": "^29.2.5",
-    "aws-cdk": "2.1031.0",
     "ts-node": "^10.9.2",
     "typescript": "~5.6.3"
   },
   "dependencies": {
+    "@aws-lambda-powertools/logger": "^2.28.1",
+    "@aws-sdk/client-sfn": "^3.925.0",
     "aws-cdk-lib": "2.215.0",
-    "constructs": "^10.0.0"
+    "constructs": "^10.0.0",
+    "image-size": "^2.0.2"
   }
 }

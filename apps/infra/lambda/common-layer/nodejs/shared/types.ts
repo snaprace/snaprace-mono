@@ -11,6 +11,73 @@ interface BaseEnvironment {
   [key: string]: string | undefined;
 }
 
+/**
+ * Step Functions 입력 인터페이스
+ */
+export interface StepFunctionInput {
+  bucket: string;
+  objectKey: string;
+  organizer: string;
+  eventId: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  detectedBibs?: string[];
+  faceIds?: string[];
+}
+
+/**
+ * 처리 상태 Enum
+ */
+export enum ProcessingStatus {
+  PENDING = "PENDING",
+  TEXT_DETECTED = "TEXT_DETECTED",
+  FACES_INDEXED = "FACES_INDEXED",
+  COMPLETED = "COMPLETED",
+}
+
+/**
+ * EventPhotos 테이블 아이템 인터페이스
+ */
+export interface EventPhoto {
+  // Primary Keys
+  event_key: string; // PK: "ORG#{organizer}#EVT#{eventId}"
+  s3_path: string; // SK: S3 객체 경로
+
+  // 메타데이터
+  image_width?: number;
+  image_height?: number;
+  rekognition_image_id?: string;
+
+  // 처리 상태
+  processing_status: ProcessingStatus;
+
+  // 감지된 데이터
+  detected_bibs?: string[]; // 감지된 Bib Number 목록
+  face_ids?: string[]; // 감지된 얼굴 ID 목록
+  is_group_photo?: boolean; // 그룹 사진 여부
+
+  // 타임스탬프
+  created_at: string; // ISO 8601 format - 레코드 생성 시간
+  updated_at: string; // ISO 8601 format - 마지막 업데이트 시간
+}
+
+/**
+ * PhotoBibIndex 테이블 아이템 인터페이스
+ */
+export interface PhotoBibIndex {
+  // Primary Keys
+  event_bib_key: string; // PK: "ORG#{organizer}#EVT#{eventId}#BIB#{bibNumber}"
+  s3_path: string; // SK: S3 객체 경로
+
+  // 메타데이터
+  indexed_at: string; // ISO 8601 format
+}
+
+/**
+ * RunnersV2 테이블 아이템 인터페이스 (기존)
+ */
+
+// 기존 RunnersV2 테이블 아이템 인터페이스
 interface RunnerItem {
   // === 기본 키 (필수) ===
   pk: string; // "ORG#org123#EVT#event456"
@@ -33,6 +100,47 @@ interface RunnerItem {
   runner_id?: string; // "runner789" (gsi1pk에서 파싱 가능하지만 편의를 위해)
 }
 
+/**
+ * Runner 인터페이스 (간소화 버전)
+ */
+export interface Runner {
+  pk: string; // "ORG#{organizer}#EVT#{eventId}"
+  sk: string; // "BIB#{bibNumber}"
+  name?: string;
+  finish_time_sec?: number;
+  PhotoKeys?: Set<string> | string[]; // StringSet - DynamoDBDocumentClient는 Set<string>으로 반환하지만, 호환성을 위해 string[]도 허용
+}
+
+/**
+ * DynamoDB 응답 타입
+ */
+export interface DynamoDBGetItemResponse<T> {
+  Item?: T;
+}
+
+export interface DynamoDBQueryResponse<T> {
+  Items: T[];
+  Count: number;
+  ScannedCount: number;
+  LastEvaluatedKey?: Record<string, any>;
+}
+
+/**
+ * Lambda 응답 타입
+ */
+export interface LambdaResponse {
+  statusCode: number;
+  headers?: Record<string, string>;
+  body: string;
+}
+
+/**
+ * 에러 타입
+ */
+export interface PhotoProcessingError extends Error {
+  code?: string;
+  statusCode?: number;
+  details?: any;
+}
+
 export type { BaseEnvironment, RunnerItem, FaceMatch };
-
-

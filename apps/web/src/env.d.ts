@@ -10,6 +10,9 @@ declare module "@/env" {
     DYNAMO_FEEDBACKS_TABLE: string;
     DYNAMO_ORGANIZATIONS_TABLE: string;
     DYNAMO_TIMING_RESULTS_TABLE: string;
+    DYNAMO_EVENT_PHOTOS_TABLE?: string;
+    DYNAMO_PHOTO_BIB_INDEX_TABLE?: string;
+    PHOTO_SEARCH_API_URL?: string;
     BUCKET: string;
     AUTH_SECRET: string;
     AUTH_URL?: string;

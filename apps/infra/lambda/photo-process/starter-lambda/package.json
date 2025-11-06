@@ -1,0 +1,20 @@
+{
+  "name": "starter-lambda",
+  "version": "1.0.0",
+  "description": "S3 Event handler to initialize photo processing workflow",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@aws-lambda-powertools/logger": "^2.28.1",
+    "@aws-sdk/client-sfn": "^3.922.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.130",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  }
+}

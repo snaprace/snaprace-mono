@@ -3,291 +3,210 @@ import { Construct } from "constructs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as nodejs from "aws-cdk-lib/aws-lambda-nodejs";
 import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
+import * as s3n from "aws-cdk-lib/aws-s3-notifications";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
+import * as sfn from "aws-cdk-lib/aws-stepfunctions";
+import * as tasks from "aws-cdk-lib/aws-stepfunctions-tasks";
+import * as logs from "aws-cdk-lib/aws-logs";
+import { DefinitionBody } from "aws-cdk-lib/aws-stepfunctions";
 import { RemovalPolicy, Duration } from "aws-cdk-lib";
+import * as rekognition from "aws-cdk-lib/aws-rekognition";
 import * as path from "path";
 
 export class PhotoProcessingStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // const removalPolicy = props?.stage === 'production' ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY
-    const removalPolicy = RemovalPolicy.DESTROY; // dev
+    const removalPolicy = RemovalPolicy.DESTROY;
 
+    // ============================================================================
+    // S3 Bucket
+    // ============================================================================
+    // photos bucket: snaprace/<org>/<event>/photos/raw/
     const photosBucket = new s3.Bucket(this, "SnapRaceBucket", {
       bucketName: "snaprace",
       enforceSSL: true,
       removalPolicy,
-      autoDeleteObjects: true, // dev
-      eventBridgeEnabled: true,
+      autoDeleteObjects: true,
     });
 
-    const photosTable = new dynamodb.TableV2(this, "PhotosTable", {
-      tableName: "PhotosV2",
-      partitionKey: { name: "pk", type: dynamodb.AttributeType.STRING }, // "ORG#<org>#EVT#<event>"
-      sortKey: { name: "sk", type: dynamodb.AttributeType.STRING }, // "PHOTO#<photo_id>" or "TS#...#PHOTO#..."
-      billing: dynamodb.Billing.onDemand(),
+    // ============================================================================
+    // DynamoDB Tables
+    // ============================================================================
+    // 1. EventPhotos table
+    const eventPhotosTable = new dynamodb.TableV2(this, "EventPhotosTable", {
+      tableName: "EventPhotos",
+      partitionKey: { name: "event_key", type: dynamodb.AttributeType.STRING }, // "ORG#<org>#EVT#<event>"
+      sortKey: { name: "s3_path", type: dynamodb.AttributeType.STRING }, // S3 객체 경로
       removalPolicy,
     });
 
-    // GSI 1: ByBib (갤러리 조회)
-    photosTable.addGlobalSecondaryIndex({
-      indexName: "GSI_ByBib",
+    // 2. PhotoBibIndex table
+    const photoBibIndexTable = new dynamodb.TableV2(this, "PhotoBibIndexTable", {
+      tableName: "PhotoBibIndex",
       partitionKey: {
-        name: "gsi1pk", // "EVT#<org>#<event>#BIB#<bib>"
+        name: "event_bib_key", // "ORG#<org>#EVT#<event>#BIB#<bib>"
         type: dynamodb.AttributeType.STRING,
       },
       sortKey: {
-        name: "gsi1sk", // "TS#<uploaded_at>#PHOTO#<photo_id>"
-        type: dynamodb.AttributeType.STRING,
-      },
-      projectionType: dynamodb.ProjectionType.INCLUDE,
-      nonKeyAttributes: ["photo_id", "cloudfront_url", "uploaded_at"],
-    });
-
-    // GSI 2: ByStatus (재처리/모니터링)
-    photosTable.addGlobalSecondaryIndex({
-      indexName: "GSI_ByStatus",
-      partitionKey: {
-        name: "gsi2pk", // "EVT#<org>#<event>#STATUS#<processing_status>"
-        type: dynamodb.AttributeType.STRING,
-      },
-      sortKey: {
-        name: "gsi2sk", // "TS#<uploaded_at>#PHOTO#<photo_id>"
-        type: dynamodb.AttributeType.STRING,
-      },
-      projectionType: dynamodb.ProjectionType.KEYS_ONLY,
-    });
-
-    // PhotoFaces table (옵션: 얼굴↔사진 역색인)
-    const photoFacesTable = new dynamodb.TableV2(this, "PhotoFacesTable", {
-      tableName: "PhotoFaces",
-      partitionKey: {
-        name: "pk", // "ORG#<org>#EVT#<event>#FACE#<face_id>"
-        type: dynamodb.AttributeType.STRING,
-      },
-      sortKey: {
-        name: "sk", // "TS#<uploaded_at>#PHOTO#<photo_id>"
+        name: "s3_path", // "s3_path"
         type: dynamodb.AttributeType.STRING,
       },
       removalPolicy,
     });
 
-    // GSI 1: BibFaces (bib → face 목록; 대표 얼굴 선출/정정용)
-    photoFacesTable.addGlobalSecondaryIndex({
-      indexName: "GSI_BibFaces",
-      partitionKey: {
-        name: "gsi1pk", // "EVT#<org>#<event>#BIB#<bib>"
-        type: dynamodb.AttributeType.STRING,
-      },
-      sortKey: {
-        name: "gsi1sk", // "FACE#<face_id>"
-        type: dynamodb.AttributeType.STRING,
-      },
-      projectionType: dynamodb.ProjectionType.INCLUDE,
-      nonKeyAttributes: ["photo_id", "similarity", "evidence_score"],
-    });
-
-    // GSI 2: PhotoFaces (사진 → face 목록; 국소 정정/삭제에 유용)
-    photoFacesTable.addGlobalSecondaryIndex({
-      indexName: "GSI_PhotoFaces",
-      partitionKey: {
-        name: "gsi2pk", // "PHOTO#<photo_id>"
-        type: dynamodb.AttributeType.STRING,
-      },
-      sortKey: {
-        name: "gsi2sk", // "FACE#<face_id>"
-        type: dynamodb.AttributeType.STRING,
-      },
-      projectionType: dynamodb.ProjectionType.INCLUDE,
-      nonKeyAttributes: ["similarity", "evidence_score"],
-    });
-
+    // 3. RunnersV2 table
     const runnersTable = new dynamodb.TableV2(this, "RunnersTable", {
       tableName: "RunnersV2",
-      partitionKey: {
-        name: "pk", // ORG#<org>#EVT#<event>
-        type: dynamodb.AttributeType.STRING,
-      },
-      sortKey: {
-        name: "sk", // BIB#<zero_padded_bib>
-        type: dynamodb.AttributeType.STRING,
-      },
+      partitionKey: { name: "pk", type: dynamodb.AttributeType.STRING }, // "ORG#<org>#EVT#<event>#RUNNER#<runner_id>"
+      sortKey: { name: "sk", type: dynamodb.AttributeType.STRING }, // "BIB#<bib>"
       removalPolicy,
     });
 
-    // GSI 1: ByRunnerId (Runner 조회)
-    runnersTable.addGlobalSecondaryIndex({
-      indexName: "GSI_ByRunnerId",
-      partitionKey: { name: "gsi1pk", type: dynamodb.AttributeType.STRING }, // RUNNER#<runner_id>
-      sortKey: { name: "gsi1sk", type: dynamodb.AttributeType.STRING }, // EVT#<organizer_id>#<event_id>
-      projectionType: dynamodb.ProjectionType.INCLUDE,
-      nonKeyAttributes: [
-        "bib_number",
-        "name",
-        "finish_time_sec",
-        "event_id",
-        "event_date",
-        "event_name",
-      ],
-    });
-
-    // GSI 2: ByEmailPerEvent (이벤트별 이메일 조회)
+    // TODO: GSI 1: ByRunnerId
     // runnersTable.addGlobalSecondaryIndex({
-    //   indexName: "GSI_ByEmailPerEvent",
-    //   partitionKey: { name: "gsi2pk", type: dynamodb.AttributeType.STRING }, // EVT#<org>#<event>#EMAIL#<email_lower>
-    //   sortKey: { name: "gsi2sk", type: dynamodb.AttributeType.STRING }, // BIB#<zero_padded_bib>
-    //   projectionType: dynamodb.ProjectionType.INCLUDE,
-    //   nonKeyAttributes: ["runner_id", "name"],
+    //   indexName: 'RunnerIdIndex',
+    //   partitionKey: {
+    //     name: 'RunnerId',
+    //     type: dynamodb.AttributeType.STRING
+    //   },
+    //   projectionType: dynamodb.ProjectionType.ALL,
     // });
 
-    // SQS 큐 생성 (단일 큐 + DLQ)
-    const photoDLQ = new sqs.Queue(this, "PhotoDLQ", {
-      retentionPeriod: Duration.days(14),
-      queueName: "photo-processing-dlq",
-    });
-
-    const photoQueue = new sqs.Queue(this, "PhotoQueue", {
-      // Lambda timeout(5분)의 6배 이상 필요: 300초 * 6 = 1800초 (30분)
-      visibilityTimeout: Duration.minutes(30),
-      deadLetterQueue: {
-        queue: photoDLQ,
-        maxReceiveCount: 5,
-      },
-      queueName: "photo-processing-queue",
-    });
-
-    // Lambda Layer 생성 (공통 의존성)
+    // ============================================================================
+    // Lambda Layer (Common Layer)
+    // ============================================================================
     // CDK가 자동으로 npm install을 실행하도록 bundling 설정
-    // npm 캐시 권한 문제 해결을 위해 환경 변수로 /tmp에 캐시 설정
+    // npm 캐시 권한 문제 해결을 위해 /tmp에 캐시 설정
     const commonLayer = new lambda.LayerVersion(this, "CommonLayer", {
-      code: lambda.Code.fromAsset(
-        path.join(__dirname, "../lambda/common-layer"),
-        {
-          bundling: {
-            image: lambda.Runtime.NODEJS_20_X.bundlingImage,
-            command: [
-              "bash",
-              "-c",
-              [
-                "cp -r /asset-input/* /asset-output/",
-                "cd /asset-output/nodejs",
-                "NPM_CONFIG_CACHE=/tmp/.npm npm install --production",
-              ].join(" && "),
-            ],
-          },
-        }
-      ),
-      compatibleRuntimes: [lambda.Runtime.NODEJS_20_X],
-      description: "Common AWS SDK dependencies for Lambda functions",
+      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/common-layer"), {
+        bundling: {
+          image: lambda.Runtime.NODEJS_20_X.bundlingImage,
+          command: [
+            "bash",
+            "-c",
+            [
+              "cp -r /asset-input/* /asset-output/",
+              "cd /asset-output/nodejs",
+              "npm install --production --cache /tmp/.npm",
+            ].join(" && "),
+          ],
+        },
+      }),
+      compatibleRuntimes: [lambda.Runtime.NODEJS_18_X, lambda.Runtime.NODEJS_20_X],
+      description: "Common dependencies and utilities for Photo Processing Lambdas",
+      removalPolicy,
     });
 
-    // detect-text Lambda 함수 생성
-    const detectTextFunction = new lambda.Function(this, "DetectTextFunction", {
-      functionName: "photo-detect-text",
-      runtime: lambda.Runtime.NODEJS_20_X,
-      handler: "index.handler",
-      code: lambda.Code.fromAsset(
-        path.join(__dirname, "../lambda/detect-text")
-      ),
+    // ============================================================================
+    // 환경 변수 (모든 Lambda에서 공유)
+    // ============================================================================
+    const commonEnv: Record<string, string> = {
+      // 공통
+      // AWS_REGION: this.region,
+      STAGE: "dev",
+      LOG_LEVEL: "INFO",
+      AWS_RETRY_MODE: "adaptive",
+      AWS_MAX_ATTEMPTS: "10",
+
+      // S3
+      PHOTOS_BUCKET: photosBucket.bucketName,
+
+      // DynamoDB
+      EVENT_PHOTOS_TABLE: eventPhotosTable.tableName,
+      PHOTO_BIB_INDEX_TABLE: photoBibIndexTable.tableName,
+      RUNNERS_TABLE: runnersTable.tableName,
+
+      // Rekognition
+      REKOGNITION_COLLECTION_PREFIX: "snaprace",
+
+      // Bib Number 설정
+      BIB_NUMBER_MIN: "1",
+      BIB_NUMBER_MAX: "99999",
+
+      // 필터링 설정
+      WATERMARK_FILTER_ENABLED: "true",
+      WATERMARK_AREA_THRESHOLD: "0.35",
+      MIN_TEXT_HEIGHT_PX: "50",
+      MIN_TEXT_CONFIDENCE: "90",
+
+      // Rekognition 설정
+      MIN_FACE_CONFIDENCE: "90",
+      MAX_FACES_PER_PHOTO: "10",
+    };
+
+    // ============================================================================
+    // Lambda Functions (Processing)
+    // ============================================================================
+
+    // 1. Detect Text Lambda (Bib Number Extraction)
+    const detectTextLambda = new nodejs.NodejsFunction(this, "DetectTextLambda", {
+      functionName: "photo-processing-detect-text",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: "handler",
+      entry: path.join(__dirname, "../lambda/photo-process/detect-text/index.ts"),
       layers: [commonLayer],
-      timeout: Duration.minutes(5),
-      memorySize: 512,
       environment: {
-        PHOTOS_TABLE_NAME: photosTable.tableName,
-        RUNNERS_TABLE_NAME: runnersTable.tableName,
-        QUEUE_URL: photoQueue.queueUrl,
-        MIN_TEXT_CONFIDENCE: "90.0",
-        CLOUDFRONT_DOMAIN_NAME: "images.snap-race.com",
+        ...commonEnv,
       },
-      logRetention: cdk.aws_logs.RetentionDays.ONE_WEEK,
-      tracing: lambda.Tracing.ACTIVE,
+      timeout: Duration.seconds(60),
+      memorySize: 512,
+      description: "Detects text and extracts Bib numbers from race photos using Rekognition",
+      bundling: {
+        externalModules: ["@aws-sdk/*"],
+        nodeModules: [],
+      },
     });
 
-    // DynamoDB 테이블 읽기/쓰기 권한
-    photosTable.grantReadWriteData(detectTextFunction);
-    runnersTable.grantReadData(detectTextFunction);
-
-    // SQS 전송 권한
-    photoQueue.grantSendMessages(detectTextFunction);
+    // Detect Text Lambda 권한 부여
+    photosBucket.grantRead(detectTextLambda);
+    eventPhotosTable.grantReadWriteData(detectTextLambda);
+    photoBibIndexTable.grantReadWriteData(detectTextLambda);
+    runnersTable.grantReadData(detectTextLambda); // Bib 검증용 (선택적)
 
     // Rekognition 권한
-    detectTextFunction.addToRolePolicy(
+    detectTextLambda.addToRolePolicy(
       new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
         actions: ["rekognition:DetectText"],
         resources: ["*"],
       })
     );
 
-    // S3 읽기 권한 (버킷 내 객체)
-    photosBucket.grantRead(detectTextFunction);
-
-    // EventBridge Rule 생성: S3 객체 생성 이벤트 → Lambda
-    // photos/raw 경로만 처리
-    const photoUploadRule = new events.Rule(this, "PhotoUploadRule", {
-      eventPattern: {
-        source: ["aws.s3"],
-        detailType: ["Object Created"],
-        detail: {
-          bucket: {
-            name: [photosBucket.bucketName],
-          },
-          object: {
-            key: [
-              {
-                wildcard: "*/photos/raw/*",
-              },
-            ],
-          },
-        },
-      },
-    });
-
-    photoUploadRule.addTarget(
-      new targets.LambdaFunction(detectTextFunction, {
-        retryAttempts: 3,
-      })
-    );
-
-    // index-faces Lambda 함수 생성
-    const indexFacesFunction = new lambda.Function(this, "IndexFacesFunction", {
-      functionName: "photo-index-faces",
-      runtime: lambda.Runtime.NODEJS_20_X,
-      handler: "index.handler",
-      code: lambda.Code.fromAsset(
-        path.join(__dirname, "../lambda/index-faces")
-      ),
+    // 2. Index Faces Lambda (Face Detection & Indexing)
+    const indexFacesLambda = new nodejs.NodejsFunction(this, "IndexFacesLambda", {
+      functionName: "photo-processing-index-faces",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: "handler",
+      entry: path.join(__dirname, "../lambda/photo-process/index-faces/index.ts"),
       layers: [commonLayer],
-      timeout: Duration.minutes(5),
-      memorySize: 1024, // 얼굴 인식은 더 많은 메모리 필요
       environment: {
-        PHOTOS_TABLE_NAME: photosTable.tableName,
-        PHOTO_FACES_TABLE_NAME: photoFacesTable.tableName,
-        PHOTOS_BUCKET_NAME: photosBucket.bucketName,
-        MIN_SIMILARITY_THRESHOLD: "90.0", // 얼굴 매칭 최소 유사도 (%)
-        REQUIRED_VOTES: "2", // 얼굴 매칭 최소 득표수
+        ...commonEnv,
       },
-      logRetention: cdk.aws_logs.RetentionDays.ONE_WEEK,
-      tracing: lambda.Tracing.ACTIVE,
+      timeout: Duration.seconds(60),
+      memorySize: 512,
+      description: "Indexes faces from race photos to Rekognition Collection",
+      bundling: {
+        externalModules: ["@aws-sdk/*"],
+        nodeModules: [],
+      },
     });
 
-    // DynamoDB 테이블 읽기/쓰기 권한
-    photosTable.grantReadWriteData(indexFacesFunction);
-    photoFacesTable.grantReadWriteData(indexFacesFunction);
+    // Index Faces Lambda 권한 부여
+    photosBucket.grantRead(indexFacesLambda);
+    eventPhotosTable.grantReadWriteData(indexFacesLambda);
 
-    // Rekognition 권한
-    indexFacesFunction.addToRolePolicy(
+    // Rekognition 권한 (DetectFaces, IndexFaces, Collection 관리)
+    indexFacesLambda.addToRolePolicy(
       new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
         actions: [
+          "rekognition:DetectFaces",
           "rekognition:IndexFaces",
-          "rekognition:SearchFaces",
           "rekognition:CreateCollection",
           "rekognition:DescribeCollection",
         ],
@@ -295,123 +214,275 @@ export class PhotoProcessingStack extends cdk.Stack {
       })
     );
 
-    // S3 읽기 권한 (버킷 내 객체)
-    photosBucket.grantRead(indexFacesFunction);
+    // 3. DB Update Lambda (Runners PhotoKeys Update)
+    const dbUpdateLambda = new nodejs.NodejsFunction(this, "DbUpdateLambda", {
+      functionName: "photo-processing-db-update",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: "handler",
+      entry: path.join(__dirname, "../lambda/photo-process/db-update/index.ts"),
+      layers: [commonLayer],
+      environment: {
+        ...commonEnv,
+      },
+      timeout: Duration.seconds(30),
+      memorySize: 256,
+      description: "Updates Runners table PhotoKeys with detected photos",
+      bundling: {
+        externalModules: ["@aws-sdk/*"],
+        nodeModules: [],
+      },
+    });
 
-    // SQS 이벤트 소스 연결: photoQueue → index-faces Lambda
-    indexFacesFunction.addEventSource(
-      new lambdaEventSources.SqsEventSource(photoQueue, {
-        batchSize: 5,
-        maxBatchingWindow: Duration.seconds(10),
+    // DB Update Lambda 권한 부여
+    eventPhotosTable.grantReadWriteData(dbUpdateLambda);
+    runnersTable.grantReadWriteData(dbUpdateLambda); // PhotoKeys 업데이트용
+
+    // DynamoDB DescribeTable 권한 (테이블 존재 여부 확인)
+    dbUpdateLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["dynamodb:DescribeTable"],
+        resources: [runnersTable.tableArn],
       })
     );
 
-    // find-by-selfie Lambda 함수 생성
-    const findBySelfieFunction = new lambda.Function(
-      this,
-      "FindBySelfieFunction",
-      {
-        functionName: "photo-find-by-selfie",
-        runtime: lambda.Runtime.NODEJS_20_X,
-        handler: "index.handler",
-        code: lambda.Code.fromAsset(
-          path.join(__dirname, "../lambda/find-by-selfie")
-        ),
-        layers: [commonLayer],
-        timeout: Duration.minutes(5),
-        memorySize: 1024, // 얼굴 검색은 더 많은 메모리 필요
-        environment: {
-          PHOTOS_TABLE_NAME: photosTable.tableName,
-          PHOTO_FACES_TABLE_NAME: photoFacesTable.tableName,
-          PHOTOS_BUCKET_NAME: photosBucket.bucketName,
-          MIN_SIMILARITY_THRESHOLD: "90.0", // 얼굴 매칭 최소 유사도 (%)
-        },
-        logRetention: cdk.aws_logs.RetentionDays.ONE_WEEK,
-        tracing: lambda.Tracing.ACTIVE,
-      }
-    );
+    // ============================================================================
+    // Step Functions State Machine
+    // ============================================================================
 
-    // DynamoDB 테이블 읽기 권한
-    photosTable.grantReadData(findBySelfieFunction);
-    photoFacesTable.grantReadData(findBySelfieFunction);
+    // Step Functions Tasks 정의
+    const detectTextTask = new tasks.LambdaInvoke(this, "DetectTextTask", {
+      lambdaFunction: detectTextLambda,
+      outputPath: "$.Payload",
+      retryOnServiceExceptions: true,
+      resultPath: "$",
+    });
+
+    const indexFacesTask = new tasks.LambdaInvoke(this, "IndexFacesTask", {
+      lambdaFunction: indexFacesLambda,
+      outputPath: "$.Payload",
+      retryOnServiceExceptions: true,
+      resultPath: "$",
+    });
+    indexFacesTask.addRetry({
+      errors: [
+        "ProvisionedThroughputExceededException",
+        "ThrottlingException",
+      ],
+      interval: Duration.seconds(2),
+      backoffRate: 2.0,
+      maxAttempts: 6,
+    });
+
+    const dbUpdateTask = new tasks.LambdaInvoke(this, "DbUpdateTask", {
+      lambdaFunction: dbUpdateLambda,
+      outputPath: "$.Payload",
+      retryOnServiceExceptions: true,
+      resultPath: "$",
+    });
+
+    // State Machine 정의 (체인 구성)
+    const definition = detectTextTask.next(indexFacesTask).next(dbUpdateTask);
+
+    // CloudWatch Log Group
+    const stateMachineLogGroup = new logs.LogGroup(this, "StateMachineLogGroup", {
+      logGroupName: "/aws/stepfunctions/photo-processing",
+      removalPolicy,
+      retention: logs.RetentionDays.ONE_WEEK,
+    });
+
+    // State Machine 생성
+    const stateMachine = new sfn.StateMachine(this, "PhotoProcessingStateMachine", {
+      stateMachineName: "photo-processing-workflow",
+      definitionBody: DefinitionBody.fromChainable(definition),
+      timeout: Duration.minutes(5),
+      tracingEnabled: true,
+      logs: {
+        destination: stateMachineLogGroup,
+        level: sfn.LogLevel.ERROR, // 에러만 로깅 (정상 처리 시 로그 최소화)
+        includeExecutionData: false, // 실행 데이터 제외 (로그 용량 절감)
+      },
+    });
+
+    // ============================================================================
+    // Starter Lambda (S3 Event Handler)
+    // ============================================================================
+
+    const starterLambda = new nodejs.NodejsFunction(this, "StarterLambda", {
+      functionName: "photo-processing-starter",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: "handler",
+      entry: path.join(__dirname, "../lambda/photo-process/starter-lambda/index.ts"),
+      layers: [commonLayer],
+      environment: {
+        ...commonEnv,
+        STATE_MACHINE_ARN: stateMachine.stateMachineArn,
+      },
+      timeout: Duration.seconds(30),
+      memorySize: 256,
+      description: "Handles S3 upload events and initiates photo processing workflow",
+      bundling: {
+        externalModules: ["@aws-sdk/*"],
+        nodeModules: [],
+      },
+    });
+
+    // Starter Lambda 권한 부여
+    photosBucket.grantRead(starterLambda);
+    eventPhotosTable.grantReadWriteData(starterLambda);
+    stateMachine.grantStartExecution(starterLambda);
+
+    // ============================================================================
+    // Outputs
+    // ============================================================================
+
+    new cdk.CfnOutput(this, "StateMachineArn", {
+      value: stateMachine.stateMachineArn,
+      description: "Photo Processing State Machine ARN",
+      exportName: "PhotoProcessingStateMachineArn",
+    });
+
+    new cdk.CfnOutput(this, "PhotosBucketName", {
+      value: photosBucket.bucketName,
+      description: "Photos S3 Bucket Name",
+      exportName: "PhotosBucketName",
+    });
+
+    new cdk.CfnOutput(this, "StarterLambdaName", {
+      value: starterLambda.functionName,
+      description: "Starter Lambda Function Name",
+      exportName: "StarterLambdaName",
+    });
+
+    // ============================================================================
+    // S3 Event Notification (Starter Lambda 자동 실행)
+    // ============================================================================
+
+    // S3 객체 생성 이벤트를 Starter Lambda에 연결
+    // 모든 파일 처리 (Starter Lambda에서 경로 검증)
+    photosBucket.addEventNotification(s3.EventType.OBJECT_CREATED, new s3n.LambdaDestination(starterLambda));
+
+    new cdk.CfnOutput(this, "EventNotificationStatus", {
+      value: "Configured for s3:ObjectCreated:* events",
+      description: "S3 Event Notification Status",
+    });
+
+    // ============================================================================
+    // Search API Lambda Functions
+    // ============================================================================
+
+    // 1. Search by Bib Lambda
+    const searchByBibLambda = new nodejs.NodejsFunction(this, "SearchByBibLambda", {
+      functionName: "photo-search-by-bib",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: "handler",
+      entry: path.join(__dirname, "../lambda/search-api/search-by-bib/index.ts"),
+      layers: [commonLayer],
+      environment: {
+        ...commonEnv,
+      },
+      timeout: Duration.seconds(30),
+      memorySize: 256,
+      description: "Search photos by Bib number",
+      bundling: {
+        externalModules: ["@aws-sdk/*"],
+        nodeModules: [],
+      },
+    });
+
+    // Search by Bib Lambda 권한
+    photoBibIndexTable.grantReadData(searchByBibLambda);
+    runnersTable.grantReadData(searchByBibLambda);
+
+    // 2. Search by Selfie Lambda
+    const searchBySelfieLambda = new nodejs.NodejsFunction(this, "SearchBySelfieLambda", {
+      functionName: "photo-search-by-selfie",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: "handler",
+      entry: path.join(__dirname, "../lambda/search-api/search-by-selfie/index.ts"),
+      layers: [commonLayer],
+      environment: {
+        ...commonEnv,
+      },
+      timeout: Duration.seconds(30),
+      memorySize: 512,
+      description: "Search photos by selfie using facial recognition",
+      bundling: {
+        externalModules: ["@aws-sdk/*"],
+        nodeModules: [],
+      },
+    });
+
+    // Search by Selfie Lambda 권한
+    runnersTable.grantReadWriteData(searchBySelfieLambda); // 선택적으로 PhotoKeys 업데이트
 
     // Rekognition 권한
-    findBySelfieFunction.addToRolePolicy(
+    searchBySelfieLambda.addToRolePolicy(
       new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: [
-          "rekognition:SearchFacesByImage",
-          "rekognition:DescribeCollection",
-        ],
+        actions: ["rekognition:SearchFacesByImage"],
         resources: ["*"],
       })
     );
 
-    // API Gateway 생성
-    const api = new apigateway.RestApi(this, "SnapRaceApi", {
+    // ============================================================================
+    // API Gateway
+    // ============================================================================
+
+    const api = new apigateway.RestApi(this, "PhotoSearchAPI", {
       restApiName: "SnapRace Photo Search API",
-      description: "API for finding photos by selfie",
-      defaultCorsPreflightOptions: {
-        allowOrigins: [
-          "http://localhost:3000",
-          "https://snap-race.com",
-          "https://www.snap-race.com",
-          "https://*.snap-race.com",
-        ],
-        allowMethods: apigateway.Cors.ALL_METHODS,
-        allowHeaders: [
-          "Content-Type",
-          "X-Amz-Date",
-          "Authorization",
-          "X-Api-Key",
-        ],
-      },
+      description: "API for searching photos by Bib number or selfie",
       deployOptions: {
-        stageName: "v1",
+        stageName: "prod",
         tracingEnabled: true,
         loggingLevel: apigateway.MethodLoggingLevel.INFO,
+        dataTraceEnabled: true,
+      },
+      defaultCorsPreflightOptions: {
+        allowOrigins: ["http://localhost:3000", "https://snap-race.com"],
+        allowMethods: ["GET", "POST", "OPTIONS"],
+        allowHeaders: ["Content-Type", "X-Amz-Date", "Authorization", "X-Api-Key", "X-Amz-Security-Token"],
+        allowCredentials: false,
       },
     });
 
-    // /selfie 엔드포인트 추가
-    const selfieResource = api.root.addResource("selfie");
-    selfieResource.addMethod(
-      "POST",
-      new apigateway.LambdaIntegration(findBySelfieFunction, {
-        proxy: true,
-      })
-    );
+    // API 리소스 구조
+    const searchResource = api.root.addResource("search");
+    const bibResource = searchResource.addResource("bib");
+    const selfieResource = searchResource.addResource("selfie");
 
-    // Outputs
-    new cdk.CfnOutput(this, "PhotosBucketName", {
-      value: photosBucket.bucketName,
+    // GET /search/bib
+    bibResource.addMethod("GET", new apigateway.LambdaIntegration(searchByBibLambda), {
+      apiKeyRequired: false,
     });
-    new cdk.CfnOutput(this, "PhotosTableName", {
-      value: photosTable.tableName,
+
+    // POST /search/selfie
+    selfieResource.addMethod("POST", new apigateway.LambdaIntegration(searchBySelfieLambda), {
+      apiKeyRequired: false,
     });
-    new cdk.CfnOutput(this, "PhotoFacesTableName", {
-      value: photoFacesTable.tableName,
-    });
-    new cdk.CfnOutput(this, "RunnersTableName", {
-      value: runnersTable.tableName,
-    });
-    new cdk.CfnOutput(this, "PhotoQueueUrl", {
-      value: photoQueue.queueUrl,
-    });
-    new cdk.CfnOutput(this, "DetectTextFunctionName", {
-      value: detectTextFunction.functionName,
-    });
-    new cdk.CfnOutput(this, "IndexFacesFunctionName", {
-      value: indexFacesFunction.functionName,
-    });
-    new cdk.CfnOutput(this, "FindBySelfieFunctionName", {
-      value: findBySelfieFunction.functionName,
-    });
+
+    // ============================================================================
+    // API Gateway Outputs
+    // ============================================================================
+
     new cdk.CfnOutput(this, "ApiGatewayUrl", {
       value: api.url,
+      description: "Photo Search API URL",
+      exportName: "PhotoSearchApiUrl",
     });
-    new cdk.CfnOutput(this, "ApiGatewaySelfieEndpoint", {
-      value: `${api.url}v1/selfie`,
+
+    new cdk.CfnOutput(this, "ApiGatewayId", {
+      value: api.restApiId,
+      description: "Photo Search API ID",
+      exportName: "PhotoSearchApiId",
+    });
+
+    new cdk.CfnOutput(this, "SearchByBibEndpoint", {
+      value: `${api.url}search/bib?organizer={org}&eventId={event}&bibNumber={bib}`,
+      description: "Search by Bib Number Endpoint",
+    });
+
+    new cdk.CfnOutput(this, "SearchBySelfieEndpoint", {
+      value: `${api.url}search/selfie`,
+      description: "Search by Selfie Endpoint (POST)",
     });
   }
 }

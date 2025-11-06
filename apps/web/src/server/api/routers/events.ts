@@ -13,6 +13,7 @@ export const EventSchema = z.object({
   event_type: z.string(),
   organization_id: z.string(),
   participant_count: z.number().optional(),
+  face_search_only: z.boolean().optional(),
   finishline_video_info: z
     .object({
       duration: z.number(),
