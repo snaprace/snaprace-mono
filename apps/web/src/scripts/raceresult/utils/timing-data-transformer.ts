@@ -43,7 +43,7 @@ function extractContestName(
 ): string {
   // groupFilters에서 Type: 1인 항목의 Values 배열에서 contest 이름 추출
   const contestFilter = groupFilters.find((filter) => filter.Type === 1);
-  if (contestFilter && contestFilter.Values.length > 0) {
+  if (contestFilter?.Values?.length) {
     // contestKey에서 인덱스 추출 (#1_5K -> 1)
     const regex = /^#(\d+)_/;
     const match = regex.exec(contestKey);
