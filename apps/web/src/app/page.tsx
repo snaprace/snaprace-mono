@@ -12,7 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { api } from "@/trpc/react";
 import { EventSelectSkeleton } from "@/components/states/EventsSkeleton";
 import { useOrganizationHelper } from "@/hooks/useOrganizationHelper";
@@ -27,6 +26,8 @@ export default function HomePage() {
   const eventsQuery = api.events.getAll.useQuery();
 
   const events = useMemo(() => eventsQuery.data ?? [], [eventsQuery.data]);
+
+  const testEvent = selectedEventId.includes("test");
 
   useEffect(() => {
     if (events.length > 0 && !selectedEventId) {
@@ -101,42 +102,70 @@ export default function HomePage() {
               )}
 
               {/* Bib Number Input */}
-              <div className="space-y-2">
-                <label className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
-                  <Search className="h-4 w-4" />
-                  Bib Number
-                </label>
-                <Input
-                  type="text"
-                  placeholder="Enter your bib number (e.g., 1234)"
-                  value={bibNumber}
-                  onChange={(e) => setBibNumber(e.target.value)}
-                  disabled={events.length === 0}
-                  className="bg-background border-border h-14 text-sm font-medium md:text-lg"
-                  style={{
-                    fontSize: "14px",
-                  }}
-                />
-              </div>
+              {!testEvent && (
+                <div className="space-y-2">
+                  <label className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
+                    <Search className="h-4 w-4" />
+                    Bib Number
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Enter your bib number (e.g., 1234)"
+                    value={bibNumber}
+                    onChange={(e) => setBibNumber(e.target.value)}
+                    disabled={events.length === 0}
+                    className="bg-background border-border h-14 text-sm font-medium md:text-lg"
+                    style={{
+                      fontSize: "14px",
+                    }}
+                  />
+                </div>
+              )}
 
-              <Button
-                type="submit"
-                size="lg"
-                className="bg-primary hover:bg-primary/90 text-primary-foreground h-14 w-full border-0 text-lg font-medium shadow-none"
-                disabled={!bibNumber.trim() || !selectedEventId}
-              >
-                <Search className="mr-2 h-5 w-5" />
-                Find My Photos
-              </Button>
+              {!testEvent && (
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground h-14 w-full border-0 text-lg font-medium shadow-none"
+                  disabled={!bibNumber.trim() || !selectedEventId}
+                >
+                  <Search className="mr-2 h-5 w-5" />
+                  Find My Photos
+                </Button>
+              )}
+
+              {testEvent && (
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground h-14 w-full border-0 text-lg font-medium shadow-none"
+                  onClick={() => router.push(`/events/${selectedEventId}/null`)}
+                >
+                  <Search className="mr-2 h-5 w-5" />
+                  Go to All Photos
+                </Button>
+              )}
+
+              {!testEvent && (
+                <Button
+                  size="lg"
+                  className="bg-secondary hover:bg-secondary/90 text-secondary-foreground h-14 w-full border-0 text-lg font-medium shadow-none"
+                  onClick={() => router.push(`/events/${selectedEventId}/null`)}
+                  variant="outline"
+                  // disabled={!bibNumber.trim() || !selectedEventId}
+                >
+                  Go to Event!
+                </Button>
+              )}
             </form>
           </div>
 
-          <p className="text-muted-foreground mt-4 text-sm">
+          {/* <p className="text-muted-foreground mt-4 text-sm">
             Don&apos;t know your bib number?{" "}
             <Link href="/events" className="text-primary hover:underline">
               Browse all events
             </Link>
-          </p>
+          </p> */}
         </div>
       </section>
 

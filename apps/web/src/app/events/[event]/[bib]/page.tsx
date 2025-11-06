@@ -95,7 +95,7 @@ export default function EventPhotoPage() {
       eventId: event,
       bibNumber,
     },
-    { enabled: !!event && !isAllPhotos && !!bibNumber },
+    { enabled: !!event && !isAllPhotos && !!bibNumber && testEvent },
   );
 
   const photos = useMemo(() => {
@@ -187,6 +187,7 @@ export default function EventPhotoPage() {
     uploadedFile,
     reset,
     response,
+    hasError: selfieUploadError,
   } = useSelfieUpload({
     eventId: event,
     bibNumber,
@@ -197,7 +198,7 @@ export default function EventPhotoPage() {
   const handleLabelClick = (e: React.MouseEvent) => {
     e.preventDefault();
 
-    if (!bibNumber || isUploading) return;
+    if (!(bibNumber || testEvent) || isUploading) return;
 
     if (hasFacialRecognitionConsent(event)) {
       fileInputRef.current?.click();
@@ -223,10 +224,18 @@ export default function EventPhotoPage() {
         const startedAt = performance.now();
 
         // Upload selfie and then refetch gallery only on success
-        await uploadSelfie(file);
-        const { data } = await galleryQuery.refetch();
+        const uploadResult = await uploadSelfie(file);
 
-        const matchedCount = data?.selfie_matched_photos?.length ?? 0;
+        let matchedCount = 0;
+        if (testEvent) {
+          // testEvent일 때는 uploadSelfie 반환값에서 직접 가져옴
+          matchedCount = uploadResult.matchedPhotos.length;
+        } else if (!isAllPhotos) {
+          // 일반 이벤트이고 bibNumber가 있을 때만 galleryQuery refetch
+          const { data } = await galleryQuery.refetch();
+          matchedCount = data?.selfie_matched_photos?.length ?? 0;
+        }
+
         const latencyMs = Math.round(performance.now() - startedAt);
         trackSelfieUpload({
           event_id: event,
@@ -293,8 +302,8 @@ export default function EventPhotoPage() {
   };
 
   const selfieMatchedSet = useMemo(() => {
-    if (testEvent && !isAllPhotos && response?.selfie_matched_photos) {
-      return new Set(response?.selfie_matched_photos ?? []);
+    if (testEvent && response?.selfie_matched_photos) {
+      return new Set(response.selfie_matched_photos);
     }
     if (!isAllPhotos && galleryQuery.data?.selfie_matched_photos?.length) {
       return new Set(galleryQuery.data.selfie_matched_photos);
@@ -310,13 +319,6 @@ export default function EventPhotoPage() {
   const isLoading =
     eventQuery.isLoading || galleryQuery.isLoading || allPhotosQuery.isLoading;
 
-  const hasError =
-    eventQuery.error || galleryQuery.error || allPhotosQuery.error;
-
-  if (hasError) {
-    return <ErrorState message="Failed to load event data" />;
-  }
-
   const isUploading =
     isProcessing || galleryQuery.isLoading || galleryQuery.isFetching;
 
@@ -331,6 +333,34 @@ export default function EventPhotoPage() {
     : typeof galleryQuery.data?.selfie_enhanced === "boolean"
       ? galleryQuery.data.selfie_enhanced
       : false;
+
+  const displayedPhotos = useMemo(() => {
+    if (testEvent && isAllPhotos && response?.selfie_matched_photos?.length) {
+      return response.selfie_matched_photos;
+    }
+    if (testEvent && !isAllPhotos && response?.selfie_matched_photos?.length) {
+      return [...(response.selfie_matched_photos ?? []), ...photos];
+    }
+    if (testEvent && selfieEnhanced) {
+      return [...(response?.selfie_matched_photos ?? []), ...photos];
+    }
+    return photos;
+  }, [
+    testEvent,
+    isAllPhotos,
+    response?.selfie_matched_photos,
+    selfieEnhanced,
+    photos,
+  ]);
+
+  const displayedPhotoCount = displayedPhotos.length;
+
+  const hasError =
+    eventQuery.error || galleryQuery.error || allPhotosQuery.error;
+
+  if (hasError) {
+    return <ErrorState message="Failed to load event data" />;
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -372,7 +402,8 @@ export default function EventPhotoPage() {
                       "All Photos"
                     )}
                     {" • "}
-                    {photos.length} photo{photos.length !== 1 ? "s" : ""}
+                    {displayedPhotoCount} photo
+                    {displayedPhotoCount !== 1 ? "s" : ""}
                   </p>
                 </div>
               )}
@@ -420,6 +451,7 @@ export default function EventPhotoPage() {
         selfieEnhanced={selfieEnhanced}
         selfieMatchedCount={selfieMatchedCount}
         isProcessed={isProcessed}
+        hasError={selfieUploadError}
         inputRef={fileInputRef}
         onLabelClick={handleLabelClick}
         onFileChange={handleFileUpload}
@@ -499,13 +531,9 @@ export default function EventPhotoPage() {
       <div className="mt-4 w-full px-[4px] sm:px-[20px]">
         {isLoading ? (
           <MasonryPhotoSkeleton />
-        ) : photos.length > 0 ? (
+        ) : displayedPhotos.length > 0 ? (
           <InfinitePhotoGrid
-            photos={
-              testEvent && selfieEnhanced
-                ? [...(response?.selfie_matched_photos ?? []), ...photos]
-                : photos
-            }
+            photos={displayedPhotos}
             columnCount={columnCount}
             isMobile={isMobile}
             onPhotoClick={handlePhotoClick}

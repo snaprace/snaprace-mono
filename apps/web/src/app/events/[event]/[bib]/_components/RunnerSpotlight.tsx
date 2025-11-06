@@ -27,6 +27,7 @@ interface RunnerSpotlightProps {
   selfieEnhanced: boolean;
   selfieMatchedCount: number;
   isProcessed: boolean;
+  hasError?: boolean;
   inputRef: RefObject<HTMLInputElement | null>;
   onLabelClick: (event: MouseEvent<HTMLLabelElement>) => void;
   onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
@@ -45,6 +46,7 @@ export function RunnerSpotlight({
   selfieEnhanced,
   selfieMatchedCount,
   isProcessed,
+  hasError = false,
   inputRef,
   onLabelClick,
   onFileChange,
@@ -113,15 +115,16 @@ export function RunnerSpotlight({
             />
           )}
 
-          {bibNumber && (
+          {(bibNumber || testEvent) && (
             <SelfieUploadCard
               bibNumber={bibNumber}
-              disabled={!bibNumber}
+              disabled={!(bibNumber || testEvent)}
               isUploading={isUploading}
               uploadedFile={uploadedFile}
               selfieEnhanced={selfieEnhanced}
               matchedCount={selfieMatchedCount}
               showNoMatches={showNoMatches}
+              hasError={hasError}
               inputRef={inputRef}
               onLabelClick={onLabelClick}
               onFileChange={onFileChange}

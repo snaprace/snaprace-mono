@@ -209,6 +209,21 @@ export const photosRouter = createTRPCRouter({
 
         if (!response.ok) {
           const errorText = await response.text();
+
+          // 500 에러는 검색 결과가 없는 경우로 처리
+          if (response.status === 500) {
+            return {
+              organizer,
+              eventId,
+              photoKeys: [],
+              photoCount: 0,
+              matches: [],
+              message:
+                "No additional photos found. Try uploading a different selfie with better lighting or a clearer view of your face.",
+            };
+          }
+
+          // 다른 에러는 그대로 throw
           throw new Error(
             `API Gateway request failed: ${response.status} ${errorText}`,
           );
@@ -237,6 +252,8 @@ export const photosRouter = createTRPCRouter({
         };
       } catch (error: unknown) {
         console.error("Search by selfie API error:", error);
+
+        // 네트워크 에러나 기타 에러는 그대로 throw
         throw new Error(
           `Failed to search by selfie: ${error instanceof Error ? error.message : "Unknown error"}`,
         );

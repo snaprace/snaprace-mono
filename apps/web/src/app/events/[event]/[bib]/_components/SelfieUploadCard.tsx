@@ -12,6 +12,7 @@ interface SelfieUploadCardProps {
   selfieEnhanced: boolean;
   matchedCount: number;
   showNoMatches: boolean;
+  hasError?: boolean;
   inputRef: RefObject<HTMLInputElement | null>;
   onLabelClick: (event: MouseEvent<HTMLLabelElement>) => void;
   onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
@@ -26,6 +27,7 @@ export function SelfieUploadCard({
   selfieEnhanced,
   matchedCount,
   showNoMatches,
+  hasError = false,
   inputRef,
   onLabelClick,
   onFileChange,
@@ -55,7 +57,7 @@ export function SelfieUploadCard({
             ref={inputRef}
             onChange={onFileChange}
             className="hidden"
-            disabled={uploadDisabled || !bibNumber}
+            disabled={uploadDisabled}
           />
           <label
             htmlFor="selfie-upload"
@@ -78,7 +80,7 @@ export function SelfieUploadCard({
                 </div>
               ) : null}
 
-              {uploadedFile && selfieEnhanced && !isUploading ? (
+              {uploadedFile && selfieEnhanced && !isUploading && !hasError ? (
                 <div className="bg-background/90 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-sm">
                   <div className="flex flex-col items-center gap-3">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10 text-green-600">
@@ -135,7 +137,7 @@ export function SelfieUploadCard({
           </label>
         </div>
 
-        {showNoMatches ? (
+        {showNoMatches || hasError ? (
           <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800 dark:border-yellow-800/80 dark:bg-yellow-900/20 dark:text-yellow-200">
             <div className="flex items-start gap-2">
               <span className="mt-0.5 text-lg">!</span>

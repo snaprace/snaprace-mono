@@ -28,6 +28,7 @@ export function useSelfieUpload({
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isProcessed, setIsProcessed] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   const [response, setResponse] = useState<LambdaResponse | null>(null);
 
@@ -99,19 +100,22 @@ export function useSelfieUpload({
     return true;
   };
 
-  const uploadSelfie = async (file: File): Promise<boolean> => {
+  const uploadSelfie = async (
+    file: File,
+  ): Promise<{ success: boolean; matchedPhotos: string[] }> => {
     // Check if all required params are available
-    if (!bibNumber || !eventId) {
+    if (!(bibNumber || testEvent) || !eventId) {
       toast.error("Please enter a bib number first");
-      return false;
+      return { success: false, matchedPhotos: [] };
     }
 
     if (!validateFile(file)) {
-      return false;
+      return { success: false, matchedPhotos: [] };
     }
 
     setUploadedFile(file);
     setIsProcessing(true);
+    setHasError(false);
 
     try {
       const base64Image = await convertToBase64(file);
@@ -128,15 +132,10 @@ export function useSelfieUpload({
           (photoKey) => cloudfrontUrl + photoKey,
         );
 
-        console.log("existingPhotos", existingPhotos);
-        console.log("selfieMatchedPhotos", selfieMatchedPhotos);
-
         const existingSet = new Set(existingPhotos ?? []);
         const uniqueSelfieMatchedPhotos = selfieMatchedPhotos.filter(
           (photo) => !existingSet.has(photo),
         );
-
-        console.log("uniqueSelfieMatchedPhotos", uniqueSelfieMatchedPhotos);
 
         setIsProcessed(true);
 
@@ -145,7 +144,10 @@ export function useSelfieUpload({
             `Successfully matched ${uniqueSelfieMatchedPhotos.length} photos!`,
           );
         } else {
-          toast.info(result.message);
+          toast.info(
+            result.message ??
+              "No additional photos found. Try a different selfie with better lighting or a clearer view of your face.",
+          );
         }
 
         setResponse({
@@ -153,7 +155,10 @@ export function useSelfieUpload({
           selfie_matched_photos: uniqueSelfieMatchedPhotos,
         });
 
-        return uniqueSelfieMatchedPhotos.length > 0;
+        return {
+          success: uniqueSelfieMatchedPhotos.length > 0,
+          matchedPhotos: uniqueSelfieMatchedPhotos,
+        };
       } else {
         // 기존 Lambda 함수 사용
         const matchedResult = await callLambdaFunction(base64Image);
@@ -171,13 +176,21 @@ export function useSelfieUpload({
 
         setResponse(matchedResult);
 
-        return matchedResult.selfie_matched_photos.length > 0;
+        return {
+          success: matchedResult.selfie_matched_photos.length > 0,
+          matchedPhotos: matchedResult.selfie_matched_photos,
+        };
       }
     } catch (error) {
       console.error("Selfie upload error:", error);
-      const message = error instanceof Error ? error.message : "Unknown error";
-      toast.error(`Failed to process selfie: ${message}`);
-      return false;
+      setHasError(true);
+      setIsProcessed(true);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      toast.error(
+        "Failed to process selfie. Please try again with a different photo.",
+      );
+      return { success: false, matchedPhotos: [] };
     } finally {
       setIsProcessing(false);
     }
@@ -187,6 +200,8 @@ export function useSelfieUpload({
     setUploadedFile(null);
     setIsProcessing(false);
     setIsProcessed(false);
+    setHasError(false);
+    setResponse(null);
   };
 
   return {
@@ -196,5 +211,6 @@ export function useSelfieUpload({
     uploadedFile,
     reset,
     response,
+    hasError,
   };
 }
