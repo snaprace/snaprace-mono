@@ -3,12 +3,23 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { useSwipeable } from "react-swipeable";
-import { X, ChevronLeft, ChevronRight, Download, Share2 } from "lucide-react";
+import {
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Share2,
+  Instagram,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { ShareDialog } from "@/components/ShareDialog";
 import { trackPhotoDownload } from "@/lib/analytics";
+import {
+  extractInstagramId,
+  getInstagramProfileUrl,
+} from "@/utils/photographerUtils";
 
 import {
   generatePhotoFilename,
@@ -294,6 +305,7 @@ export function PhotoSingleView({
               priority
               unoptimized
             />
+            {/* Selfie Badge - Top Left */}
             {selfieMatchedSet?.has(currentPhoto) && (
               <div className="absolute top-2 left-2 z-20">
                 <Badge variant="default">
@@ -301,6 +313,31 @@ export function PhotoSingleView({
                 </Badge>
               </div>
             )}
+
+            {/* Photographer Badge - Bottom Left */}
+            {(() => {
+              const instagramId = extractInstagramId(currentPhoto);
+              if (instagramId) {
+                return (
+                  <div className="absolute bottom-2 left-2 z-20">
+                    <a
+                      href={getInstagramProfileUrl(instagramId)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-block"
+                    >
+                      <div className="flex cursor-pointer items-center gap-1 rounded-full px-2 py-1 text-white shadow-sm transition-opacity hover:opacity-90">
+                        <span className="text-xs font-medium">
+                          @{instagramId}
+                        </span>
+                      </div>
+                    </a>
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </div>
         </div>
 

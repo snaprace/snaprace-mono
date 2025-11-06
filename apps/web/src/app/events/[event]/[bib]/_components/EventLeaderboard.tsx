@@ -27,7 +27,7 @@ export function EventLeaderboard({
 }: EventLeaderboardProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const testEvent = eventId.includes("test");
+  const faceSearchOnly = eventId.includes("test");
 
   // Fetch all categories without filtering
   const resultsQuery = api.results.getAllResults.useQuery(
@@ -37,7 +37,7 @@ export function EventLeaderboard({
       // Don't filter by category - load all categories
     },
     {
-      enabled: !!eventId && !!organizationId && !testEvent,
+      enabled: !!eventId && !!organizationId && !faceSearchOnly,
     },
   );
 

@@ -65,17 +65,17 @@ export default function EventPhotoPage() {
     { enabled: !!event },
   );
 
-  const testEvent = eventQuery.data?.event_id.includes("test");
+  const faceSearchOnly = eventQuery.data?.face_search_only ?? false;
   const cloudfrontUrl = "https://images.snap-race.com/";
 
   const galleryQuery = api.galleries.getByBibNumber.useQuery(
     { eventId: event, bibNumber },
-    { enabled: !!event && !isAllPhotos && !!bibNumber && !testEvent },
+    { enabled: !!event && !isAllPhotos && !!bibNumber && !faceSearchOnly },
   );
 
   const allPhotosQuery = api.photos.getByEventId.useQuery(
     { eventId: event },
-    { enabled: !!event && isAllPhotos && !testEvent },
+    { enabled: !!event && isAllPhotos && !faceSearchOnly },
   );
 
   const allPhotosQueryV2 = api.photos.getByEventV2.useQuery(
@@ -85,7 +85,7 @@ export default function EventPhotoPage() {
         !!eventQuery.data?.organization_id &&
         !!event &&
         isAllPhotos &&
-        testEvent,
+        faceSearchOnly,
     },
   );
 
@@ -95,11 +95,11 @@ export default function EventPhotoPage() {
       eventId: event,
       bibNumber,
     },
-    { enabled: !!event && !isAllPhotos && !!bibNumber && testEvent },
+    { enabled: !!event && !isAllPhotos && !!bibNumber && faceSearchOnly },
   );
 
   const photos = useMemo(() => {
-    if (testEvent && isAllPhotos && allPhotosQueryV2.data) {
+    if (faceSearchOnly && isAllPhotos && allPhotosQueryV2.data) {
       return (
         allPhotosQueryV2.data?.map((photo) =>
           encodeURI(cloudfrontUrl + photo.s3Path),
@@ -107,7 +107,7 @@ export default function EventPhotoPage() {
       );
     }
 
-    if (testEvent && !isAllPhotos && bibPhotosQueryV2.data) {
+    if (faceSearchOnly && !isAllPhotos && bibPhotosQueryV2.data) {
       return (
         bibPhotosQueryV2.data.map((photo) =>
           encodeURI(cloudfrontUrl + photo.s3Path),
@@ -137,7 +137,7 @@ export default function EventPhotoPage() {
     isAllPhotos,
     allPhotosQuery.data,
     galleryQuery.data,
-    testEvent,
+    faceSearchOnly,
     allPhotosQueryV2.data,
     bibPhotosQueryV2.data,
   ]);
@@ -193,12 +193,13 @@ export default function EventPhotoPage() {
     bibNumber,
     organizerId: eventQuery.data?.organization_id ?? "",
     existingPhotos: !isAllPhotos ? photos : undefined,
+    faceSearchOnly: eventQuery.data?.face_search_only ?? false,
   });
 
   const handleLabelClick = (e: React.MouseEvent) => {
     e.preventDefault();
 
-    if (!(bibNumber || testEvent) || isUploading) return;
+    if (!(bibNumber || faceSearchOnly) || isUploading) return;
 
     if (hasFacialRecognitionConsent(event)) {
       fileInputRef.current?.click();
@@ -227,8 +228,8 @@ export default function EventPhotoPage() {
         const uploadResult = await uploadSelfie(file);
 
         let matchedCount = 0;
-        if (testEvent) {
-          // testEvent일 때는 uploadSelfie 반환값에서 직접 가져옴
+        if (faceSearchOnly) {
+          // faceSearchOnly일 때는 uploadSelfie 반환값에서 직접 가져옴
           matchedCount = uploadResult.matchedPhotos.length;
         } else if (!isAllPhotos) {
           // 일반 이벤트이고 bibNumber가 있을 때만 galleryQuery refetch
@@ -302,7 +303,7 @@ export default function EventPhotoPage() {
   };
 
   const selfieMatchedSet = useMemo(() => {
-    if (testEvent && response?.selfie_matched_photos) {
+    if (faceSearchOnly && response?.selfie_matched_photos) {
       return new Set(response.selfie_matched_photos);
     }
     if (!isAllPhotos && galleryQuery.data?.selfie_matched_photos?.length) {
@@ -312,46 +313,60 @@ export default function EventPhotoPage() {
   }, [
     isAllPhotos,
     galleryQuery.data?.selfie_matched_photos,
-    testEvent,
+    faceSearchOnly,
     response?.selfie_matched_photos,
   ]);
 
   const isLoading =
-    eventQuery.isLoading || galleryQuery.isLoading || allPhotosQuery.isLoading;
+    eventQuery.isLoading ||
+    galleryQuery.isLoading ||
+    allPhotosQuery.isLoading ||
+    allPhotosQueryV2.isLoading ||
+    bibPhotosQueryV2.isLoading;
 
   const isUploading =
     isProcessing || galleryQuery.isLoading || galleryQuery.isFetching;
 
-  const selfieMatchedCount = testEvent
+  const selfieMatchedCount = faceSearchOnly
     ? (response?.selfie_matched_photos?.length ?? 0)
     : Array.isArray(galleryQuery.data?.selfie_matched_photos)
       ? galleryQuery.data.selfie_matched_photos.length
       : 0;
 
-  const selfieEnhanced = testEvent
+  const selfieEnhanced = faceSearchOnly
     ? (response?.selfie_matched_photos?.length ?? 0) > 0
     : typeof galleryQuery.data?.selfie_enhanced === "boolean"
       ? galleryQuery.data.selfie_enhanced
       : false;
 
   const displayedPhotos = useMemo(() => {
-    if (testEvent && isAllPhotos && response?.selfie_matched_photos?.length) {
+    if (
+      faceSearchOnly &&
+      isAllPhotos &&
+      response?.selfie_matched_photos?.length
+    ) {
       return response.selfie_matched_photos;
     }
-    if (testEvent && !isAllPhotos && response?.selfie_matched_photos?.length) {
+    if (
+      faceSearchOnly &&
+      !isAllPhotos &&
+      response?.selfie_matched_photos?.length
+    ) {
       return [...(response.selfie_matched_photos ?? []), ...photos];
     }
-    if (testEvent && selfieEnhanced) {
+    if (faceSearchOnly && selfieEnhanced) {
       return [...(response?.selfie_matched_photos ?? []), ...photos];
     }
     return photos;
   }, [
-    testEvent,
+    faceSearchOnly,
     isAllPhotos,
     response?.selfie_matched_photos,
     selfieEnhanced,
     photos,
   ]);
+
+  console.log(photos);
 
   const displayedPhotoCount = displayedPhotos.length;
 
@@ -409,32 +424,34 @@ export default function EventPhotoPage() {
               )}
             </div>
 
-            <div className="w-10 md:w-auto">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden"
-                onClick={() => router.push("/")}
-                aria-label="Open search"
-              >
-                <Search className="h-4 w-4" />
-              </Button>
-              <form
-                onSubmit={handleBibSearch}
-                className="hidden items-center gap-2 md:flex"
-              >
-                <Input
-                  type="text"
-                  placeholder="Enter bib"
-                  value={searchBib}
-                  onChange={(e) => setSearchBib(e.target.value)}
-                  className="w-[100px] border border-gray-200"
-                />
-                <Button type="submit" size="sm" disabled={!searchBib.trim()}>
-                  <Search />
+            {!faceSearchOnly && (
+              <div className="w-10 md:w-auto">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="md:hidden"
+                  onClick={() => router.push("/")}
+                  aria-label="Open search"
+                >
+                  <Search className="h-4 w-4" />
                 </Button>
-              </form>
-            </div>
+                <form
+                  onSubmit={handleBibSearch}
+                  className="hidden items-center gap-2 md:flex"
+                >
+                  <Input
+                    type="text"
+                    placeholder="Enter bib"
+                    value={searchBib}
+                    onChange={(e) => setSearchBib(e.target.value)}
+                    className="w-[100px] border border-gray-200"
+                  />
+                  <Button type="submit" size="sm" disabled={!searchBib.trim()}>
+                    <Search />
+                  </Button>
+                </form>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -598,8 +615,8 @@ export default function EventPhotoPage() {
       <PhotoSingleView
         isOpen={isModalOpen}
         onClose={handleCloseSingleView}
-        photos={photos}
-        currentIndex={Math.min(currentPhotoIndex, photos.length - 1)}
+        photos={displayedPhotos}
+        currentIndex={Math.min(currentPhotoIndex, displayedPhotos.length - 1)}
         onIndexChange={handlePhotoIndexChange}
         event={event}
         bibNumber={bibNumber}

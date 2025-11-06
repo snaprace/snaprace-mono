@@ -4,10 +4,14 @@ import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { MasonryGrid } from "@egjs/grid";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
-import { Share2, Download, Check } from "lucide-react";
+import { Share2, Download, Check, Instagram } from "lucide-react";
 import { ShareDialog } from "@/components/ShareDialog";
 import { generatePhotoFilename } from "@/utils/photo";
 import { createDownloadClickHandler } from "@/utils/downloadClickHandler";
+import {
+  extractInstagramId,
+  getInstagramProfileUrl,
+} from "@/utils/photographerUtils";
 
 interface InfinitePhotoGridProps {
   photos: string[];
@@ -42,8 +46,6 @@ export function InfinitePhotoGrid({
   const gridRef = useRef<MasonryGrid | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const rafIdRef = useRef<number>(0);
-
-  const testEvent = event?.includes("test");
 
   const [isGridReady, setIsGridReady] = useState(false);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -224,6 +226,7 @@ export function InfinitePhotoGrid({
                   </div>
                 </div>
               )}
+              {/* Selfie Badge - Top Left */}
               {selfieMatchedSet?.has(url) && (
                 <div className="absolute top-2 left-2 z-20">
                   <Badge variant="default">
@@ -231,6 +234,31 @@ export function InfinitePhotoGrid({
                   </Badge>
                 </div>
               )}
+
+              {/* Photographer Badge - Bottom Left */}
+              {(() => {
+                const instagramId = extractInstagramId(url);
+                if (instagramId) {
+                  return (
+                    <div className="absolute bottom-2 left-2 z-20">
+                      <a
+                        href={getInstagramProfileUrl(instagramId)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-block"
+                      >
+                        <div className="flex cursor-pointer items-center gap-1 rounded-full px-2 py-1 text-white shadow-sm transition-opacity hover:opacity-90">
+                          <span className="text-xs font-medium">
+                            @{instagramId}
+                          </span>
+                        </div>
+                      </a>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
               <div
                 className={`absolute right-0 bottom-0 left-0 z-10 ${isSelectionMode ? "hidden" : "hidden"} translate-y-2 items-center justify-end bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 md:flex`}
               >

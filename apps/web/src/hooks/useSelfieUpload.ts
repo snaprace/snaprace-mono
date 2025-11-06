@@ -8,6 +8,7 @@ interface SelfieUploadParams {
   bibNumber: string;
   organizerId: string;
   existingPhotos?: string[];
+  faceSearchOnly: boolean;
 }
 
 interface LambdaResponse {
@@ -24,6 +25,7 @@ export function useSelfieUpload({
   bibNumber,
   organizerId,
   existingPhotos,
+  faceSearchOnly,
 }: SelfieUploadParams) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -31,9 +33,6 @@ export function useSelfieUpload({
   const [hasError, setHasError] = useState(false);
 
   const [response, setResponse] = useState<LambdaResponse | null>(null);
-
-  const testEvent = eventId.includes("test");
-  const cloudfrontUrl = "https://images.snap-race.com/";
 
   // tRPC mutation for V2 Photo Processing Stack
   const searchBySelfieMutation = api.photos.searchBySelfie.useMutation();
@@ -104,7 +103,7 @@ export function useSelfieUpload({
     file: File,
   ): Promise<{ success: boolean; matchedPhotos: string[] }> => {
     // Check if all required params are available
-    if (!(bibNumber || testEvent) || !eventId) {
+    if (!(bibNumber || faceSearchOnly) || !eventId) {
       toast.error("Please enter a bib number first");
       return { success: false, matchedPhotos: [] };
     }
@@ -120,7 +119,7 @@ export function useSelfieUpload({
     try {
       const base64Image = await convertToBase64(file);
 
-      if (testEvent) {
+      if (faceSearchOnly) {
         // V2 Photo Processing Stack 사용 (tRPC useMutation)
         const result = await searchBySelfieMutation.mutateAsync({
           organizer: organizerId,
@@ -128,14 +127,15 @@ export function useSelfieUpload({
           selfieImage: base64Image,
         });
 
-        const selfieMatchedPhotos = result.photoKeys.map(
-          (photoKey) => cloudfrontUrl + photoKey,
-        );
+        // Lambda에서 이미 CloudFront URL이 조합된 imageUrls를 반환
+        const selfieMatchedPhotos = result.imageUrls;
 
         const existingSet = new Set(existingPhotos ?? []);
         const uniqueSelfieMatchedPhotos = selfieMatchedPhotos.filter(
           (photo) => !existingSet.has(photo),
         );
+
+        console.log("uniqueSelfieMatchedPhotos", uniqueSelfieMatchedPhotos);
 
         setIsProcessed(true);
 

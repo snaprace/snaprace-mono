@@ -112,6 +112,8 @@ export class PhotoProcessingStack extends cdk.Stack {
       // AWS_REGION: this.region,
       STAGE: "dev",
       LOG_LEVEL: "INFO",
+      AWS_RETRY_MODE: "adaptive",
+      AWS_MAX_ATTEMPTS: "10",
 
       // S3
       PHOTOS_BUCKET: photosBucket.bucketName,
@@ -260,6 +262,15 @@ export class PhotoProcessingStack extends cdk.Stack {
       outputPath: "$.Payload",
       retryOnServiceExceptions: true,
       resultPath: "$",
+    });
+    indexFacesTask.addRetry({
+      errors: [
+        "ProvisionedThroughputExceededException",
+        "ThrottlingException",
+      ],
+      interval: Duration.seconds(2),
+      backoffRate: 2.0,
+      maxAttempts: 6,
     });
 
     const dbUpdateTask = new tasks.LambdaInvoke(this, "DbUpdateTask", {

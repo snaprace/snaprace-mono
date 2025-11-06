@@ -215,7 +215,7 @@ export const photosRouter = createTRPCRouter({
             return {
               organizer,
               eventId,
-              photoKeys: [],
+              imageUrls: [],
               photoCount: 0,
               matches: [],
               message:
@@ -232,7 +232,7 @@ export const photosRouter = createTRPCRouter({
         const result = (await response.json()) as {
           organizer: string;
           eventId: string;
-          photoKeys: string[];
+          imageUrls: string[];
           photoCount: number;
           matches?: Array<{
             photoKey: string;
@@ -245,7 +245,7 @@ export const photosRouter = createTRPCRouter({
         return {
           organizer: result.organizer,
           eventId: result.eventId,
-          photoKeys: result.photoKeys,
+          imageUrls: result.imageUrls,
           photoCount: result.photoCount,
           matches: result.matches ?? [],
           message: result.message,

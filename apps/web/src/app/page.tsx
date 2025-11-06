@@ -27,7 +27,9 @@ export default function HomePage() {
 
   const events = useMemo(() => eventsQuery.data ?? [], [eventsQuery.data]);
 
-  const testEvent = selectedEventId.includes("test");
+  const faceSearchOnly =
+    events.find((event) => event.event_id === selectedEventId)
+      ?.face_search_only ?? false;
 
   useEffect(() => {
     if (events.length > 0 && !selectedEventId) {
@@ -102,7 +104,7 @@ export default function HomePage() {
               )}
 
               {/* Bib Number Input */}
-              {!testEvent && (
+              {!faceSearchOnly && (
                 <div className="space-y-2">
                   <label className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
                     <Search className="h-4 w-4" />
@@ -122,7 +124,7 @@ export default function HomePage() {
                 </div>
               )}
 
-              {!testEvent && (
+              {!faceSearchOnly && (
                 <Button
                   type="submit"
                   size="lg"
@@ -134,7 +136,7 @@ export default function HomePage() {
                 </Button>
               )}
 
-              {testEvent && (
+              {faceSearchOnly && (
                 <Button
                   type="submit"
                   size="lg"
@@ -146,7 +148,7 @@ export default function HomePage() {
                 </Button>
               )}
 
-              {!testEvent && (
+              {!faceSearchOnly && (
                 <Button
                   size="lg"
                   className="bg-secondary hover:bg-secondary/90 text-secondary-foreground h-14 w-full border-0 text-lg font-medium shadow-none"

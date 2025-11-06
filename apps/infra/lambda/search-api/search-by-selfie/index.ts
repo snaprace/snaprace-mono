@@ -111,24 +111,48 @@ export async function handler(event: APIGatewayProxyEvent, context: Context): Pr
       matchCount: faceMatches.length,
     });
 
-    // 5. ExternalImageId에서 S3 경로 추출 및 역변환
-    // ExternalImageId는 sanitize된 형태 (: 사용, 공백은 _ 변환)
-    // 원본 S3 경로로 복원: : -> /, 파일명의 _ -> 공백 (URL 인코딩)
+    const cloudfrontUrl = "https://images.snap-race.com/";
+
+    // 5. ExternalImageId에서 S3 경로 추출 및 CloudFront URL 생성
+    // ExternalImageId는 sanitize된 형태 (: 사용, 선행 _는 @ 변환됨, 공백은 _ 변환)
+    // 원본 S3 경로로 복원 후 CloudFront URL과 조합
     const sanitizedPhotoKeys = faceMatches
       .map((match) => match.Face?.ExternalImageId)
       .filter((id): id is string => !!id);
 
-    // sanitize된 경로를 원본 S3 경로로 복원
-    // 1. : -> / 변환, 2. 파일명의 _ -> 공백 복원, 3. URL 인코딩
-    const photoKeys = sanitizedPhotoKeys.map((key) =>
-      key.replace(/:/g, "/").replace(/([^/]+)$/, (filename) => encodeURIComponent(filename.replace(/_/g, " ")))
-    );
+    // sanitize된 경로를 원본 S3 경로로 복원하고 CloudFront URL 생성
+    const imageUrls = sanitizedPhotoKeys.map((key) => {
+      // 1. : -> / 변환
+      const pathParts = key.split(":");
+      const fileName = pathParts[pathParts.length - 1];
+      const dirPath = pathParts.slice(0, -1).join("/");
+
+      // 2. 파일명 복원
+      let restoredFileName = fileName;
+
+      // 선행 _는 @로 변환
+      if (restoredFileName.startsWith("_")) {
+        restoredFileName = "@" + restoredFileName.substring(1);
+      }
+
+      // 대문자 약어(2글자+) 뒤 언더스코어 뒤에 또 대문자 약어(2글자+)가 오는 경우만 공백으로 복원
+      // 예: "@agulosso_OMRC_NYCM25" → "@agulosso_OMRC NYCM25" ✅
+      // 예: "@soyeon_is_so_young" → 그대로 유지 (소문자이므로) ✅
+      restoredFileName = restoredFileName.replace(/([A-Z]{2,})_([A-Z]{2,})/g, "$1 $2");
+
+      // 3. 전체 경로 재조합 및 인코딩
+      const fullPath = dirPath ? `${dirPath}/${restoredFileName}` : restoredFileName;
+      const encodedParts = fullPath.split("/").map((part) => encodeURIComponent(part));
+
+      // 4. CloudFront URL과 조합
+      return cloudfrontUrl + encodedParts.join("/");
+    });
 
     // 중복 제거
-    const uniquePhotoKeys = [...new Set(photoKeys)];
+    const uniqueImageUrls = [...new Set(imageUrls)];
 
     logger.info("Unique photos found", {
-      uniquePhotoCount: uniquePhotoKeys.length,
+      uniquePhotoCount: uniqueImageUrls.length,
     });
 
     // 6. Runners 테이블 업데이트 (선택적 - Selfie 검색 결과도 저장)
@@ -136,7 +160,7 @@ export async function handler(event: APIGatewayProxyEvent, context: Context): Pr
     // 추후 개선: FaceId로 Bib를 역추적하는 로직 추가 가능
 
     // 7. 결과 반환
-    if (uniquePhotoKeys.length === 0) {
+    if (uniqueImageUrls.length === 0) {
       logger.info("No matching faces found", {
         organizer,
         eventId,
@@ -145,7 +169,7 @@ export async function handler(event: APIGatewayProxyEvent, context: Context): Pr
       return successResponse({
         organizer,
         eventId,
-        photoKeys: [],
+        imageUrls: [],
         photoCount: 0,
         message: "No matching faces found. Try with a clearer selfie or different angle.",
       });
@@ -164,10 +188,10 @@ export async function handler(event: APIGatewayProxyEvent, context: Context): Pr
     return successResponse({
       organizer,
       eventId,
-      photoKeys: uniquePhotoKeys,
-      photoCount: uniquePhotoKeys.length,
+      imageUrls: uniqueImageUrls,
+      photoCount: uniqueImageUrls.length,
       matches: sortedMatches,
-      message: `Found ${uniquePhotoKeys.length} photo(s) with matching faces`,
+      message: `Found ${uniqueImageUrls.length} photo(s) with matching faces`,
     });
   } catch (error: any) {
     logger.error("Failed to process Selfie search", {
@@ -182,7 +206,7 @@ export async function handler(event: APIGatewayProxyEvent, context: Context): Pr
         error: error.message,
       });
       return successResponse({
-        photoKeys: [],
+        imageUrls: [],
         photoCount: 0,
         message: "No faces indexed for this event yet. Please wait for photos to be processed.",
       });

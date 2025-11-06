@@ -54,12 +54,12 @@ export function RunnerSpotlight({
 }: RunnerSpotlightProps) {
   const timingEnabled = !isAllPhotos && bibNumber.length > 0;
 
-  const testEvent = eventId.includes("test");
+  const faceSearchOnly = event?.face_search_only ?? false;
 
   const timingQuery = api.results.getTimingByBib.useQuery(
     { eventId, bib: bibNumber },
     {
-      enabled: timingEnabled && !testEvent,
+      enabled: timingEnabled && !faceSearchOnly,
     },
   );
 
@@ -92,7 +92,7 @@ export function RunnerSpotlight({
     <div className="container mx-auto mt-8 px-1 md:px-4">
       <section className="border-border/60 bg-muted/30 overflow-hidden rounded-3xl border p-4 shadow-sm md:p-6">
         <div className="grid gap-4">
-          {showTimingCard ? (
+          {!faceSearchOnly && showTimingCard ? (
             <TimingSummaryCard
               status={timingStatus}
               detail={detail}
@@ -100,14 +100,16 @@ export function RunnerSpotlight({
             />
           ) : null}
 
-          <EventLeaderboard
-            eventId={eventId}
-            eventName={eventName}
-            organizationId={organizationId}
-            highlightBib={!isAllPhotos ? bibNumber : undefined}
-          />
+          {!faceSearchOnly && (
+            <EventLeaderboard
+              eventId={eventId}
+              eventName={eventName}
+              organizationId={organizationId}
+              highlightBib={!isAllPhotos ? bibNumber : undefined}
+            />
+          )}
 
-          {event?.finishline_video_info && (
+          {!faceSearchOnly && event?.finishline_video_info && (
             <FinishVideo
               event={event}
               timingDetail={detail}
@@ -115,10 +117,10 @@ export function RunnerSpotlight({
             />
           )}
 
-          {(bibNumber || testEvent) && (
+          {(bibNumber || faceSearchOnly) && (
             <SelfieUploadCard
               bibNumber={bibNumber}
-              disabled={!(bibNumber || testEvent)}
+              disabled={!(bibNumber || faceSearchOnly)}
               isUploading={isUploading}
               uploadedFile={uploadedFile}
               selfieEnhanced={selfieEnhanced}
