@@ -366,8 +366,6 @@ export default function EventPhotoPage() {
     photos,
   ]);
 
-  console.log(photos);
-
   const displayedPhotoCount = displayedPhotos.length;
 
   const hasError =
