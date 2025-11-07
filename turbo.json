@@ -16,7 +16,8 @@
     "AUTH_SECRET",
     "AUTH_URL",
     "CRISP_WEBSITE_ID",
-    "NODE_ENV"
+    "NODE_ENV",
+    "PHOTO_API_GATEWAY_URL"
   ],
   "tasks": {
     "build": {
