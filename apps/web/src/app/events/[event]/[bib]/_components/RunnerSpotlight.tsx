@@ -145,7 +145,7 @@ interface TimingSummaryCardProps {
 function TimingSummaryCard({
   status,
   detail,
-  onRetry,
+  onRetry: _onRetry,
 }: TimingSummaryCardProps) {
   if (status === "disabled") {
     return null;

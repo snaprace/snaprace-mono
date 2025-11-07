@@ -29,7 +29,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { FilterState, EnhancedLeaderboardResult } from "./types";
+import type { FilterState } from "./types";
 
 interface LeaderboardTableAdvancedProps {
   results: LeaderboardResult[];
@@ -42,7 +42,7 @@ export function LeaderboardTableAdvanced({
   results,
   highlightBib,
   eventId,
-  organizationId,
+  organizationId: _organizationId,
 }: LeaderboardTableAdvancedProps) {
   // 상태 관리
   const [searchQuery, setSearchQuery] = useState("");

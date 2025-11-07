@@ -230,7 +230,7 @@ export default function EventPhotoPage() {
       fileInputRef.current.click();
     }
     trackSelfieRetry(event, bibNumber);
-  }, [reset]);
+  }, [reset, event, bibNumber]);
 
   const handleBibSearch = (e: React.FormEvent) => {
     e.preventDefault();

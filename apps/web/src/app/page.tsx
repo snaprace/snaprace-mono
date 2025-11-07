@@ -358,7 +358,7 @@ export default function HomePage() {
             </form>
 
             <p className="text-muted-foreground mt-4 text-xs">
-              Don't know your bib?
+              Don&apos;t know your bib?
               <Link
                 href="/events"
                 className="text-primary pl-1 font-medium underline-offset-4 hover:underline"

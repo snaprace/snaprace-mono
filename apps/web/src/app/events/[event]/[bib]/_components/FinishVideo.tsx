@@ -69,14 +69,14 @@ export function FinishVideo({
 
   // Calculate video start time
   const startTime = useMemo(() => {
-    if (!videoInfo || videoInfo.status !== "enabled") {
+    if (videoInfo?.status !== "enabled") {
       return 0;
     }
     return calculateVideoStartTime(videoInfo, timingDetail, isAllPhotos);
   }, [videoInfo, timingDetail, isAllPhotos]);
 
   // Don't render if video info doesn't exist or is disabled
-  if (!videoInfo || videoInfo.status !== "enabled") {
+  if (videoInfo?.status !== "enabled") {
     return null;
   }
 
