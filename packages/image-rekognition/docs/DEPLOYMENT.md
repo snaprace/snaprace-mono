@@ -139,7 +139,7 @@ cdk deploy ImageRekognitionStack-dev
 예시:
 
 ```bash
-# 이미지 업로드: s3://snaprace-images-dev/raw/snaprace-kr/seoul-marathon-2024/photo.jpg
+# 이미지 업로드: s3://snaprace-images-dev/snaprace-kr/seoul-marathon-2024/raw/photo.jpg
 # → Collection 자동 생성: snaprace-kr-seoul-marathon-2024
 
 # Collection 확인 (선택사항)
@@ -187,7 +187,7 @@ aws dynamodb describe-table --table-name PhotoService-dev --query 'Table.TableSt
 
 ```bash
 # 테스트 이미지 업로드
-aws s3 cp test-image.jpg s3://snaprace-images-dev/raw/snaprace-kr/test-event/test.jpg
+aws s3 cp test-image.jpg s3://snaprace-images-dev/snaprace-kr/test-event/raw/test.jpg
 
 # Step Functions 실행 확인 (약 30초 후)
 aws stepfunctions list-executions \

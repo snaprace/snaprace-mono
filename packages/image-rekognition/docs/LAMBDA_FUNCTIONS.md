@@ -1,4 +1,4 @@
-ㅑ# Lambda 함수 구현 스펙
+# Lambda 함수 구현 스펙
 
 ## 📋 개요
 
@@ -106,7 +106,8 @@ interface S3EventRecord {
       name: string // "snaprace-images-dev"
     }
     object: {
-      key: string // "raw/org-123/event-456/photo.jpg"
+      key: string // "{organizerId}/{eventId}/raw/photo.jpg"
+      // 예: "snaprace-kr/seoul-marathon-2024/raw/IMG_1234.jpg"
       size: number
     }
   }
@@ -144,8 +145,9 @@ export const handler = async (event: SQSEvent) => {
     for (const s3Record of s3Event.Records) {
       const { bucket, object } = s3Record.s3
 
-      // raw/ 프리픽스 검증
-      if (!object.key.startsWith('raw/')) {
+      // 경로 형식 검증: {organizerId}/{eventId}/raw/{filename}
+      const pathParts = object.key.split('/')
+      if (pathParts.length < 4 || pathParts[2] !== 'raw') {
         console.log(`Skipping non-raw object: ${object.key}`)
         continue
       }
@@ -212,7 +214,7 @@ export const handler = async (event: SQSEvent) => {
 ```typescript
 {
   runtime: NodeJS 20.x
-  memory: 2048 MB  // Sharp.js는 메모리 사용량이 높음
+  memory: 2048 MB  // Sharp는 메모리 사용량이 높음
   timeout: 300초 (5분)
   ephemeralStorage: 1024 MB  // /tmp 디렉토리
   environment: {
@@ -221,9 +223,7 @@ export const handler = async (event: SQSEvent) => {
     MAX_HEIGHT: "4096"
     JPEG_QUALITY: "90"
   }
-  layers: [
-    "arn:aws:lambda:...:layer:sharp-layer:1"
-  ]
+  // Sharp는 CDK 번들링 시 자동으로 Lambda 환경용 바이너리 설치
 }
 ```
 
@@ -232,7 +232,8 @@ export const handler = async (event: SQSEvent) => {
 ```typescript
 interface PreprocessInput {
   bucketName: string
-  rawKey: string // "raw/org-123/event-456/photo.jpg"
+  rawKey: string // "{organizerId}/{eventId}/raw/photo.jpg"
+  // 예: "snaprace-kr/seoul-marathon-2024/raw/IMG_1234.jpg"
   fileSize: number
   timestamp: string
 }
@@ -244,7 +245,7 @@ interface PreprocessInput {
 interface PreprocessOutput {
   bucketName: string
   rawKey: string
-  processedKey: string // "processed/org-123/event-456/{ulid}.jpg"
+  processedKey: string // "{organizerId}/{eventId}/processed/{ulid}.jpg"
   ulid: string
   orgId: string
   eventId: string
@@ -255,7 +256,7 @@ interface PreprocessOutput {
   }
   format: string // "jpeg"
   size: number // bytes
-  s3Uri: string // "s3://bucket/processed/..."
+  s3Uri: string // "s3://bucket/{organizerId}/{eventId}/processed/..."
 }
 ```
 
@@ -283,14 +284,19 @@ interface StepFunctionInput {
 export const handler = async (event: StepFunctionInput) => {
   console.log('Processing image:', event.rawKey)
 
-  // 1. 경로 파싱 (raw/org-123/event-456/photo.jpg)
+  // 1. 경로 파싱 ({organizerId}/{eventId}/raw/photo.jpg)
   const pathParts = event.rawKey.split('/')
   if (pathParts.length < 4) {
-    throw new Error('Invalid S3 key format')
+    throw new Error('Invalid S3 key format: expected {organizerId}/{eventId}/raw/filename')
   }
 
-  const [, orgId, eventId, ...filenameParts] = pathParts
+  const [orgId, eventId, rawPrefix, ...filenameParts] = pathParts
   const originalFilename = filenameParts.join('/')
+
+  // raw/ 디렉토리 검증
+  if (rawPrefix !== 'raw') {
+    throw new Error('S3 key must include /raw/ directory')
+  }
 
   // 2. 원본 이미지 다운로드
   const getCommand = new GetObjectCommand({
@@ -347,7 +353,7 @@ export const handler = async (event: StepFunctionInput) => {
 
   // 6. ULID 생성 및 저장 경로 구성
   const imageUlid = ulid()
-  const processedKey = `processed/${orgId}/${eventId}/${imageUlid}.jpg`
+  const processedKey = `${orgId}/${eventId}/processed/${imageUlid}.jpg`
 
   // 7. S3에 업로드
   const putCommand = new PutObjectCommand({
@@ -396,24 +402,76 @@ async function streamToBuffer(stream: Readable): Promise<Buffer> {
 }
 ```
 
-### Sharp Layer 생성
+### Sharp 직접 번들링
 
-```bash
-# ARM64용 Sharp layer 생성
-mkdir -p layer/nodejs
-cd layer/nodejs
-npm init -y
-npm install sharp --arch=arm64 --platform=linux
-cd ..
-zip -r sharp-layer.zip nodejs
+**Sharp**는 Node.js용 고성능 이미지 처리 라이브러리로, 네이티브 C++ 라이브러리(libvips)를 사용합니다.
 
-# Lambda Layer 생성
-aws lambda publish-layer-version \
-  --layer-name sharp-layer \
-  --zip-file fileb://sharp-layer.zip \
-  --compatible-runtimes nodejs20.x \
-  --compatible-architectures arm64
+#### 번들링 방식 선택
+
+본 프로젝트는 **직접 번들링 방식**을 사용합니다:
+
+- ✅ **간단함**: Layer 관리 불필요
+- ✅ **최소 설계**: Preprocess Lambda 하나에만 필요
+- ✅ **자동화**: CDK 번들링 과정에서 자동으로 Lambda 환경용 바이너리 설치
+
+#### CDK 구현
+
+```typescript
+const preprocessFn = new lambda.NodejsFunction(this, 'PreprocessFunction', {
+  runtime: lambda.Runtime.NODEJS_20_X,
+  handler: 'index.handler',
+  code: lambda.Code.fromAsset('src/preprocess'),
+  memorySize: 2048,
+  timeout: cdk.Duration.minutes(5),
+  environment: {
+    BUCKET_NAME: bucket.bucketName,
+    MAX_WIDTH: '4096',
+    MAX_HEIGHT: '4096',
+    JPEG_QUALITY: '90'
+  },
+  bundling: {
+    externalModules: ['sharp'], // Sharp는 번들에서 제외
+    nodeModules: ['sharp'], // node_modules에서 설치
+    commandHooks: {
+      beforeBundling(): string[] {
+        return []
+      },
+      beforeInstall(): string[] {
+        return []
+      },
+      afterBundling(inputDir: string, outputDir: string): string[] {
+        return [
+          `cd ${outputDir}`,
+          // Lambda 환경용 Sharp 바이너리 설치
+          'rm -rf node_modules/sharp && npm install --cpu=arm64 --os=linux --libc=glibc sharp'
+        ]
+      }
+    }
+  }
+})
 ```
+
+#### 작동 원리
+
+1. **번들링 시점**: CDK 배포 시 자동 실행
+2. **크로스 컴파일**: 로컬(macOS/Windows)에서 Linux ARM64용 바이너리 설치
+3. **결과**: Lambda 환경과 완벽히 호환되는 Sharp 패키지
+
+#### 왜 이 방식인가?
+
+**Layer 방식 (❌ 불필요)**:
+
+- Layer 별도 생성 및 관리
+- 여러 함수에서 재사용할 때 유리
+- 본 프로젝트는 1개 함수만 사용 → 오버엔지니어링
+
+**직접 번들링 (✅ 권장)**:
+
+- 설정 한 곳에서 완결
+- 추가 리소스 관리 불필요
+- 배포 과정 단순화
+
+**최소 설계 원칙**: 필요한 곳에서만 필요한 만큼만! 🎯
 
 ---
 
@@ -541,6 +599,7 @@ export const handler = async (event: PreprocessOutput) => {
 /**
  * BIB 번호 추출 로직
  * - 순수 숫자 (1-5자리)
+ * - 좌측/우측 하단 워터마크 영역 제외
  * - 신뢰도 높은 순으로 정렬
  * - 중복 제거
  */
@@ -548,8 +607,35 @@ function extractBibNumbers(words: any[]): string[] {
   const bibCandidates = words
     .filter((word) => {
       const text = word.text.trim()
-      // 숫자만 포함, 1-5자리
-      return /^\d{1,5}$/.test(text)
+
+      // 1. 숫자만 포함, 1-5자리
+      if (!/^\d{1,5}$/.test(text)) {
+        return false
+      }
+
+      // 2. 워터마크 영역 제외 (좌측/우측 하단 20%x20% 사각형)
+      const bbox = word.geometry.boundingBox
+      const textTop = bbox.top
+      const textBottom = bbox.top + bbox.height
+      const textLeft = bbox.left
+      const textRight = bbox.left + bbox.width
+
+      // 좌측 하단 사각형: Left 0-20%, Bottom 80-100%
+      const isLeftBottomWatermark =
+        textRight <= 0.2 && // 텍스트가 좌측 20% 이내
+        textBottom >= 0.8 // 텍스트가 하단 20% 이내
+
+      // 우측 하단 사각형: Right 80-100%, Bottom 80-100%
+      const isRightBottomWatermark =
+        textLeft >= 0.8 && // 텍스트가 우측 20% 이내
+        textBottom >= 0.8 // 텍스트가 하단 20% 이내
+
+      if (isLeftBottomWatermark || isRightBottomWatermark) {
+        console.log(`Filtered watermark text: "${text}" at (${textLeft}, ${textTop})`)
+        return false
+      }
+
+      return true
     })
     .sort((a, b) => b.confidence - a.confidence) // 신뢰도 높은 순
     .map((word) => word.text)
@@ -559,43 +645,40 @@ function extractBibNumbers(words: any[]): string[] {
 }
 ```
 
-### BIB 번호 검출 로직 개선 (선택사항)
+### 워터마크 필터링 상세
 
-더 정확한 BIB 번호 검출을 위한 휴리스틱:
+**워터마크 위치** (20% x 20% 사각형):
+
+- 좌측 하단: `Left 0-20%` && `Bottom 80-100%`
+- 우측 하단: `Right 80-100%` && `Bottom 80-100%`
+
+**필터링 예시**:
+
+```
+이미지 좌표계 (0.0 ~ 1.0):
+┌─────────────────────────────┐
+│                             │
+│      BIB 번호 검출 영역      │
+│                             │
+│                             │
+├──────────┬──────────────────┤
+│ [워터마크]│                  │ ← 좌측 하단 20%x20%
+│          │        [워터마크] │ ← 우측 하단 20%x20%
+└──────────┴──────────────────┘
+```
+
+**조정 가능한 파라미터**:
 
 ```typescript
-function extractBibNumbers(words: any[], imageHeight: number): string[] {
-  const candidates = words
-    .filter((word) => {
-      const text = word.text.trim()
-
-      // 1. 숫자만 포함, 1-5자리
-      if (!/^\d{1,5}$/.test(text)) return false
-
-      // 2. 너무 작은 텍스트 제외 (BIB는 일반적으로 크게 표시됨)
-      const bbox = word.geometry.boundingBox
-      const textHeight = bbox.height * imageHeight
-      if (textHeight < 30) return false // 픽셀 기준 최소 높이
-
-      // 3. 신뢰도 체크
-      if (word.confidence < 85) return false
-
-      return true
-    })
-    .map((word) => ({
-      text: word.text,
-      confidence: word.confidence,
-      size: word.geometry.boundingBox.height // 상대 크기
-    }))
-    .sort((a, b) => {
-      // 크기와 신뢰도를 모두 고려
-      const scoreA = a.size * 0.5 + (a.confidence / 100) * 0.5
-      const scoreB = b.size * 0.5 + (b.confidence / 100) * 0.5
-      return scoreB - scoreA
-    })
-    .map((c) => c.text)
-
-  return Array.from(new Set(candidates))
+// 환경 변수로 조정 가능
+const WATERMARK_SIZE = parseFloat(process.env.WATERMARK_SIZE || '0.2') // 20% (너비/높이)
+const WATERMARK_LEFT_BOTTOM = {
+  leftMax: WATERMARK_SIZE, // 좌측 0-20%
+  bottomMin: 1.0 - WATERMARK_SIZE // 하단 80-100%
+}
+const WATERMARK_RIGHT_BOTTOM = {
+  rightMin: 1.0 - WATERMARK_SIZE, // 우측 80-100%
+  bottomMin: 1.0 - WATERMARK_SIZE // 하단 80-100%
 }
 ```
 
@@ -1039,7 +1122,7 @@ Step Functions 워크플로우 전체를 테스트합니다.
 
 ```bash
 # 테스트 이미지 업로드
-aws s3 cp test-image.jpg s3://snaprace-images-dev/raw/org-test/event-test/test.jpg
+aws s3 cp test-image.jpg s3://snaprace-images-dev/org-test/event-test/raw/test.jpg
 
 # Step Functions 실행 모니터링
 aws stepfunctions list-executions \

@@ -362,6 +362,37 @@ importers:
         specifier: ^8.40.0
         version: 8.46.2(eslint@9.39.0(jiti@2.6.1))(typescript@5.9.2)
 
+  packages/image-rekognition:
+    dependencies:
+      aws-cdk-lib:
+        specifier: 2.215.0
+        version: 2.215.0(constructs@10.4.2)
+      constructs:
+        specifier: ^10.0.0
+        version: 10.4.2
+    devDependencies:
+      '@types/jest':
+        specifier: ^29.5.14
+        version: 29.5.14
+      '@types/node':
+        specifier: 22.7.9
+        version: 22.7.9
+      aws-cdk:
+        specifier: 2.1031.1
+        version: 2.1031.1
+      jest:
+        specifier: ^29.7.0
+        version: 29.7.0(@types/node@22.7.9)(ts-node@10.9.2(@types/node@22.7.9)(typescript@5.6.3))
+      ts-jest:
+        specifier: ^29.2.5
+        version: 29.4.5(@babel/core@7.28.5)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.28.5))(jest-util@29.7.0)(jest@29.7.0(@types/node@22.7.9)(ts-node@10.9.2(@types/node@22.7.9)(typescript@5.6.3)))(typescript@5.6.3)
+      ts-node:
+        specifier: ^10.9.2
+        version: 10.9.2(@types/node@22.7.9)(typescript@5.6.3)
+      typescript:
+        specifier: ~5.6.3
+        version: 5.6.3
+
   packages/typescript-config: {}
 
   packages/ui:
@@ -2898,6 +2929,11 @@ packages:
 
   aws-cdk@2.1031.0:
     resolution: {integrity: sha512-iotbdOIvHoLCz1u7PUVDQbcpGpVqMk8HzAeOP4PGRqD9PoAEsCb3mwGTxHMrNGEGWdJXQxiTOGSaMmlwEvACxA==}
+    engines: {node: '>= 18.0.0'}
+    hasBin: true
+
+  aws-cdk@2.1031.1:
+    resolution: {integrity: sha512-y/ovZDtOKvgJFtwE7NDFKRgJB3stgUUrAu6b31icuFO8+vnZ+4BIt0McQfbVR8ky5QOj2TW1G1sk55k8Yv+BnQ==}
     engines: {node: '>= 18.0.0'}
     hasBin: true
 
@@ -8737,6 +8773,10 @@ snapshots:
       constructs: 10.4.2
 
   aws-cdk@2.1031.0:
+    optionalDependencies:
+      fsevents: 2.3.2
+
+  aws-cdk@2.1031.1:
     optionalDependencies:
       fsevents: 2.3.2
 
