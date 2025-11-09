@@ -43,9 +43,15 @@ export function Header() {
                 />
               </div>
             ) : (
-              <span className="text-foreground text-xl font-bold">
-                {org.name}
-              </span>
+              <div className="relative h-8 w-28">
+                <Image
+                  src="/images/snaprace-logo.svg"
+                  alt="SnapRace"
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </div>
             )}
           </Link>
 
@@ -129,7 +135,14 @@ export function Header() {
                         />
                       </div>
                     ) : (
-                      <span className="text-xl font-bold">{org.name}</span>
+                      <div className="relative h-8 w-28">
+                        <Image
+                          src="/images/snaprace-logo.svg"
+                          alt="SnapRace"
+                          fill
+                          className="object-contain"
+                        />
+                      </div>
                     )}
                   </Link>
 

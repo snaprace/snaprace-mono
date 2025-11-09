@@ -1,0 +1,9 @@
+<svg width="120" height="32" viewBox="0 0 120 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- SR Icon Box -->
+  <rect x="0" y="0" width="32" height="32" rx="6" fill="#171717"/>
+  <text x="16" y="22" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="14" font-weight="600" letter-spacing="-0.02em" text-anchor="middle" fill="white">SR</text>
+  
+  <!-- SnapRace Text -->
+  <text x="40" y="20" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="14" font-weight="500" letter-spacing="-0.01em" fill="#171717">SnapRace</text>
+</svg>
+

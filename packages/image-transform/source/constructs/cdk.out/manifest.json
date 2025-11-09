@@ -1,0 +1,757 @@
+{
+  "version": "44.0.0",
+  "artifacts": {
+    "ServerlessImageHandlerStack.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "ServerlessImageHandlerStack.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "ServerlessImageHandlerStack": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://unknown-account/unknown-region",
+      "properties": {
+        "templateFile": "ServerlessImageHandlerStack.template.json",
+        "terminationProtection": false,
+        "tags": {
+          "SolutionId": "SO0023"
+        },
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-deploy-role-${AWS::AccountId}-${AWS::Region}",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-cfn-exec-role-${AWS::AccountId}-${AWS::Region}",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/d2d2f9a2225c6f8ab5a0d1e6cef6d2cdda33ea4d4afdfcd6aed350af43d2f5c1.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "ServerlessImageHandlerStack.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-lookup-role-${AWS::AccountId}-${AWS::Region}",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "ServerlessImageHandlerStack.assets"
+      ],
+      "metadata": {
+        "/ServerlessImageHandlerStack": [
+          {
+            "type": "aws:cdk:stack-tags",
+            "data": [
+              {
+                "Key": "SolutionId",
+                "Value": "SO0023"
+              }
+            ]
+          }
+        ],
+        "/ServerlessImageHandlerStack/CorsEnabledParameter": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CorsEnabledParameter"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CorsOriginParameter": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CorsOriginParameter"
+          }
+        ],
+        "/ServerlessImageHandlerStack/SourceBucketsParameter": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SourceBucketsParameter"
+          }
+        ],
+        "/ServerlessImageHandlerStack/DeployDemoUIParameter": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DeployDemoUIParameter"
+          }
+        ],
+        "/ServerlessImageHandlerStack/LogRetentionPeriodParameter": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LogRetentionPeriodParameter"
+          }
+        ],
+        "/ServerlessImageHandlerStack/AutoWebPParameter": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AutoWebPParameter"
+          }
+        ],
+        "/ServerlessImageHandlerStack/EnableSignatureParameter": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EnableSignatureParameter"
+          }
+        ],
+        "/ServerlessImageHandlerStack/SecretsManagerSecretParameter": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SecretsManagerSecretParameter"
+          }
+        ],
+        "/ServerlessImageHandlerStack/SecretsManagerKeyParameter": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SecretsManagerKeyParameter"
+          }
+        ],
+        "/ServerlessImageHandlerStack/EnableDefaultFallbackImageParameter": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EnableDefaultFallbackImageParameter"
+          }
+        ],
+        "/ServerlessImageHandlerStack/FallbackImageS3BucketParameter": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FallbackImageS3BucketParameter"
+          }
+        ],
+        "/ServerlessImageHandlerStack/FallbackImageS3KeyParameter": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FallbackImageS3KeyParameter"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CloudFrontPriceClassParameter": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CloudFrontPriceClassParameter"
+          }
+        ],
+        "/ServerlessImageHandlerStack/OriginShieldRegionParameter": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "OriginShieldRegionParameter"
+          }
+        ],
+        "/ServerlessImageHandlerStack/EnableS3ObjectLambdaParameter": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EnableS3ObjectLambdaParameter"
+          }
+        ],
+        "/ServerlessImageHandlerStack/UseExistingCloudFrontDistributionParameter": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UseExistingCloudFrontDistributionParameter"
+          }
+        ],
+        "/ServerlessImageHandlerStack/ExistingCloudFrontDistributionIdParameter": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExistingCloudFrontDistributionIdParameter"
+          }
+        ],
+        "/ServerlessImageHandlerStack/ExistingDistributionIdRequiredRule": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExistingDistributionIdRequiredRule"
+          }
+        ],
+        "/ServerlessImageHandlerStack/Solution": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Solution"
+          }
+        ],
+        "/ServerlessImageHandlerStack/SendAnonymousStatistics": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SendAnonymousStatistics"
+          }
+        ],
+        "/ServerlessImageHandlerStack/DeployCloudWatchDashboard": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DeployCloudWatchDashboard"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/DeployDemoUICondition": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesDeployDemoUICondition308D3B09"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/EnableSignatureCondition": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesEnableSignatureCondition909DC7A1"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/EnableDefaultFallbackImageCondition": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesEnableDefaultFallbackImageConditionD1A10983"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/EnableCorsCondition": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesEnableCorsConditionA0615348"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/AutoWebPCondition": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesAutoWebPCondition7119C768"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/EnableOriginShieldCondition": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesEnableOriginShieldConditionCEE94847"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/EnableS3ObjectLambdaCondition": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesEnableS3ObjectLambdaConditionF2C07DCD"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/DisableS3ObjectLambdaCondition": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesDisableS3ObjectLambdaCondition017AC33C"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/IsLogRetentionPeriodInfinite": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesIsLogRetentionPeriodInfinite129C8A82"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/UseExistingCloudFrontDistributionCondition": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesUseExistingCloudFrontDistributionConditionEBC48184"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/SecretsManagerPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesSecretsManagerPolicy45FE005E"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/CustomResources/CustomResourceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesCustomResourcesCustomResourceRole8958A1ED"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/CustomResources/CustomResourceFunction/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesCustomResourcesCustomResourceFunction0D924235"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/CustomResources/CustomResourceUuid/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesCustomResourcesCustomResourceUuid64E7CCAD"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/CustomResources/LogBucketCustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesCustomResourcesLogBucketCustomResource2445A3AB"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/CustomResources/CustomResourceCheckSourceBuckets/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesCustomResourcesCustomResourceCheckSourceBucketsA313C9B7"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/CustomResources/CustomResourceCheckFirstBucketRegion/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesCustomResourcesCustomResourceCheckFirstBucketRegionE663CC31"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/CustomResources/CustomResourceCheckFallbackImage/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesCustomResourcesCustomResourceCheckFallbackImage6CE45571"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/CustomResources/WebsiteHostingBucketPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesCustomResourcesWebsiteHostingBucketPolicy3C526944"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/CustomResources/CustomResourceAnonymousMetric/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesCustomResourcesCustomResourceAnonymousMetric51363F57"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/CustomResources/CustomResourceCheckSecretsManager/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesCustomResourcesCustomResourceCheckSecretsManagerAEEEC776"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/CustomResources/CustomResourceValidateExistingDistribution/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesCustomResourcesCustomResourceValidateExistingDistribution34A6673C"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/CustomResources/DeployWebsite/AwsCliLayer/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesCustomResourcesDeployWebsiteAwsCliLayerBC025F39"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/CustomResources/DeployWebsite/CustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesCustomResourcesDeployWebsiteCustomResourceECB9B136"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CommonResources/CustomResources/PutWebsiteConfig/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonResourcesCustomResourcesPutWebsiteConfigC4E435F3"
+          }
+        ],
+        "/ServerlessImageHandlerStack/FrontEnd/DistributionToS3/S3Bucket/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontEndDistributionToS3S3Bucket3A171D78"
+          }
+        ],
+        "/ServerlessImageHandlerStack/FrontEnd/DistributionToS3/S3Bucket/Policy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontEndDistributionToS3S3BucketPolicyF3A0315A"
+          }
+        ],
+        "/ServerlessImageHandlerStack/FrontEnd/DistributionToS3/CloudFrontOac": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontEndDistributionToS3CloudFrontOac2BE9C90D"
+          }
+        ],
+        "/ServerlessImageHandlerStack/FrontEnd/DistributionToS3/CloudFrontDistribution/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontEndDistributionToS3CloudFrontDistribution15FE13D0"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerFunctionRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerFunctionRoleABF81E5C"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerFunctionPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerFunctionPolicy437940B5"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerLambdaFunction/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerLambdaFunctionADEF7FF2"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerLambdaFunction/InvokeOmXtXvfmnVyX0ul6SNprKOdkal6YvZiIw5QCpG--sJFo=": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerLambdaFunctionInvokeOmXtXvfmnVyX0ul6SNprKOdkal6YvZiIw5QCpGsJFo09B7B011"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerLogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerLogGroupA0941EEC"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/CachePolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndCachePolicy1DCE9B1B"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/OriginRequestPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndOriginRequestPolicy771345D7"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ApigRequestModifierFunction/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndApigRequestModifierFunction400C4F08"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerCloudFrontApiGatewayLambda/ApiAccessLogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerCloudFrontApiGatewayLambdaApiAccessLogGroup9B786692"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerCloudFrontApiGatewayLambda/LambdaRestApi/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApi5A77D109"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerCloudFrontApiGatewayLambda/LambdaRestApi/Deployment/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApiDeployment663240D697c3cdfc601da74f263d2bb8dcbb4a90"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerCloudFrontApiGatewayLambda/LambdaRestApi/DeploymentStage.image/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApiDeploymentStageimageB55D20E3"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerCloudFrontApiGatewayLambda/LambdaRestApi/Default/{proxy+}/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApiproxyBDF0A131"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerCloudFrontApiGatewayLambda/LambdaRestApi/Default/{proxy+}/ANY/ApiPermission.ServerlessImageHandlerStackBackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApiF7C63563.ANY..{proxy+}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApiproxyANYApiPermissionServerlessImageHandlerStackBackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApiF7C63563ANYproxy4E0EC93E"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerCloudFrontApiGatewayLambda/LambdaRestApi/Default/{proxy+}/ANY/ApiPermission.Test.ServerlessImageHandlerStackBackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApiF7C63563.ANY..{proxy+}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApiproxyANYApiPermissionTestServerlessImageHandlerStackBackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApiF7C63563ANYproxyE40ABA2A"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerCloudFrontApiGatewayLambda/LambdaRestApi/Default/{proxy+}/ANY/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApiproxyANY8F9763E1"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerCloudFrontApiGatewayLambda/LambdaRestApi/Default/ANY/ApiPermission.ServerlessImageHandlerStackBackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApiF7C63563.ANY..": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApiANYApiPermissionServerlessImageHandlerStackBackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApiF7C63563ANY3D47D314"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerCloudFrontApiGatewayLambda/LambdaRestApi/Default/ANY/ApiPermission.Test.ServerlessImageHandlerStackBackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApiF7C63563.ANY..": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApiANYApiPermissionTestServerlessImageHandlerStackBackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApiF7C63563ANYE1780638"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerCloudFrontApiGatewayLambda/LambdaRestApi/Default/ANY/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApiANYE4494B31"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerCloudFrontApiGatewayLambda/LambdaRestApi/UsagePlan/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApiUsagePlan76CA1E70"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerCloudFrontApiGatewayLambda/LambdaRestApiCloudWatchRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApiCloudWatchRole12575C4D"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerCloudFrontApiGatewayLambda/LambdaRestApiAccount": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerCloudFrontApiGatewayLambdaLambdaRestApiAccountE5522E5D"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerCloudFrontApiGatewayLambda/CloudFrontToApiGateway/CloudFrontDistribution/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerCloudFrontApiGatewayLambdaCloudFrontToApiGatewayCloudFrontDistribution03AA31B2"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/DeployAPIGDistribution": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndDeployAPIGDistributionF4E75280"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/AccessPoint": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndAccessPoint6DA9B104"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/OlResponseModifierFunction/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndOlResponseModifierFunctionB47B3834"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/OlRequestModifierFunction/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndOlRequestModifierFunction7E5192E3"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ObjectLambdaAccessPoint": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndObjectLambdaAccessPointBEE6B960"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/WriteGetObjectResponsePolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndWriteGetObjectResponsePolicyF3008955"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ImageHandlerCloudFrontDistribution/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndImageHandlerCloudFrontDistributionB5464C90"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/DeployS3OLDistribution": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndDeployS3OLDistribution869FCC7C"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ObjectLambdaAccessPointPolicy": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndObjectLambdaAccessPointPolicy1FC842E3"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/SIH-origin-access-control": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndSIHoriginaccesscontrolAFC8496A"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/ShortLogRetentionCondition": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndShortLogRetentionCondition72EA1A33"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/SolutionMetrics/MetricsLambda/ServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndSolutionMetricsMetricsLambdaServiceRoleF4BC77CD"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/SolutionMetrics/MetricsLambda/ServiceRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndSolutionMetricsMetricsLambdaServiceRoleDefaultPolicyEBDDA47A"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/SolutionMetrics/MetricsLambda/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndSolutionMetricsMetricsLambdaF4FA4AF7"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/SolutionMetrics/MetricsLambda/AwsEventsLambdaInvokePermission-1": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndSolutionMetricsMetricsLambdaAwsEventsLambdaInvokePermission1328BC090"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/SolutionMetrics/MetricsLambda/SqsEventSource:ServerlessImageHandlerStackBackEndSolutionMetricsLambdaToSqsToLambdalambdatosqsqueue55784E12/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndSolutionMetricsMetricsLambdaSqsEventSourceServerlessImageHandlerStackBackEndSolutionMetricsLambdaToSqsToLambdalambdatosqsqueue55784E120E34BEBC"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/SolutionMetrics/EventbridgeRuleToLambda/EventsRule/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndSolutionMetricsEventbridgeRuleToLambdaEventsRule05009025"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/SolutionMetrics/LambdaToSqsToLambda/lambda-to-sqs/queue/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndSolutionMetricsLambdaToSqsToLambdalambdatosqsqueue60A92083"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/SolutionMetrics/LambdaToSqsToLambda/lambda-to-sqs/queue/Policy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndSolutionMetricsLambdaToSqsToLambdalambdatosqsqueuePolicy5B9B4D7F"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/SolutionMetrics/BilledDurationMemorySizeQuery/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndSolutionMetricsBilledDurationMemorySizeQuery39F16D58"
+          }
+        ],
+        "/ServerlessImageHandlerStack/BackEnd/SolutionMetrics/RequestInfoQuery/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackEndSolutionMetricsRequestInfoQueryB4BC2094"
+          }
+        ],
+        "/ServerlessImageHandlerStack/OperationalInsightsDashboard/OperationalInsightsDashboard": [
+          {
+            "type": "aws:cdk:warning",
+            "data": "Math expression '7.916241884231568e-11 * cloudFrontBytesDownloaded + 7.5e-7 * cloudFrontRequests + 1.66667e-8 * lambdaDuration + 2.0000000000000002e-7 * lambdaInvocations' references unknown identifiers: e, e, e, e. Please add them to the 'usingMetrics' map. [ack: CloudWatch:Math:UnknownIdentifier]",
+            "trace": [
+              "Annotations.addMessage (/Users/chan/Desktop/develop/snaprace-mono/packages/image-transform/source/constructs/node_modules/aws-cdk-lib/core/lib/annotations.js:1:1709)",
+              "Annotations.addWarningV2 (/Users/chan/Desktop/develop/snaprace-mono/packages/image-transform/source/constructs/node_modules/aws-cdk-lib/core/lib/annotations.js:1:896)",
+              "WrappedClass.addWidgets (/Users/chan/Desktop/develop/snaprace-mono/packages/image-transform/source/constructs/node_modules/aws-cdk-lib/aws-cloudwatch/lib/dashboard.js:1:3836)",
+              "WrappedClass.descriptor.value (/Users/chan/Desktop/develop/snaprace-mono/packages/image-transform/source/constructs/node_modules/aws-cdk-lib/core/lib/metadata-resource.js:1:2296)",
+              "new OperationalInsightsDashboard (/Users/chan/Desktop/develop/snaprace-mono/packages/image-transform/source/constructs/lib/dashboard/ops-insights-dashboard.ts:111:20)",
+              "new BackEnd (/Users/chan/Desktop/develop/snaprace-mono/packages/image-transform/source/constructs/lib/back-end/back-end-construct.ts:270:42)",
+              "new ServerlessImageHandlerStack (/Users/chan/Desktop/develop/snaprace-mono/packages/image-transform/source/constructs/lib/serverless-image-stack.ts:274:21)",
+              "Object.<anonymous> (/Users/chan/Desktop/develop/snaprace-mono/packages/image-transform/source/constructs/bin/constructs.ts:26:1)",
+              "Module._compile (node:internal/modules/cjs/loader:1504:14)",
+              "Module.m._compile (/Users/chan/Desktop/develop/snaprace-mono/packages/image-transform/source/constructs/node_modules/ts-node/src/index.ts:1618:23)",
+              "Module._extensions..js (node:internal/modules/cjs/loader:1588:10)",
+              "Object.require.extensions.<computed> [as .ts] (/Users/chan/Desktop/develop/snaprace-mono/packages/image-transform/source/constructs/node_modules/ts-node/src/index.ts:1621:12)",
+              "Module.load (node:internal/modules/cjs/loader:1282:32)",
+              "Function.Module._load (node:internal/modules/cjs/loader:1098:12)",
+              "TracingChannel.traceSync (node:diagnostics_channel:315:14)",
+              "wrapModuleLoad (node:internal/modules/cjs/loader:215:24)",
+              "Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:158:5)",
+              "phase4 (/Users/chan/Desktop/develop/snaprace-mono/packages/image-transform/source/constructs/node_modules/ts-node/src/bin.ts:649:14)",
+              "bootstrap (/Users/chan/Desktop/develop/snaprace-mono/packages/image-transform/source/constructs/node_modules/ts-node/src/bin.ts:95:10)",
+              "main (/Users/chan/Desktop/develop/snaprace-mono/packages/image-transform/source/constructs/node_modules/ts-node/src/bin.ts:55:10)",
+              "Object.<anonymous> (/Users/chan/Desktop/develop/snaprace-mono/packages/image-transform/source/constructs/node_modules/ts-node/src/bin.ts:800:3)",
+              "Module._compile (node:internal/modules/cjs/loader:1504:14)",
+              "Object.Module._extensions..js (node:internal/modules/cjs/loader:1588:10)",
+              "Module.load (node:internal/modules/cjs/loader:1282:32)",
+              "Function.Module._load (node:internal/modules/cjs/loader:1098:12)",
+              "TracingChannel.traceSync (node:diagnostics_channel:315:14)",
+              "wrapModuleLoad (node:internal/modules/cjs/loader:215:24)",
+              "Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:158:5)",
+              "node:internal/main/run_main_module:30:49"
+            ]
+          }
+        ],
+        "/ServerlessImageHandlerStack/OperationalInsightsDashboard/OperationalInsightsDashboard/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "OperationalInsightsDashboard00409C46"
+          }
+        ],
+        "/ServerlessImageHandlerStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C": [
+          {
+            "type": "aws:cdk:is-custom-resource-handler-singleton",
+            "data": true
+          },
+          {
+            "type": "aws:cdk:is-custom-resource-handler-runtime-family",
+            "data": 2
+          }
+        ],
+        "/ServerlessImageHandlerStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/ServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265"
+          }
+        ],
+        "/ServerlessImageHandlerStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/ServiceRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRoleDefaultPolicy88902FDF"
+          }
+        ],
+        "/ServerlessImageHandlerStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536"
+          }
+        ],
+        "/ServerlessImageHandlerStack/ApiEndpoint": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiEndpoint"
+          }
+        ],
+        "/ServerlessImageHandlerStack/DemoUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DemoUrl"
+          }
+        ],
+        "/ServerlessImageHandlerStack/SourceBuckets": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SourceBuckets"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CorsEnabled": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CorsEnabled"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CorsOrigin": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CorsOrigin"
+          }
+        ],
+        "/ServerlessImageHandlerStack/LogRetentionPeriod": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LogRetentionPeriod"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CloudFrontLoggingBucket": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CloudFrontLoggingBucket"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CloudFrontDashboard": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CloudFrontDashboard"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/ServerlessImageHandlerStack/CDKMetadata/Condition": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadataAvailable"
+          }
+        ]
+      },
+      "displayName": "ServerlessImageHandlerStack"
+    },
+    "Tree": {
+      "type": "cdk:tree",
+      "properties": {
+        "file": "tree.json"
+      }
+    }
+  },
+  "minimumCliVersion": "2.1019.2"
+}

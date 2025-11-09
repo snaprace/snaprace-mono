@@ -17,7 +17,14 @@ export const metadata: Metadata = {
   title: "SnapRace - Find Your Race Photos",
   description:
     "Easily find and download your race photos using your bib number. Powered by Millennium Running.",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
+  icons: [
+    {
+      rel: "icon",
+      url: "/images/snaprace-logo-icon-only.svg",
+      type: "image/svg+xml",
+    },
+    { rel: "icon", url: "/favicon.ico", sizes: "any" },
+  ],
   openGraph: {
     title: "SnapRace - Find Your Race Photos",
     description:
