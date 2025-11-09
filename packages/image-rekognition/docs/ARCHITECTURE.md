@@ -79,10 +79,23 @@
 
 ```
 s3://snaprace-images-{stage}/
-├── raw/                          # 원본 이미지 업로드 위치
-│   └── {org-id}/{event-id}/{original-filename}
-└── processed/                    # 전처리 완료 이미지
-    └── {org-id}/{event-id}/{ulid}.jpg
+├── {organizerId}/
+│   └── {eventId}/
+│       ├── raw/                    # 원본 이미지 업로드 위치
+│       │   └── {original-filename}
+│       └── processed/              # 전처리 완료 이미지
+│           └── {ulid}.jpg
+
+예시:
+s3://snaprace-images-prod/
+├── snaprace-kr/
+│   └── seoul-marathon-2024/
+│       ├── raw/
+│       │   ├── IMG_1234.jpg
+│       │   └── IMG_1235.jpg
+│       └── processed/
+│           ├── 01HXY8FWZM5KJQD9K3Y6R8NZTP.jpg
+│           └── 01HXY8FWZM5KJQD9K3Y6R8NZUQ.jpg
 ```
 
 #### 구성
@@ -94,16 +107,10 @@ new s3.Bucket(this, 'ImageRekognitionBucket', {
   encryption: s3.BucketEncryption.S3_MANAGED,
   intelligentTieringConfigurations: [
     {
-      name: 'RawImagesArchival',
-      prefix: 'raw/',
+      name: 'ArchiveConfiguration',
+      // prefix 없음 = 전체 버킷에 적용
       archiveAccessTierTime: cdk.Duration.days(90), // 90일 후 Archive Access Tier
       deepArchiveAccessTierTime: cdk.Duration.days(180) // 180일 후 Deep Archive Access Tier
-    },
-    {
-      name: 'ProcessedImagesOptimization',
-      prefix: 'processed/'
-      // Frequent/Infrequent Access Tier만 사용 (Archive 미사용)
-      // 30일 미접근 시 자동으로 Infrequent Access로 이동
     }
   ],
   lifecycleRules: [
@@ -133,9 +140,12 @@ new s3.Bucket(this, 'ImageRekognitionBucket', {
 
 ```typescript
 bucket.addEventNotification(s3.EventType.OBJECT_CREATED, new s3n.SqsDestination(imageUploadQueue), {
-  prefix: 'raw/',
+  // prefix 없음 = 모든 업로드 이벤트 캐치 (SFN Trigger Lambda에서 필터링)
   suffix: '.jpg' | '.jpeg' | '.png' | '.heic'
 })
+
+// 또는 특정 조직의 이벤트만 처리하는 경우
+// prefix: 'snaprace-kr/' 등으로 제한 가능
 ```
 
 #### S3 Intelligent-Tiering 상세
@@ -174,16 +184,16 @@ S3 Intelligent-Tiering은 객체 액세스 패턴을 자동으로 모니터링�
 
 **본 프로젝트 전략**:
 
-1. **`raw/` 원본 이미지**:
-   - 즉시 Intelligent-Tiering 적용
-   - 90일 후 Archive Access Tier로 자동 이동
-   - 180일 후 Deep Archive Access Tier로 자동 이동
-   - 원본 보관하되 비용 최소화
+1. **전체 버킷에 Intelligent-Tiering 적용**:
+   - 업로드 즉시 Intelligent-Tiering으로 전환
+   - 30일 미접근 시 자동으로 Infrequent Access Tier 이동
+   - 90일 미접근 시 Archive Access Tier 이동
+   - 180일 미접근 시 Deep Archive Access Tier 이동
 
-2. **`processed/` 전처리 이미지**:
-   - 즉시 Intelligent-Tiering 적용
-   - Frequent/Infrequent Access Tier만 사용
-   - 자주 액세스되는 이미지는 빠른 성능 유지
+2. **조직/이벤트별 자동 분리**:
+   - 경로: `{organizerId}/{eventId}/raw/` 및 `.../processed/`
+   - 각 이벤트별로 독립적인 액세스 패턴 추적
+   - 원본(raw)은 장기 보관, 전처리(processed)는 자주 접근
 
 **비용 비교** (100GB, 1년 기준):
 
@@ -290,11 +300,11 @@ stateMachine.grantStartExecution(sfnTrigger)
 **리소스명**: `PreprocessFunction`
 
 ```typescript
-const preprocessFn = new lambda.Function(this, 'PreprocessFunction', {
+const preprocessFn = new lambda.NodejsFunction(this, 'PreprocessFunction', {
   runtime: lambda.Runtime.NODEJS_20_X,
   handler: 'index.handler',
   code: lambda.Code.fromAsset('src/preprocess'),
-  memorySize: 2048, // Sharp.js는 메모리 사용량이 높음
+  memorySize: 2048, // Sharp는 메모리 사용량이 높음
   timeout: cdk.Duration.minutes(5),
   environment: {
     BUCKET_NAME: bucket.bucketName,
@@ -302,10 +312,25 @@ const preprocessFn = new lambda.Function(this, 'PreprocessFunction', {
     MAX_HEIGHT: '4096',
     JPEG_QUALITY: '90'
   },
-  layers: [
-    // Sharp layer (ARM64 optimized)
-    lambda.LayerVersion.fromLayerVersionArn(this, 'SharpLayer', 'arn:aws:lambda:ap-northeast-2:...:layer:sharp:...')
-  ]
+  bundling: {
+    externalModules: ['sharp'],
+    nodeModules: ['sharp'],
+    commandHooks: {
+      beforeBundling(): string[] {
+        return []
+      },
+      beforeInstall(): string[] {
+        return []
+      },
+      afterBundling(inputDir: string, outputDir: string): string[] {
+        return [
+          `cd ${outputDir}`,
+          // Lambda 환경용 Sharp 바이너리 자동 설치
+          'rm -rf node_modules/sharp && npm install --cpu=arm64 --os=linux --libc=glibc sharp'
+        ]
+      }
+    }
+  }
 })
 
 bucket.grantReadWrite(preprocessFn)
