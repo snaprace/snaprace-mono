@@ -3,14 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { useSwipeable } from "react-swipeable";
-import {
-  X,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Share2,
-  Instagram,
-} from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Download, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -119,6 +112,8 @@ export function PhotoSingleView({
 
   const currentPhoto = photos[currentIndex];
   const filename = generatePhotoFilename(event ?? "", bibNumber, currentIndex);
+
+  console.log("currentPhoto", currentPhoto);
 
   const handleClose = useCallback(() => {
     onClose();
@@ -344,7 +339,41 @@ export function PhotoSingleView({
         {/* Mobile-specific bottom info */}
         {isMobile && (
           <div className="absolute right-0 bottom-0 left-0 bg-gradient-to-t from-gray-100/80 to-transparent p-4 text-center">
-            <p className="text-sm text-gray-600">{filename}</p>
+            <p className="text-sm text-gray-600">
+              {(() => {
+                const instagramId = extractInstagramId(currentPhoto);
+                if (instagramId) {
+                  // Extract actual filename from URL
+                  const urlFilename = decodeURIComponent(
+                    currentPhoto.split("/").pop() || "",
+                  );
+                  const atInstagram = `@${instagramId}`;
+
+                  // Check if filename contains @instagramId
+                  if (urlFilename.includes(atInstagram)) {
+                    const parts = urlFilename.split(atInstagram);
+
+                    return (
+                      <>
+                        {parts[0]}
+                        <a
+                          href={getInstagramProfileUrl(instagramId)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-block text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          {atInstagram}
+                        </a>
+                        {parts[1]}
+                      </>
+                    );
+                  }
+                  return urlFilename;
+                }
+                return filename;
+              })()}
+            </p>
           </div>
         )}
 
