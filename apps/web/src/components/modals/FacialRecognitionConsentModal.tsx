@@ -75,7 +75,10 @@ export function FacialRecognitionConsentModal({
             >
               Privacy Policy
             </Link>
-            .
+            .<br />
+            Photos are for personal use only — no commercial use allowed.
+            <br />
+            Please credit photographers when sharing.
           </DialogDescription>
         </DialogHeader>
 

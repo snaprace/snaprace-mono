@@ -130,7 +130,7 @@ optimized_count=0
 skipped_count=0
 
 
-find . -maxdepth 1 -type f -iregex ".*\.\(jpg\|jpeg\)" -print0 | while IFS= read -r -d $'\0' file; do
+find . -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" \) -print0 | while IFS= read -r -d $'\0' file; do
   # 파일명에서 ./ 접두사 제거
   file="${file#./}"
   

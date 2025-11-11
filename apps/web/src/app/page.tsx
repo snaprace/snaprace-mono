@@ -49,15 +49,13 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="bg-background relative px-4 py-20 sm:py-32">
         <div className="container mx-auto max-w-4xl text-center">
-          <h1 className="text-foreground mb-6 text-3xl font-medium tracking-tight whitespace-pre-wrap sm:text-4xl md:text-5xl">
-            {org.subdomain
-              ? `${org.name}\nEvent Photos`
-              : "Find Your Event Photos"}
+          <h1 className="text-foreground mb-12 text-3xl font-medium tracking-tight whitespace-pre-wrap sm:text-4xl md:text-5xl">
+            {org.subdomain ? `${org.name}\nEvent Photos` : "Find your snap"}
           </h1>
 
-          <p className="text-muted-foreground mx-auto mb-16 max-w-xl text-lg">
+          {/* <p className="text-muted-foreground mx-auto mb-16 max-w-xl text-lg">
             {org.welcomeMessage}
-          </p>
+          </p> */}
 
           {/* Main Search */}
           <div className="mx-auto max-w-xl">

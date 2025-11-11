@@ -10,7 +10,7 @@ export function Footer() {
   return (
     <section className="bg-muted/10 mt-auto border-t">
       <div className="mx-auto w-full max-w-6xl px-4 py-3 sm:py-4">
-        <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+        <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
           <div className="text-muted-foreground flex flex-wrap items-center gap-3 text-[10px] sm:text-xs">
             <Link
               href="/privacy-policy"
@@ -36,7 +36,7 @@ export function Footer() {
           </div>
 
           {org.partners.length > 0 && (
-            <div className="flex max-w-full items-center justify-center gap-3 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:justify-end">
+            <div className="flex max-w-full items-center justify-center gap-3 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {org.partners.map((partner) => (
                 <Link
                   key={partner.id}
@@ -51,7 +51,7 @@ export function Footer() {
                       alt={partner.name}
                       width={120}
                       height={32}
-                      className="max-h-8 w-auto object-contain opacity-70 transition-all duration-200 group-hover:opacity-100 group-hover:scale-105"
+                      className="max-h-8 w-auto object-contain opacity-70 transition-all duration-200 group-hover:scale-105 group-hover:opacity-100"
                       sizes="120px"
                     />
                   </div>
