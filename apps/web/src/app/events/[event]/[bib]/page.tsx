@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useCallback, useState } from "react";
+import { useMemo, useRef, useCallback, useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,38 @@ import {
 import { useOrganizationHelper } from "@/hooks/useOrganizationHelper";
 import Link from "next/link";
 import { RunnerSpotlight } from "./_components/RunnerSpotlight";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Camera } from "lucide-react";
+
+// 사진 URL에서 작가명 추출
+function extractPhotographer(photoUrl: string): string | null {
+  // URL 패턴: .../raw/@photographer-number.jpg
+  const match = photoUrl.match(/@([^-]+)-\d+\.(jpg|jpeg|png)/i);
+  return match?.[1] ?? null;
+}
+
+// 작가별로 사진 그룹화
+function groupPhotosByPhotographer(photos: string[]): Record<string, string[]> {
+  const grouped: Record<string, string[]> = {};
+
+  photos.forEach((photo) => {
+    const photographer = extractPhotographer(photo);
+    if (photographer) {
+      if (!grouped[photographer]) {
+        grouped[photographer] = [];
+      }
+      grouped[photographer].push(photo);
+    }
+  });
+
+  return grouped;
+}
 
 export default function EventPhotoPage() {
   const router = useRouter();
@@ -47,6 +79,8 @@ export default function EventPhotoPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
+  const [selectedPhotographer, setSelectedPhotographer] =
+    useState<string>("all");
 
   const org = useOrganizationHelper();
   const partners = org.partners;
@@ -339,6 +373,16 @@ export default function EventPhotoPage() {
       ? galleryQuery.data.selfie_enhanced
       : false;
 
+  // selfie 검색이 활성화되어 있는지 확인
+  const hasSelfieResults = selfieEnhanced || selfieMatchedCount > 0;
+
+  // selfie 검색 결과가 있으면 작가 필터 초기화
+  useEffect(() => {
+    if (hasSelfieResults && selectedPhotographer !== "all") {
+      setSelectedPhotographer("all");
+    }
+  }, [hasSelfieResults, selectedPhotographer]);
+
   const displayedPhotos = useMemo(() => {
     // selfie 검색 중일 때는 기존 photos를 계속 표시 (깜빡임 방지)
     if (isProcessing || galleryQuery.isFetching) {
@@ -374,7 +418,38 @@ export default function EventPhotoPage() {
     galleryQuery.isFetching,
   ]);
 
-  const displayedPhotoCount = displayedPhotos.length;
+  // 작가별로 사진 그룹화
+  const photosByPhotographer = useMemo(() => {
+    if (!isAllPhotos) return null;
+    return groupPhotosByPhotographer(displayedPhotos);
+  }, [displayedPhotos, isAllPhotos]);
+
+  // 작가 목록 (사진 수 기준 정렬)
+  const photographers = useMemo(() => {
+    if (!photosByPhotographer) return [];
+    return Object.entries(photosByPhotographer)
+      .map(([name, photos]) => ({ name, count: photos.length }))
+      .sort((a, b) => b.count - a.count);
+  }, [photosByPhotographer]);
+
+  // 선택된 작가에 따라 필터링된 사진
+  const filteredPhotos = useMemo(() => {
+    if (
+      !isAllPhotos ||
+      !photosByPhotographer ||
+      selectedPhotographer === "all"
+    ) {
+      return displayedPhotos;
+    }
+    return photosByPhotographer[selectedPhotographer] || [];
+  }, [
+    displayedPhotos,
+    photosByPhotographer,
+    selectedPhotographer,
+    isAllPhotos,
+  ]);
+
+  const displayedPhotoCount = filteredPhotos.length;
 
   const hasError =
     eventQuery.error || galleryQuery.error || allPhotosQuery.error;
@@ -550,13 +625,62 @@ export default function EventPhotoPage() {
         </div>
       )}
 
+      {/* Photographer Filter - Only for All Photos (숨김: selfie 검색 중/결과 있을 때) */}
+      {isAllPhotos && photographers.length > 1 && !hasSelfieResults && (
+        <div className="container mx-auto mt-4 px-[4px] md:mt-6 md:px-4">
+          <div className="flex items-center gap-2">
+            <Select
+              value={selectedPhotographer}
+              onValueChange={setSelectedPhotographer}
+            >
+              <SelectTrigger className="bg-background border-border w-full md:w-[280px]">
+                <SelectValue placeholder="Select photographer" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-medium">
+                      All Photographers
+                    </span>
+                    <span className="text-muted-foreground text-xs">
+                      {displayedPhotos.length}
+                    </span>
+                  </div>
+                </SelectItem>
+                {photographers.map((photographer) => (
+                  <SelectItem key={photographer.name} value={photographer.name}>
+                    <div className="flex items-center justify-between gap-3">
+                      <span>@{photographer.name}</span>
+                      <span className="text-muted-foreground text-xs">
+                        {photographer.count}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedPhotographer !== "all" && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setSelectedPhotographer("all")}
+                className="text-muted-foreground text-xs md:text-sm"
+              >
+                <span className="md:hidden">Clear</span>
+                <span className="hidden md:inline">Clear filter</span>
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Full-width Photo Grid */}
       <div className="mt-4 w-full px-[4px] sm:px-[20px]">
         {isLoading ? (
           <MasonryPhotoSkeleton />
-        ) : displayedPhotos.length > 0 ? (
+        ) : filteredPhotos.length > 0 ? (
           <InfinitePhotoGrid
-            photos={displayedPhotos}
+            photos={filteredPhotos}
             columnCount={columnCount}
             isMobile={isMobile}
             onPhotoClick={handlePhotoClick}
@@ -570,28 +694,6 @@ export default function EventPhotoPage() {
             onPhotoSelect={handlePhotoSelect}
           />
         ) : (
-          // isAllPhotos ? (
-          //   <InfinitePhotoGrid
-          //     photos={photos}
-          //     columnCount={columnCount}
-          //     isMobile={isMobile}
-          //     onPhotoClick={handlePhotoClick}
-          //     photoRefs={photoRefs}
-          //     event={event}
-          //     bibNumber={bibNumber}
-          //   />
-          // ) : (
-          //   <PhotoGrid
-          //     photos={photos}
-          //     columnCount={columnCount}
-          //     isMobile={isMobile}
-          //     onPhotoClick={handlePhotoClick}
-          //     photoRefs={photoRefs}
-          //     selfieMatchedSet={selfieMatchedSet}
-          //     event={event}
-          //     bibNumber={bibNumber}
-          //   />
-          // )
           <NoPhotosState
             isAllPhotos={isAllPhotos}
             bibNumber={bibNumber}
@@ -621,8 +723,8 @@ export default function EventPhotoPage() {
       <PhotoSingleView
         isOpen={isModalOpen}
         onClose={handleCloseSingleView}
-        photos={displayedPhotos}
-        currentIndex={Math.min(currentPhotoIndex, displayedPhotos.length - 1)}
+        photos={filteredPhotos}
+        currentIndex={Math.min(currentPhotoIndex, filteredPhotos.length - 1)}
         onIndexChange={handlePhotoIndexChange}
         event={event}
         bibNumber={bibNumber}
