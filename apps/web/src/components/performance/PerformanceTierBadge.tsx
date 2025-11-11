@@ -5,7 +5,6 @@ import {
   Trophy,
   Medal,
   Award,
-  ShieldCheck,
   Flag,
   CircleStar,
 } from "lucide-react";
@@ -102,7 +101,7 @@ export const PerformanceTierBadge = forwardRef<
     return null;
   }
 
-  const { icon: Icon, label, description, color, percentage } = tier;
+  const { icon: Icon, description, color, percentage } = tier;
 
   const formatted = new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 1,

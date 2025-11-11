@@ -21,7 +21,7 @@ interface EventLeaderboardProps {
 
 export function EventLeaderboard({
   eventId,
-  eventName,
+  eventName: _eventName,
   organizationId,
   highlightBib,
 }: EventLeaderboardProps) {

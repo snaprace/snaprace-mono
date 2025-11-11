@@ -47,12 +47,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Camera } from "lucide-react";
-
 // 사진 URL에서 작가명 추출
 function extractPhotographer(photoUrl: string): string | null {
   // URL 패턴: .../raw/@photographer-number.jpg
-  const match = photoUrl.match(/@([^-]+)-\d+\.(jpg|jpeg|png)/i);
+  const regex = /@([^-]+)-\d+\.(jpg|jpeg|png)/i;
+  const match = regex.exec(photoUrl);
   return match?.[1] ?? null;
 }
 
@@ -327,7 +326,7 @@ export default function EventPhotoPage() {
       fileInputRef.current.click();
     }
     trackSelfieRetry(event, bibNumber);
-  }, [reset]);
+  }, [reset, event, bibNumber]);
 
   const handleBibSearch = (e: React.FormEvent) => {
     e.preventDefault();

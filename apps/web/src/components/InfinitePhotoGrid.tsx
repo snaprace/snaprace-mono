@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { MasonryGrid } from "@egjs/grid";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
-import { Share2, Download, Check, Instagram } from "lucide-react";
+import { Share2, Download, Check } from "lucide-react";
 import { ShareDialog } from "@/components/ShareDialog";
 import { generatePhotoFilename } from "@/utils/photo";
 import { createDownloadClickHandler } from "@/utils/downloadClickHandler";
@@ -240,7 +240,7 @@ export function InfinitePhotoGrid({
                 const instagramId = extractInstagramId(url);
                 if (instagramId) {
                   return (
-                    <div className="absolute bottom-2 left-2 z-20">
+                    <div className="absolute bottom-1 left-1 z-20">
                       <a
                         href={getInstagramProfileUrl(instagramId)}
                         target="_blank"
@@ -248,7 +248,7 @@ export function InfinitePhotoGrid({
                         onClick={(e) => e.stopPropagation()}
                         className="inline-block"
                       >
-                        <div className="flex cursor-pointer items-center gap-1 rounded-full px-2 py-1 text-white shadow-sm transition-opacity hover:opacity-90">
+                        <div className="flex cursor-pointer items-center gap-1 rounded-full px-1 py-1 text-white shadow-sm transition-opacity hover:opacity-90">
                           <span className="text-xs font-medium">
                             @{instagramId}
                           </span>

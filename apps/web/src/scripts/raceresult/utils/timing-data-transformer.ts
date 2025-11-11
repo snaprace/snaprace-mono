@@ -407,7 +407,7 @@ export function transformContestData(
 
     // avg_pace (DataFields[8]) - 비어있으면 chip_time과 거리로 계산 (mile 기준)
     let avgPace = (row[8] ?? "") as string;
-    if (!avgPace || !avgPace.trim()) {
+    if (!avgPace?.trim()) {
       const distanceMiles = extractDistanceFromContestName(contestName);
       avgPace = calculatePaceFromTimeAndDistance(chipTime, distanceMiles);
     }

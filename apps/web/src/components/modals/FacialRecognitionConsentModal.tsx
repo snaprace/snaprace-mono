@@ -31,8 +31,8 @@ export function FacialRecognitionConsentModal({
   isOpen,
   onClose,
   onAgree,
-  onDeny,
-  eventName,
+  onDeny: _onDeny,
+  eventName: _eventName,
   isRequired = false,
 }: FacialRecognitionConsentModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -47,11 +47,6 @@ export function FacialRecognitionConsentModal({
     } finally {
       setIsProcessing(false);
     }
-  };
-
-  const handleDeny = () => {
-    onDeny?.();
-    onClose();
   };
 
   return (

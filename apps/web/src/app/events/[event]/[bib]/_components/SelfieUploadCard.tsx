@@ -20,7 +20,7 @@ interface SelfieUploadCardProps {
 }
 
 export function SelfieUploadCard({
-  bibNumber,
+  bibNumber: _bibNumber,
   disabled,
   isUploading,
   uploadedFile,

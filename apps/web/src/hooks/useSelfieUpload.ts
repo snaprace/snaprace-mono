@@ -183,8 +183,6 @@ export function useSelfieUpload({
       console.error("Selfie upload error:", error);
       setHasError(true);
       setIsProcessed(true);
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
       toast.error(
         "Failed to process selfie. Please try again with a different photo.",
       );
