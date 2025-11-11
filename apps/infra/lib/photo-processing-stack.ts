@@ -34,6 +34,17 @@ export class PhotoProcessingStack extends cdk.Stack {
       enforceSSL: true,
       removalPolicy,
       autoDeleteObjects: true,
+      cors: [
+        {
+          allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.HEAD],
+          allowedOrigins: [
+            "https://snap-race.com",
+            "https://www.snap-race.com",
+            "https://*.snap-race.com",
+            "http://localhost:3000", // 로컬 개발용
+          ],
+        },
+      ],
     });
 
     // ============================================================================
@@ -264,10 +275,7 @@ export class PhotoProcessingStack extends cdk.Stack {
       resultPath: "$",
     });
     indexFacesTask.addRetry({
-      errors: [
-        "ProvisionedThroughputExceededException",
-        "ThrottlingException",
-      ],
+      errors: ["ProvisionedThroughputExceededException", "ThrottlingException"],
       interval: Duration.seconds(2),
       backoffRate: 2.0,
       maxAttempts: 6,
@@ -292,7 +300,7 @@ export class PhotoProcessingStack extends cdk.Stack {
 
     // State Machine 생성
     const stateMachine = new sfn.StateMachine(this, "PhotoProcessingStateMachine", {
-      stateMachineName: "photo-processing-workflow",
+      stateMachineName: "photo-processing-workflow-v2",
       definitionBody: DefinitionBody.fromChainable(definition),
       timeout: Duration.minutes(5),
       tracingEnabled: true,

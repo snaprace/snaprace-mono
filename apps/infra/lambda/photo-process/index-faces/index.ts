@@ -85,6 +85,8 @@ export async function handler(input: StepFunctionInput, context: Context): Promi
     await ensureCollectionExists(collectionId);
 
     // 5. IndexFaces 호출
+    // / -> :, @ -> _ 변환 (Rekognition이 /와 @를 허용하지 않음)
+    // 복원 시: : -> /, 파일명 첫 문자 _ -> @
     const externalImageId = sanitizeExternalImageId(input.objectKey);
 
     const indexResult = await indexFaces(
