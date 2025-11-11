@@ -135,8 +135,6 @@ export function useSelfieUpload({
           (photo) => !existingSet.has(photo),
         );
 
-        console.log("uniqueSelfieMatchedPhotos", uniqueSelfieMatchedPhotos);
-
         setIsProcessed(true);
 
         if (uniqueSelfieMatchedPhotos.length > 0) {
