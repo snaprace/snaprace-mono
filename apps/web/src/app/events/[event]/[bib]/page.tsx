@@ -340,6 +340,12 @@ export default function EventPhotoPage() {
       : false;
 
   const displayedPhotos = useMemo(() => {
+    // selfie 검색 중일 때는 기존 photos를 계속 표시 (깜빡임 방지)
+    if (isProcessing || galleryQuery.isFetching) {
+      return photos;
+    }
+
+    // selfie 검색 완료 후 결과 표시
     if (
       faceSearchOnly &&
       isAllPhotos &&
@@ -364,6 +370,8 @@ export default function EventPhotoPage() {
     response?.selfie_matched_photos,
     selfieEnhanced,
     photos,
+    isProcessing,
+    galleryQuery.isFetching,
   ]);
 
   const displayedPhotoCount = displayedPhotos.length;
