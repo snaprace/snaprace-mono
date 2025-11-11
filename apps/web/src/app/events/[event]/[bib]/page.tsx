@@ -1,6 +1,13 @@
 "use client";
 
-import { useMemo, useRef, useCallback, useState, useEffect } from "react";
+import {
+  useMemo,
+  useRef,
+  useCallback,
+  useState,
+  useEffect,
+  startTransition,
+} from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -417,7 +424,7 @@ export default function EventPhotoPage() {
     galleryQuery.isFetching,
   ]);
 
-  // 작가별로 사진 그룹화
+  // 작가별로 사진 그룹화 (메모이제이션 최적화)
   const photosByPhotographer = useMemo(() => {
     if (!isAllPhotos) return null;
     return groupPhotosByPhotographer(displayedPhotos);
@@ -431,21 +438,23 @@ export default function EventPhotoPage() {
       .sort((a, b) => b.count - a.count);
   }, [photosByPhotographer]);
 
-  // 선택된 작가에 따라 필터링된 사진
+  // 선택된 작가에 따라 필터링된 사진 (최적화: 조건문 순서 개선)
   const filteredPhotos = useMemo(() => {
+    // 빠른 경로: 필터 없음
     if (
+      selectedPhotographer === "all" ||
       !isAllPhotos ||
-      !photosByPhotographer ||
-      selectedPhotographer === "all"
+      !photosByPhotographer
     ) {
       return displayedPhotos;
     }
+    // 필터 적용
     return photosByPhotographer[selectedPhotographer] || [];
   }, [
-    displayedPhotos,
-    photosByPhotographer,
     selectedPhotographer,
     isAllPhotos,
+    photosByPhotographer,
+    displayedPhotos,
   ]);
 
   const displayedPhotoCount = filteredPhotos.length;
@@ -630,19 +639,24 @@ export default function EventPhotoPage() {
           <div className="flex items-center gap-2">
             <Select
               value={selectedPhotographer}
-              onValueChange={setSelectedPhotographer}
+              onValueChange={(value) => {
+                // startTransition을 사용하여 UI 업데이트를 논블로킹으로 처리
+                startTransition(() => {
+                  setSelectedPhotographer(value);
+                });
+              }}
             >
               <SelectTrigger className="bg-background border-border w-full md:w-[280px]">
                 <SelectValue placeholder="Select photographer" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-medium">
                       All Photographers
                     </span>
                     <span className="text-muted-foreground text-xs">
-                      {displayedPhotos.length}
+                      ({displayedPhotos.length})
                     </span>
                   </div>
                 </SelectItem>
@@ -651,7 +665,7 @@ export default function EventPhotoPage() {
                     <div className="flex items-center justify-between gap-3">
                       <span>@{photographer.name}</span>
                       <span className="text-muted-foreground text-xs">
-                        {photographer.count}
+                        ({photographer.count})
                       </span>
                     </div>
                   </SelectItem>
@@ -662,7 +676,12 @@ export default function EventPhotoPage() {
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => setSelectedPhotographer("all")}
+                onClick={() => {
+                  // startTransition을 사용하여 UI 업데이트를 논블로킹으로 처리
+                  startTransition(() => {
+                    setSelectedPhotographer("all");
+                  });
+                }}
                 className="text-muted-foreground text-xs md:text-sm"
               >
                 <span className="md:hidden">Clear</span>

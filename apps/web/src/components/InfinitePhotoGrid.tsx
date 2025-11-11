@@ -139,7 +139,10 @@ export function InfinitePhotoGrid({
   useEffect(() => {
     const initialByColumns = columnCount * PER_COLUMN_INITIAL_ROWS;
     const initial = Math.max(MIN_INITIAL_BATCH, initialByColumns);
-    setVisibleCount(Math.min(initial, photos.length));
+    const newVisibleCount = Math.min(initial, photos.length);
+
+    // 부드러운 전환을 위해 상태 업데이트 최적화
+    setVisibleCount(newVisibleCount);
   }, [photos.length, columnCount]);
 
   // IntersectionObserver to load more
@@ -179,7 +182,12 @@ export function InfinitePhotoGrid({
 
   // Render only visible photos, but keep global index
   const items = useMemo(() => {
-    return photos.slice(0, visibleCount).map((url, i) => ({ url, index: i }));
+    return photos.slice(0, visibleCount).map((url, i) => ({
+      url,
+      index: i,
+      // 고유한 key 생성: URL을 기반으로 하되 인덱스도 포함하여 중복 방지
+      key: `${url}-${i}`,
+    }));
   }, [photos, visibleCount]);
 
   return (
@@ -189,9 +197,9 @@ export function InfinitePhotoGrid({
         className="grid-container w-full"
         style={{ minHeight: "100vh" }}
       >
-        {items.map(({ url, index }) => (
+        {items.map(({ url, index, key }) => (
           <div
-            key={index}
+            key={key}
             ref={(el) => setPhotoRef(el, index)}
             className="cursor-pointer"
             onClick={() => {

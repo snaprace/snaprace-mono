@@ -351,22 +351,16 @@ export function PhotoSingleView({
 
                   // Check if filename contains @instagramId
                   if (urlFilename.includes(atInstagram)) {
-                    const parts = urlFilename.split(atInstagram);
-
                     return (
-                      <>
-                        {parts[0]}
-                        <a
-                          href={getInstagramProfileUrl(instagramId)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-block text-blue-600 hover:text-blue-800 hover:underline"
-                        >
-                          {atInstagram}
-                        </a>
-                        {parts[1]}
-                      </>
+                      <a
+                        href={getInstagramProfileUrl(instagramId)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-block text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        {atInstagram}
+                      </a>
                     );
                   }
                   return urlFilename;
