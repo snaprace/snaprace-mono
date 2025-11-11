@@ -92,10 +92,28 @@ export function generateShareablePhotoUrl(
     legacyBaseUrl ||
     (typeof window !== "undefined" ? window.location.origin : "");
 
-  const url = new URL(`${base}/photo/${encodedId}`, base || "http://localhost");
-  const orgId = options?.organizerId ?? undefined;
   const evtId = options?.eventId ?? undefined;
   const bib = options?.bibNumber ?? undefined;
+
+  // If eventId is provided, use the canonical /events/{eventId}/{bib}?pid={photoId} format
+  if (evtId) {
+    const bibPath = bib && bib.length > 0 ? bib : "null";
+    const url = new URL(
+      `${base}/events/${evtId}/${bibPath}`,
+      base || "http://localhost",
+    );
+    url.searchParams.set("pid", encodedId);
+
+    // For server-side without a real base, return path with query string
+    if (!base) {
+      return `/events/${evtId}/${bibPath}?pid=${encodedId}`;
+    }
+    return url.toString();
+  }
+
+  // Fallback to /photo/{photoId} format for backward compatibility
+  const url = new URL(`${base}/photo/${encodedId}`, base || "http://localhost");
+  const orgId = options?.organizerId ?? undefined;
   if (orgId) url.searchParams.set("organizerId", orgId);
   if (evtId) url.searchParams.set("eventId", evtId);
   if (bib) url.searchParams.set("bibNumber", bib);
