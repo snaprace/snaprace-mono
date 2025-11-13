@@ -17,5 +17,7 @@ declare module "@/env" {
     AUTH_SECRET: string;
     AUTH_URL?: string;
     CRISP_WEBSITE_ID: string;
+    GOOGLE_ANALYTICS_ID?: string;
+    NEXT_PUBLIC_SITE_URL: string;
   };
 }

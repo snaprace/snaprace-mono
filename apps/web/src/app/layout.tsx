@@ -12,19 +12,13 @@ import { Toaster } from "@/components/ui/sonner";
 import ClarityInit from "@/components/analytics/ClarityInit";
 import { getOrganizationBySubdomain } from "@/lib/server-organization";
 import Script from "next/script";
+import { env } from "@/env";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(env.NEXT_PUBLIC_SITE_URL),
   title: "SnapRace - Find Your Race Photos",
   description:
-    "Easily find and download your race photos using your bib number. Powered by Millennium Running.",
-  icons: [
-    {
-      rel: "icon",
-      url: "/images/snaprace-logo-icon-only.svg",
-      type: "image/svg+xml",
-    },
-    { rel: "icon", url: "/favicon.ico", sizes: "any" },
-  ],
+    "Easily find and download your race photos using your bib number.",
   openGraph: {
     title: "SnapRace - Find Your Race Photos",
     description:
@@ -33,6 +27,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: "/images/og-landing.png",
+        width: 1200,
+        height: 630,
         alt: "SnapRace - Find Your Race Photos",
       },
     ],
