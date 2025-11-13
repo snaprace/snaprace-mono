@@ -149,7 +149,7 @@ export class PhotoProcessingStack extends cdk.Stack {
 
       // Rekognition 설정
       MIN_FACE_CONFIDENCE: "90",
-      MAX_FACES_PER_PHOTO: "10",
+      MAX_FACES_PER_PHOTO: "15",
     };
 
     // ============================================================================
