@@ -54,6 +54,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 // 사진 URL에서 작가명 추출
 function extractPhotographer(photoUrl: string): string | null {
   // URL 패턴: .../raw/@photographer-number.jpg
@@ -191,6 +197,8 @@ export default function EventPhotoPage() {
     currentPhotoIndex,
     setClickedPhotoRect,
   } = usePhotoState(photos);
+
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   const {
     selectedPhotos,
@@ -338,6 +346,7 @@ export default function EventPhotoPage() {
   const handleBibSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchBib.trim()) {
+      setIsSearchModalOpen(false); // 모달 닫기
       router.push(`/events/${event}/${searchBib.trim()}`);
     }
   };
@@ -513,34 +522,32 @@ export default function EventPhotoPage() {
               )}
             </div>
 
-            {!faceSearchOnly && (
-              <div className="w-10 md:w-auto">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="md:hidden"
-                  onClick={() => router.push("/")}
-                  aria-label="Open search"
-                >
-                  <Search className="h-4 w-4" />
+            <div className="w-10 md:w-auto">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                onClick={() => setIsSearchModalOpen(true)}
+                aria-label="Open search"
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+              <form
+                onSubmit={handleBibSearch}
+                className="hidden items-center gap-2 md:flex"
+              >
+                <Input
+                  type="text"
+                  placeholder="Enter bib"
+                  value={searchBib}
+                  onChange={(e) => setSearchBib(e.target.value)}
+                  className="w-[100px] border border-gray-200"
+                />
+                <Button type="submit" size="sm" disabled={!searchBib.trim()}>
+                  <Search />
                 </Button>
-                <form
-                  onSubmit={handleBibSearch}
-                  className="hidden items-center gap-2 md:flex"
-                >
-                  <Input
-                    type="text"
-                    placeholder="Enter bib"
-                    value={searchBib}
-                    onChange={(e) => setSearchBib(e.target.value)}
-                    className="w-[100px] border border-gray-200"
-                  />
-                  <Button type="submit" size="sm" disabled={!searchBib.trim()}>
-                    <Search />
-                  </Button>
-                </form>
-              </div>
-            )}
+              </form>
+            </div>
           </div>
         </div>
       </div>
@@ -720,17 +727,6 @@ export default function EventPhotoPage() {
         )}
       </div>
 
-      {/* Feedback Section - Only for specific bib */}
-      {/* {!isAllPhotos && bibNumber && photos.length > 0 && (
-        <section className="container mx-auto px-1 py-8">
-          <FeedbackSection
-            eventId={event}
-            bibNumber={bibNumber}
-            eventName={eventQuery.data?.event_name || ""}
-          />
-        </section>
-      )} */}
-
       <section className="bg-muted/20 mt-auto border-t px-4 py-4">
         <div className="text-muted-foreground text-center text-xs">
           <p>© {new Date().getFullYear()} SnapRace. All rights reserved.</p>
@@ -765,6 +761,35 @@ export default function EventPhotoPage() {
         onDeny={handleConsentDeny}
         eventName={eventQuery.data?.event_name}
       />
+
+      {/* Mobile Bib Search Modal */}
+      <Dialog open={isSearchModalOpen} onOpenChange={setIsSearchModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Search by Bib Number</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleBibSearch} className="space-y-4">
+            <Input
+              type="text"
+              placeholder="Enter bib number"
+              value={searchBib}
+              onChange={(e) => setSearchBib(e.target.value)}
+              className="bg-background border-border w-full text-sm"
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <Button
+                type="submit"
+                className="flex-1"
+                disabled={!searchBib.trim()}
+              >
+                <Search className="h-5 w-5" />
+                Search
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

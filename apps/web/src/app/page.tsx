@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Search, Trophy } from "lucide-react";
+import { Calendar, Images, Search, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,8 +49,8 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="bg-background relative px-4 py-20 sm:py-32">
         <div className="container mx-auto max-w-4xl text-center">
-          <h1 className="text-foreground mb-12 text-3xl font-medium tracking-tight whitespace-pre-wrap sm:text-4xl md:text-5xl">
-            {org.subdomain ? `${org.name}\nEvent Photos` : "Find your snap!"}
+          <h1 className="text-foreground mb-12 text-3xl font-semibold tracking-tight whitespace-pre-wrap sm:text-4xl md:text-5xl">
+            {org.subdomain ? `${org.name}\nEvent Photos` : "Find your snap"}
           </h1>
 
           {/* <p className="text-muted-foreground mx-auto mb-16 max-w-xl text-lg">
@@ -102,46 +102,43 @@ export default function HomePage() {
               )}
 
               {/* Bib Number Input */}
-              {!faceSearchOnly && (
-                <div className="space-y-2">
-                  <label className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
-                    <Search className="h-4 w-4" />
-                    Bib Number
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder="Enter your bib number (e.g., 1234)"
-                    value={bibNumber}
-                    onChange={(e) => setBibNumber(e.target.value)}
-                    disabled={events.length === 0}
-                    className="bg-background border-border h-14 text-sm font-medium md:text-lg"
-                    style={{
-                      fontSize: "14px",
-                    }}
-                  />
-                </div>
-              )}
 
-              {!faceSearchOnly && (
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground h-14 w-full border-0 text-lg font-medium shadow-none"
-                  disabled={!bibNumber.trim() || !selectedEventId}
-                >
-                  <Search className="mr-2 h-5 w-5" />
-                  Find My Photos
-                </Button>
-              )}
+              <div className="space-y-2">
+                <label className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
+                  <Search className="h-4 w-4" />
+                  Bib Number
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Enter your bib number (e.g., 1234)"
+                  value={bibNumber}
+                  onChange={(e) => setBibNumber(e.target.value)}
+                  disabled={events.length === 0}
+                  className="bg-background border-border h-14 text-sm font-medium md:text-lg"
+                  style={{
+                    fontSize: "14px",
+                  }}
+                />
+              </div>
+
+              <Button
+                type="submit"
+                size="lg"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground h-14 w-full border-0 text-lg font-medium shadow-none"
+                disabled={!bibNumber.trim() || !selectedEventId}
+              >
+                <Search className="mr-2 h-5 w-5" />
+                Find My Photos
+              </Button>
 
               {faceSearchOnly && (
                 <Button
                   type="submit"
                   size="lg"
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground h-14 w-full border-0 text-lg font-medium shadow-none"
+                  className="bg-secondary hover:bg-secondary/90 text-secondary-foreground h-14 w-full border-0 text-lg font-medium shadow-none"
                   onClick={() => router.push(`/events/${selectedEventId}/null`)}
                 >
-                  <Search className="mr-2 h-5 w-5" />
+                  <Images className="mr-2 h-5 w-5" />
                   Go to All Photos
                 </Button>
               )}
@@ -154,7 +151,8 @@ export default function HomePage() {
                   variant="outline"
                   // disabled={!bibNumber.trim() || !selectedEventId}
                 >
-                  Go to Event!
+                  <Calendar className="mr-2 h-5 w-5" />
+                  Go to Event
                 </Button>
               )}
             </form>

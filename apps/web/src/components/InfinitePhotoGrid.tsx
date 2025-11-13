@@ -59,9 +59,9 @@ export function InfinitePhotoGrid({
     isMobile && columnCount === 2 ? MOBILE_TWO_COLUMN_GAP_PX : DEFAULT_GAP_PX;
 
   // Tune batch sizes
-  const MIN_INITIAL_BATCH = 40;
-  const PER_COLUMN_INITIAL_ROWS = 12; // rows per column initially
-  const LOAD_MORE_BATCH = 60;
+  const MIN_INITIAL_BATCH = 30;
+  const PER_COLUMN_INITIAL_ROWS = 10; // rows per column initially
+  const LOAD_MORE_BATCH = 30;
 
   // Track container width
   useEffect(() => {
@@ -162,7 +162,7 @@ export function InfinitePhotoGrid({
           setTimeout(() => setIsLoadingMore(false), 0);
         }
       },
-      { root: null, rootMargin: "400px 0px", threshold: 0 },
+      { root: null, rootMargin: "200px 0px", threshold: 0 },
     );
 
     observer.observe(sentinelRef.current);
