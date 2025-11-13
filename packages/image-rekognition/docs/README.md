@@ -1,173 +1,208 @@
-# Image Rekognition CDK 프로젝트
+# README.md
 
-## 📋 개요
+# SnapRace Photo Platform
 
-본 프로젝트는 마라톤/달리기 대회 사진을 자동으로 분석하여 참가자별로 분류하는 이미지 인식 시스템입니다.
+SnapRace는 러닝/레이스 이벤트의 **사진 업로드 → 자동 분석 → 갤러리 제공 → bib/selfie/photographer 검색**까지 전 과정을 자동화하는 플랫폼입니다.
 
-### 핵심 기능
+이 문서는 SnapRace 백엔드 시스템 전체 구조를 한눈에 파악할 수 있도록 설계 개요를 제공합니다.
 
-1. **이미지 전처리**: 원본 이미지를 표준화하고 최적화
-2. **BIB 번호 검출**: AWS Rekognition Text Detection으로 배번 인식
-3. **얼굴 인덱싱**: AWS Rekognition Face Collection으로 얼굴 등록
-4. **메타데이터 저장**: DynamoDB에 검색 가능한 형태로 저장
+---
 
-### 주요 기술 스택
+# 📌 주요 기능
 
-- **Infrastructure**: AWS CDK (TypeScript)
-- **Orchestration**: AWS Step Functions
-- **Image Processing**: AWS Lambda + Sharp.js
-- **AI/ML**: AWS Rekognition (DetectText, IndexFaces)
-- **Storage**: Amazon S3, DynamoDB
-- **Decoupling**: Amazon SQS
+## 🏞️ 사진 업로드 & 자동 처리
+- Photographer 또는 Organizer가 S3로 사진 업로드
+- 이미지 업로드 시 S3 메타데이터로 photographer-id 전달 가능
+- 업로드 후 자동으로 이미지 처리 파이프라인 실행 (전처리 + 분석)
 
-## 🏗️ 전체 워크플로우
+## 🔍 사진 분석 (BIB / Face)
+- AWS Rekognition DetectText → bib 자동 인식
+- AWS Rekognition IndexFaces → 얼굴 기반 검색 지원
+- 여러 BIB 검출, 여러 얼굴 검출 모두 지원
 
-```
-[사진 업로드]
-    ↓
-[S3: raw/] → [S3 Event] → [SQS Queue]
-    ↓
-[Lambda: SFN Trigger]
-    ↓
-[Step Functions] ← 전체 오케스트레이션
-    ↓
-    ├─ Step 1: [Lambda: Preprocess]
-    │   └─ ULID 생성, 리사이징, 포맷 변환
-    │   └─ 저장: S3 processed/{ulid}.jpg
-    ↓
-    ├─ Step 2: [Parallel 병렬 실행]
-    │   ├─ [Lambda: Detect Text] → BIB 번호 추출
-    │   └─ [Lambda: Index Faces] → 얼굴 등록
-    ↓
-    └─ Step 3: [Lambda: Fanout DynamoDB]
-        ├─ PHOTO 아이템 저장 (원본 메타데이터)
-        └─ BIB_INDEX 아이템 N개 저장 (BIB별 색인)
-```
+## ⚡ 고성능 이미지 검색
+- **BIB 검색**  
+- **Photographer별 갤러리**  
+- **이벤트 전체 사진 조회**  
+- **Selfie(얼굴) 검색**  
 
-## 📁 프로젝트 구조
+DynamoDB 단일 테이블 + GSI1/GSI2 구조로 모든 조회는 **Query 1번**으로 해결.
 
-```
-packages/image-rekognition/
-├── bin/
-│   └── image-rekognition.ts          # CDK 앱 엔트리포인트
-├── lib/
-│   └── image-rekognition-stack.ts    # 메인 스택 (인프라 정의)
-├── src/                               # Lambda 런타임 코드
-│   ├── preprocess/                    # 전처리 Lambda
-│   │   └── index.ts
-│   ├── detect-text/                   # BIB 검출 Lambda
-│   │   └── index.ts
-│   ├── index-faces/                   # 얼굴 인덱싱 Lambda
-│   │   └── index.ts
-│   ├── fanout-dynamodb/               # DynamoDB 저장 Lambda
-│   │   └── index.ts
-│   └── sfn-trigger/                   # Step Functions 트리거 Lambda
-│       └── index.ts
-├── docs/                              # 설계 문서
-│   ├── README.md                      # 이 파일
-│   ├── ARCHITECTURE.md                # 아키텍처 상세
-│   ├── LAMBDA_FUNCTIONS.md            # Lambda 구현 스펙
-│   ├── DYNAMODB_SCHEMA.md             # DynamoDB 스키마
-│   └── DEPLOYMENT.md                  # 배포 가이드
-├── test/
-│   └── image-rekognition.test.ts
-├── package.json
-└── tsconfig.json
+## 🏁 이벤트 & 러너 정보 관리 (RDB)
+- organizers / events / event_runners 관리
+- 사진-only 이벤트(`PHOTOS_ONLY`) 또는 결과+사진(`RESULTS_AND_PHOTOS`) 모두 지원
+- photographer 프로필 및 event_photographers 매핑 관리
+
+## 📤 이미지 서빙
+- CloudFront CDN으로 전처리된 이미지 서빙
+- `processed/` 이미지는 항상 웹 최적화된 상태
+
+---
+
+# 🏗️ 전체 아키텍처
+
+전체 아키텍처는 **RDB Truth Layer + DynamoDB Read Layer + Step Functions 파이프라인** 조합으로 구성됩니다.
+
+```mermaid
+flowchart LR
+    Uploader -->|S3 Upload| S3[(S3 Bucket)]
+    S3 --> SQS[SQS ImageUpload]
+    SQS --> L0[Lambda
+    SFN Trigger]
+    L0 --> SFN[Step Functions
+    ImageProcessingWorkflow]
+
+    SFN --> L1[Lambda
+    Preprocess]
+    SFN --> L2a[Lambda
+    DetectText]
+    SFN --> L2b[Lambda
+    IndexFaces]
+    SFN --> L3[Lambda
+    Fanout DynamoDB]
+
+    L3 --> DDB[(DynamoDB
+    PhotoService)]
+    L3 -.-> RDB[(PostgreSQL
+    Truth Layer)]
+
+    Viewer --> API --> DDB
+    API --> RDB
 ```
 
-## 🚀 빠른 시작
+---
 
-### 1. 의존성 설치
+# 🔧 구성 요소
 
-```bash
-npm install
+## 1) RDB (PostgreSQL / Supabase)
+Truth Layer
+- organizers
+- events (`display_mode`, `results_integration`, `photos_meta` 포함)
+- event_runners
+- photographers
+- event_photographers (N:N)
+
+📄 세부 문서 → `RDB_SCHEMA.md`
+
+---
+
+## 2) DynamoDB (PhotoService)
+Read-Optimized Layer
+- PHOTO (사진 1장당 1개)
+- BIB_INDEX (bib별 인덱스)
+- **GSI1** – BIB 검색
+- **GSI2** – Photographer 검색
+
+📄 세부 문서 → `DYNAMODB_SCHEMA.md`
+
+---
+
+## 3) Lambda Functions
+- `SfnTriggerFunction`: S3 Event → SFN 시작 + photographerId 읽기
+- `PreprocessFunction`: 이미지 최적화 + processed 저장
+- `DetectTextFunction`: Rekognition DetectText
+- `IndexFacesFunction`: Rekognition IndexFaces + 컬렉션 생성
+- `FanoutDynamoDBFunction`: PHOTO + BIB_INDEX 생성, photographer denormalize
+
+📄 세부 문서 → `LAMBDA_FUNCTIONS.md`
+
+---
+
+## 4) Step Functions Workflow
+병렬 Rekognition 분석 + 최종 DynamoDB 저장
+
+📄 세부 문서 → `STEP_FUNCTIONS_WORKFLOW.md`
+
+---
+
+## 5) 이미지 서빙
+- CDN: CloudFront
+- S3 processed 경로에서 서빙
+- path 예시:
+```
+https://images.snap-race.com/{organizer}/{event}/processed/{ulid}.jpg
 ```
 
-### 2. 환경 변수 설정
+---
 
-CDK 컨텍스트 또는 환경 변수로 다음 값들을 설정합니다:
+# 📦 디렉토리 구조 (예시)
 
-```bash
-export AWS_REGION=ap-northeast-2
-export STAGE=dev
-export ORG_ID=your-org-id
-export EVENT_ID=your-event-id
+```
+/infra
+  /cdk
+  /lambda
+
+/backend
+  /api
+  /supabase
+  /rekognition
+
+/docs
+  - README.md
+  - ARCHITECTURE.md
+  - RDB_SCHEMA.md
+  - DYNAMODB_SCHEMA.md
+  - LAMBDA_FUNCTIONS.md
+  - STEP_FUNCTIONS_WORKFLOW.md
+  - DEPLOYMENT.md
+  - INDEX.md
 ```
 
-### 3. CDK 배포
+---
 
-```bash
-# 처음 배포하는 경우 (Bootstrap 필요)
-npx cdk bootstrap
+# 🚀 개발 플로우
 
-# 스택 배포
-npx cdk deploy
-```
+1. S3 presigned URL을 생성해 업로더에게 제공
+2. 사진 업로드 시 `x-amz-meta-photographer-id` 포함 가능
+3. 파이프라인 자동 실행 → DynamoDB 저장
+4. 프론트엔드는 API 통해 사진 목록 조회
 
-> 💡 **Rekognition Collection은 자동 생성됩니다**  
-> 첫 이미지 업로드 시 `{orgId}-{eventId}` 형식의 Collection이 자동으로 생성됩니다.  
-> 수동 생성이 필요하지 않습니다!
+---
 
-## 📚 상세 문서
+# 🪪 권한 및 보안
+- S3 업로드는 presigned URL 기반
+- Lambda 최소 권한 원칙 적용
+- SQS DLQ 구성
+- DynamoDB PITR(Point-in-Time Recovery) 활성화
+- Step Functions X-Ray tracing 활성화
 
-- [아키텍처 상세](./ARCHITECTURE.md) - 전체 시스템 아키텍처 및 AWS 리소스
-- [Lambda 함수 구현 스펙](./LAMBDA_FUNCTIONS.md) - 각 Lambda의 입출력 및 로직
-- [DynamoDB 스키마](./DYNAMODB_SCHEMA.md) - 테이블 설계 및 쿼리 패턴
-- [배포 및 운영](./DEPLOYMENT.md) - 배포, 모니터링, 트러블슈팅
+---
 
-## 🔑 핵심 설계 원칙
+# 🧪 로컬 테스트 전략
+- Lambda 개별 테스트 (localstack 또는 mock)
+- Step Functions ASL mock tester
+- DynamoDB write/read 테스트
+- S3 metadata 자동 파싱 테스트
 
-### 1. 안정성 (Reliability)
+---
 
-- **SQS 디커플링**: 대량 업로드 시 Step Functions 실행 한도 보호
-- **Step Functions 오케스트레이션**: 각 단계별 재시도 및 에러 핸들링
-- **멱등성**: 동일한 입력에 대해 여러 번 실행해도 안전
+# 📈 모니터링
+- CloudWatch Alarms: DLQ, SFN Fail, Lambda ErrorRate
+- SQS Queue Depth monitoring
+- DynamoDB Throttle 체크
 
-### 2. 확장성 (Scalability)
+---
 
-- **병렬 처리**: BIB 검출과 얼굴 인덱싱 동시 실행
-- **Lambda 자동 스케일링**: 트래픽에 따라 자동으로 확장
-- **SQS 버퍼링**: 대량 요청을 안정적으로 처리
+# 📚 참고 문서
+- ARCHITECTURE.md – 전체 아키텍처
+- RDB_SCHEMA.md – Truth Layer 스키마
+- DYNAMODB_SCHEMA.md – DynamoDB 설계
+- LAMBDA_FUNCTIONS.md – Lambda 함수 정의
+- STEP_FUNCTIONS_WORKFLOW.md – Step Functions 워크플로
+- DEPLOYMENT.md – 배포 가이드
+- INDEX.md – 문서 인덱스
 
-### 3. 비용 최적화 (Cost Optimization)
+---
 
-- **표준화된 이미지**: 전처리를 통해 Rekognition 비용 절감
-- **리사이징**: 불필요하게 큰 이미지 처리 방지
-- **S3 Intelligent-Tiering**: 액세스 패턴에 따라 자동으로 최적 스토리지 클래스 전환
-  - 원본 이미지는 90-180일 후 Archive Tier로 자동 이동
-  - 최대 95% 스토리지 비용 절감 가능
+# 🎯 목표
+SnapRace 플랫폼의 목표는
 
-### 4. 추적성 (Traceability)
+- **완전 자동화**된 이미지 처리 파이프라인
+- **고성능 검색** (bib/selfie/photographer)
+- **운영과 확장이 쉬운 구조**
 
-- **ULID 기반 식별**: 시간 순서가 있는 고유 ID
-- **S3 URI**: ExternalImageId로 원본 추적 가능
-- **Step Functions 실행 히스토리**: 전체 워크플로우 추적
+을 제공하는 것입니다.
 
-## 🔍 주요 제약사항 및 고려사항
+본 문서는 SnapRace 백엔드의 전체적인 개요를 제공하며,  
+작업별 상세 문서는 docs 아래 각 md 파일을 참고하십시오.
 
-### AWS Rekognition 제약
-
-- **이미지 크기**: 최대 15MB, 최소 80x80px
-- **이미지 해상도**: 최대 4096px (긴 변 기준)
-- **얼굴 크기**: 최소 40x40px (전체 이미지의 일정 비율)
-- **지원 포맷**: JPEG, PNG (전처리에서 JPEG로 통일)
-
-### Step Functions 제약
-
-- **페이로드 크기**: 최대 256KB
-- **실행 시간**: 최대 1년 (본 프로젝트는 ~수 분 이내)
-- **동시 실행**: 계정당 기본 한도 확인 필요
-
-### DynamoDB 설계
-
-- **단일 테이블 설계**: PhotoService 테이블 사용
-- **복합 키**: PK, SK로 계층적 데이터 표현
-- **GSI**: BIB 기반 검색을 위한 GSI1
-
-## 📞 문의 및 지원
-
-프로젝트 관련 문의사항은 팀 슬랙 채널 또는 이슈 트래커를 이용해주세요.
-
-## 📄 라이선스
-
-Internal Use Only

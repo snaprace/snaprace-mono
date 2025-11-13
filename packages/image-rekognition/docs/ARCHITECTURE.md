@@ -1,782 +1,350 @@
-# 아키텍처 상세 설계
+# ARCHITECTURE.md
 
-## 📐 시스템 아키텍처
+# SnapRace Photo Platform Architecture
 
-### 전체 구성도
+본 문서는 SnapRace 이미지 파이프라인 및 조회 시스템의 **최신 아키텍처(Photographer/GSI2/RDB 통합 버전)**를 정의합니다.
 
+- 업로드 → 전처리 → Rekognition → DynamoDB 인덱싱까지의 전체 흐름
+- RDB(PostgreSQL)와 DynamoDB의 역할 분리
+- Photographer / 사진-only 이벤트 지원
+
+---
+
+## 1. 하이레벨 개요
+
+SnapRace는 러닝/레이스 이벤트의 사진을
+
+- **bib 번호로 검색**
+- **Selfie(얼굴)로 검색**
+- **Photographer별 갤러리**
+
+처럼 다양한 방식으로 찾을 수 있게 하는 서비스입니다.
+
+이를 위해 백엔드는 다음 두 계층으로 구성됩니다.
+
+1. **Truth Layer (RDB / PostgreSQL)**
+   - organizers, events, event_runners
+   - photographers, event_photographers
+
+2. **Read-Optimized Layer (DynamoDB PhotoService)**
+   - PHOTO: 사진 1장당 1레코드
+   - BIB_INDEX: bib별 인덱스
+   - GSI1: bib → 사진들
+   - GSI2: photographer → 사진들
+
+이미지 처리 파이프라인은 **S3 + SQS + Lambda + Step Functions + Rekognition + DynamoDB**로 구성됩니다.
+
+---
+
+## 2. 전체 아키텍처 다이어그램
+
+```mermaid
+flowchart LR
+    subgraph Client
+      Uploader["Photographer / Admin<br/>S3 Direct Upload"]
+      Viewer["Web Client / Gallery"]
+    end
+
+    subgraph Storage
+      S3[("S3 Bucket\n snaprace-images-{stage}")]
+      RDB[("PostgreSQL / Supabase\n organizers / events / photographers / event_runners")]
+      DDB[("DynamoDB\n PhotoService-{stage}")]
+    end
+
+    subgraph Processing
+      SQS["SQS Queue\n ImageUpload"]
+      L0["Lambda\n SFN Trigger"]
+      SFN["Step Functions\n ImageProcessingWorkflow"]
+      L1["Lambda\n Preprocess"]
+      L2a["Lambda\n DetectText"]
+      L2b["Lambda\n IndexFaces"]
+      L3["Lambda\n Fanout DynamoDB"]
+      Rek["Rekognition\n DetectText / IndexFaces / Collection"]
+    end
+
+    subgraph API
+      Api["API Gateway + Lambda/Next.js API"]
+    end
+
+    Uploader -->|direct upload\n(+ S3 metadata: photographer-id)| S3
+    S3 -->|ObjectCreated| SQS
+    SQS --> L0 --> SFN
+
+    SFN --> L1 --> L2a & L2b --> L3
+    L2a --> Rek
+    L2b --> Rek
+    L3 --> DDB
+    L3 -.-> RDB
+
+    Viewer --> Api --> DDB
+    Api --> RDB
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         S3 Bucket                                │
-│  ┌──────────────┐                    ┌──────────────┐           │
-│  │   raw/       │                    │ processed/   │           │
-│  │ (원본 이미지)  │                    │ (전처리 완료)  │           │
-│  └──────┬───────┘                    └──────▲───────┘           │
-│         │                                   │                   │
-└─────────┼───────────────────────────────────┼───────────────────┘
-          │ S3 Event Notification             │
-          ▼                                   │
-┌─────────────────┐                           │
-│   SQS Queue     │                           │
-│ (ImageUpload)   │                           │
-└────────┬────────┘                           │
-         │ Poll (Event Source Mapping)        │
-         ▼                                    │
-┌─────────────────┐                           │
-│  Lambda         │                           │
-│  SFN Trigger    │───┐                       │
-└─────────────────┘   │ StartExecution        │
-                      ▼                       │
-              ┌────────────────┐              │
-              │ Step Functions │              │
-              │   Workflow     │              │
-              └───────┬────────┘              │
-                      │                       │
-        ┏━━━━━━━━━━━━━┻━━━━━━━━━━━━━┓        │
-        ┃      State Machine         ┃        │
-        ┃                            ┃        │
-        ┃  ┌──────────────────┐     ┃        │
-        ┃  │ 1. Preprocess    │─────╋────────┘
-        ┃  │    Lambda        │     ┃
-        ┃  └────────┬─────────┘     ┃
-        ┃           │                ┃
-        ┃  ┌────────▼─────────┐     ┃
-        ┃  │ 2. Parallel      │     ┃
-        ┃  │  ┌─────────────┐ │     ┃
-        ┃  │  │ Detect Text │ │─────╋────┐
-        ┃  │  │   Lambda    │ │     ┃    │ Rekognition
-        ┃  │  └─────────────┘ │     ┃    │ DetectText API
-        ┃  │  ┌─────────────┐ │     ┃    │
-        ┃  │  │ Index Faces │ │─────╋────┘
-        ┃  │  │   Lambda    │ │     ┃      Rekognition
-        ┃  │  └─────────────┘ │     ┃      IndexFaces API
-        ┃  └────────┬─────────┘     ┃           │
-        ┃           │                ┃           ▼
-        ┃  ┌────────▼─────────┐     ┃    ┌──────────────┐
-        ┃  │ 3. Fanout        │─────╋───▶│  Rekognition │
-        ┃  │    DynamoDB      │     ┃    │  Collection  │
-        ┃  │    Lambda        │     ┃    │EventRunnerFaces
-        ┃  └────────┬─────────┘     ┃    └──────────────┘
-        ┃           │                ┃
-        ┗━━━━━━━━━━━┻━━━━━━━━━━━━━━┛
-                    │
-                    ▼
-            ┌───────────────┐
-            │   DynamoDB    │
-            │ PhotoService  │
-            │               │
-            │ • PHOTO       │
-            │ • BIB_INDEX   │
-            └───────────────┘
-```
 
-## 🧱 AWS 리소스 정의
+---
 
-### 1. S3 Bucket
+## 3. 스토리지 레이어
 
-**리소스명**: `ImageRekognitionBucket`
+### 3.1 S3 버킷 구조
 
-#### 구조
+- 버킷명: `snaprace-images-{stage}`
 
-```
+```text
 s3://snaprace-images-{stage}/
-├── {organizerId}/
-│   └── {eventId}/
-│       ├── raw/                    # 원본 이미지 업로드 위치
-│       │   └── {original-filename}
-│       └── processed/              # 전처리 완료 이미지
-│           └── {ulid}.jpg
+└── {organizerId}/
+    └── {eventId}/
+        ├── raw/
+        │   └── {originalFilename}
+        └── processed/
+            └── {ulid}.jpg
+```
 
-예시:
+#### 예시
+
+```text
 s3://snaprace-images-prod/
-├── snaprace-kr/
-│   └── seoul-marathon-2024/
-│       ├── raw/
-│       │   ├── IMG_1234.jpg
-│       │   └── IMG_1235.jpg
-│       └── processed/
-│           ├── 01HXY8FWZM5KJQD9K3Y6R8NZTP.jpg
-│           └── 01HXY8FWZM5KJQD9K3Y6R8NZUQ.jpg
+└── snaprace-kr/
+    └── seoul-marathon-2024/
+        ├── raw/DSC_1234.jpg
+        └── processed/01HXY8FWZM5KJQD9K3Y6R8NZTP.jpg
 ```
 
-#### 구성
+#### S3 업로드 메타데이터
 
-```typescript
-new s3.Bucket(this, 'ImageRekognitionBucket', {
-  bucketName: `snaprace-images-${stage}`,
-  versioned: false,
-  encryption: s3.BucketEncryption.S3_MANAGED,
-  intelligentTieringConfigurations: [
+Photographer가 있는 경우, 업로드 시 메타데이터에 photographer 정보를 포함합니다.
+
+```text
+x-amz-meta-photographer-id: ph_01ABCXYZ
+x-amz-meta-source: photographer-upload
+```
+
+### 3.2 RDB (Truth Layer)
+
+RDB 스키마는 `RDB_SCHEMA.md`에 상세 정의되어 있으며, 핵심 테이블은:
+
+- `organizers` – 주최사 정보
+- `events` – 이벤트 정보 (`display_mode`, `results_integration`, `photos_meta` 포함)
+- `event_runners` – bib/결과 정보
+- `photographers` – 포토그래퍼 프로필
+- `event_photographers` – 이벤트↔포토그래퍼 N:N 관계
+
+RDB는 **관리, 설정, 정산, 권한, 메타데이터**의 source-of-truth 입니다.
+
+### 3.3 DynamoDB (PhotoService)
+
+DynamoDB 테이블은 `DYNAMODB_SCHEMA.md`에 상세 정의되어 있으며, 핵심 개념은:
+
+- 단일 테이블: `PhotoService-{stage}`
+- 엔티티 유형:
+  - `PHOTO` – 사진 한 장에 대한 메타데이터 및 분석 결과
+  - `BIB_INDEX` – bib별 인덱스 (경량)
+- GSI:
+  - GSI1 – bib → 사진 리스트
+  - GSI2 – photographer → 사진 리스트
+
+DynamoDB는 **갤러리/검색/뛰어난 조회 성능**을 위해 사용합니다.
+
+---
+
+## 4. 이벤트 처리 파이프라인 (업로드 → 인덱싱)
+
+### 4.1 S3 Event → SQS
+
+- 버킷에 `ObjectCreated` 이벤트 발생 시, SQS `ImageUpload` 큐에 메시지 전송
+- JPEG/PNG/HEIC 등의 이미지 확장자로 필터링
+
+```ts
+['.jpg', '.jpeg', '.png', '.heic'].forEach((suffix) => {
+  bucket.addEventNotification(
+    s3.EventType.OBJECT_CREATED,
+    new s3n.SqsDestination(imageUploadQueue),
     {
-      name: 'ArchiveConfiguration',
-      // prefix 없음 = 전체 버킷에 적용
-      archiveAccessTierTime: cdk.Duration.days(90), // 90일 후 Archive Access Tier
-      deepArchiveAccessTierTime: cdk.Duration.days(180) // 180일 후 Deep Archive Access Tier
-    }
-  ],
-  lifecycleRules: [
-    {
-      id: 'enable-intelligent-tiering',
-      enabled: true,
-      transitions: [
-        {
-          storageClass: s3.StorageClass.INTELLIGENT_TIERING,
-          transitionAfter: cdk.Duration.days(0) // 즉시 Intelligent-Tiering으로 전환
-        }
-      ]
-    }
-  ],
-  eventBridgeEnabled: false, // S3 Event Notification 사용
-  cors: [
-    {
-      allowedOrigins: ['*'],
-      allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
-      allowedHeaders: ['*']
-    }
-  ]
-})
+      prefix: '', // 또는 특정 organizer/event prefix
+      suffix,
+    },
+  );
+});
 ```
 
-#### S3 Event Notification
+SQS 메시지는 S3 오브젝트 key, 버킷 이름, 사이즈 등을 포함합니다.
 
-```typescript
-bucket.addEventNotification(s3.EventType.OBJECT_CREATED, new s3n.SqsDestination(imageUploadQueue), {
-  // prefix 없음 = 모든 업로드 이벤트 캐치 (SFN Trigger Lambda에서 필터링)
-  suffix: '.jpg' | '.jpeg' | '.png' | '.heic'
-})
+### 4.2 SFN Trigger Lambda (SQS → Step Functions)
 
-// 또는 특정 조직의 이벤트만 처리하는 경우
-// prefix: 'snaprace-kr/' 등으로 제한 가능
-```
+- SQS를 폴링하며 메시지를 batch로 읽음
+- 각 레코드에 대해 S3 object key를 파싱하여 `{orgId, eventId, rawKey}` 추출
+- S3 HeadObject를 통해 `photographer-id` 등 메타데이터를 읽어 workflow input에 포함
 
-#### S3 Intelligent-Tiering 상세
-
-**작동 방식**:
-
-S3 Intelligent-Tiering은 객체 액세스 패턴을 자동으로 모니터링하고 최적의 스토리지 티어로 이동시킵니다.
-
-**Tier 구조** (서울 리전 기준):
-
-```
-┌─────────────────────────────────────────────────────────┐
-│           S3 Intelligent-Tiering                        │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  [Frequent Access Tier]  $0.023/GB                     │
-│  └─ 기본 티어 (밀리초 단위 액세스)                        │
-│         │                                               │
-│         │ 30일 미접근                                    │
-│         ▼                                               │
-│  [Infrequent Access Tier]  $0.0125/GB                  │
-│  └─ 자동 이동 (밀리초 단위 액세스)                        │
-│         │                                               │
-│         │ 90일 미접근 (구성 필요)                         │
-│         ▼                                               │
-│  [Archive Access Tier]  $0.004/GB                      │
-│  └─ 선택적 자동 아카이빙 (밀리초~분 단위 액세스)           │
-│         │                                               │
-│         │ 180일 미접근 (구성 필요)                        │
-│         ▼                                               │
-│  [Deep Archive Access Tier]  $0.00099/GB               │
-│  └─ 장기 보관 (12시간 검색 시간)                          │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-```
-
-**본 프로젝트 전략**:
-
-1. **전체 버킷에 Intelligent-Tiering 적용**:
-   - 업로드 즉시 Intelligent-Tiering으로 전환
-   - 30일 미접근 시 자동으로 Infrequent Access Tier 이동
-   - 90일 미접근 시 Archive Access Tier 이동
-   - 180일 미접근 시 Deep Archive Access Tier 이동
-
-2. **조직/이벤트별 자동 분리**:
-   - 경로: `{organizerId}/{eventId}/raw/` 및 `.../processed/`
-   - 각 이벤트별로 독립적인 액세스 패턴 추적
-   - 원본(raw)은 장기 보관, 전처리(processed)는 자주 접근
-
-**비용 비교** (100GB, 1년 기준):
-
-| 시나리오        | Standard | Glacier        | Intelligent-Tiering | 절감율 |
-| --------------- | -------- | -------------- | ------------------- | ------ |
-| 매월 1회 접근   | $276     | $48 + 검색비용 | $150                | 46%    |
-| 3개월 후 미접근 | $276     | $48 + 검색비용 | $60                 | 78%    |
-| 6개월 후 미접근 | $276     | $48 + 검색비용 | $30                 | 89%    |
-
-**장점**:
-
-- ✅ **완전 자동화**: 수동 Lifecycle 관리 불필요
-- ✅ **예측 가능한 성능**: Frequent/Infrequent Tier는 밀리초 단위 액세스
-- ✅ **검색 비용 없음**: Archive Tier도 추가 검색 비용 없음 (Glacier 대비 큰 장점)
-- ✅ **유연성**: 액세스 패턴 변경 시 자동으로 Tier 상향 이동
-
-**주의사항**:
-
-- ⚠️ 128KB 미만 객체: 모니터링 비용이 스토리지 비용보다 높을 수 있음
-- ⚠️ 모니터링 비용: 1,000개 객체당 $0.0025 (월)
-- ⚠️ 최소 보관 기간: 30일 (30일 이내 삭제 시 30일분 과금)
-
-### 2. SQS Queue
-
-**리소스명**: `ImageUploadQueue`
-
-#### 목적
-
-- S3 이벤트와 Step Functions 실행 사이의 디커플링
-- 대량 업로드 시 Step Functions 동시 실행 한도 보호
-- 실패 시 재시도 메커니즘
-
-#### 구성
-
-```typescript
-const imageUploadQueue = new sqs.Queue(this, 'ImageUploadQueue', {
-  queueName: `image-upload-${stage}`,
-  visibilityTimeout: cdk.Duration.minutes(15), // Lambda 실행 시간 + 여유
-  retentionPeriod: cdk.Duration.days(4),
-  deadLetterQueue: {
-    queue: dlq,
-    maxReceiveCount: 3 // 3번 실패 시 DLQ로 이동
-  }
-})
-
-const dlq = new sqs.Queue(this, 'ImageUploadDLQ', {
-  queueName: `image-upload-dlq-${stage}`,
-  retentionPeriod: cdk.Duration.days(14)
-})
-```
-
-#### 메시지 형식
-
-```json
+```jsonc
 {
-  "Records": [
-    {
-      "eventName": "ObjectCreated:Put",
-      "s3": {
-        "bucket": {
-          "name": "snaprace-images-dev"
-        },
-        "object": {
-          "key": "raw/org-123/event-456/photo-001.jpg",
-          "size": 2048576
-        }
-      }
-    }
-  ]
+  "orgId": "snaprace-kr",
+  "eventId": "seoul-marathon-2024",
+  "bucketName": "snaprace-images-prod",
+  "rawKey": "snaprace-kr/seoul-marathon-2024/raw/DSC_1234.jpg",
+  "photographerId": "ph_01ABCXYZ" // 없을 수 있음
 }
 ```
 
-### 3. Lambda Functions
+### 4.3 Step Functions Workflow
 
-#### 3.1. SFN Trigger Lambda
+자세한 상태 정의는 `STEP_FUNCTIONS_WORKFLOW.md` 참고.
 
-**리소스명**: `SfnTriggerFunction`
+기본 흐름:
 
-```typescript
-const sfnTrigger = new lambda.Function(this, 'SfnTriggerFunction', {
-  runtime: lambda.Runtime.NODEJS_20_X,
-  handler: 'index.handler',
-  code: lambda.Code.fromAsset('src/sfn-trigger'),
-  environment: {
-    STATE_MACHINE_ARN: stateMachine.stateMachineArn
-  },
-  timeout: cdk.Duration.seconds(30)
-})
+1. **Preprocess (Lambda)**
+   - S3 raw 이미지를 다운로드
+   - 리사이즈/압축 (Sharp)
+   - processed 경로에 업로드 (`processed/{ulid}.jpg`)
+   - S3 metadata 복사 및 일부 정규화
+   - 결과로 `processedKey`, `s3Uri`, `dimensions`, `photographerId` 등을 반환
 
-// SQS 이벤트 소스 연결
-sfnTrigger.addEventSource(
-  new lambdaEventSources.SqsEventSource(imageUploadQueue, {
-    batchSize: 10, // 한 번에 최대 10개 메시지 처리
-    maxBatchingWindow: cdk.Duration.seconds(5)
-  })
-)
+2. **Parallel Analyze (DetectText / IndexFaces)**
+   - DetectText Lambda: Rekognition DetectText 호출 → bib 후보 추출
+   - IndexFaces Lambda: Rekognition IndexFaces 호출 → 컬렉션에 얼굴 인덱싱
+     - Collection ID: `{orgId}-{eventId}` 규칙 사용
+     - 없으면 CreateCollection → 멱등성 처리
 
-// Step Functions 실행 권한
-stateMachine.grantStartExecution(sfnTrigger)
-```
+3. **Fanout DynamoDB (Lambda)**
+   - Preprocess + DetectText + IndexFaces 결과를 종합
+   - bib 목록, faceId, S3 위치, photographerId 등을 기반으로
+     - PHOTO 1개
+     - BIB_INDEX (bib 개수만큼)
+   - DynamoDB `PhotoService-{stage}`에 저장
+   - 필요 시 RDB `photographers`에서 handle/displayName을 읽어 denormalize
 
-#### 3.2. Preprocess Lambda
+---
 
-**리소스명**: `PreprocessFunction`
+## 5. Photographer 연동 설계
 
-```typescript
-const preprocessFn = new lambda.NodejsFunction(this, 'PreprocessFunction', {
-  runtime: lambda.Runtime.NODEJS_20_X,
-  handler: 'index.handler',
-  code: lambda.Code.fromAsset('src/preprocess'),
-  memorySize: 2048, // Sharp는 메모리 사용량이 높음
-  timeout: cdk.Duration.minutes(5),
-  environment: {
-    BUCKET_NAME: bucket.bucketName,
-    MAX_WIDTH: '4096',
-    MAX_HEIGHT: '4096',
-    JPEG_QUALITY: '90'
-  },
-  bundling: {
-    externalModules: ['sharp'],
-    nodeModules: ['sharp'],
-    commandHooks: {
-      beforeBundling(): string[] {
-        return []
-      },
-      beforeInstall(): string[] {
-        return []
-      },
-      afterBundling(inputDir: string, outputDir: string): string[] {
-        return [
-          `cd ${outputDir}`,
-          // Lambda 환경용 Sharp 바이너리 자동 설치
-          'rm -rf node_modules/sharp && npm install --cpu=arm64 --os=linux --libc=glibc sharp'
-        ]
-      }
-    }
-  }
-})
+### 5.1 Truth: RDB
 
-bucket.grantReadWrite(preprocessFn)
-```
+- `photographers`: 프로필, 인스타 핸들, 웹사이트 등
+- `event_photographers`: 어떤 이벤트에 어떤 photographer가 참여하는지
 
-#### 3.3. Detect Text Lambda
+Admin / Backoffice에서는:
+- 이벤트 설정화면에서 event_photographers를 관리
+- 업로드 UI에서는 **해당 이벤트에 등록된 photographer만 선택 가능**하게 구현
 
-**리소스명**: `DetectTextFunction`
+### 5.2 Data Flow: S3 → SFN → Dynamo
 
-```typescript
-const detectTextFn = new lambda.Function(this, 'DetectTextFunction', {
-  runtime: lambda.Runtime.NODEJS_20_X,
-  handler: 'index.handler',
-  code: lambda.Code.fromAsset('src/detect-text'),
-  memorySize: 512,
-  timeout: cdk.Duration.seconds(30),
-  environment: {
-    BUCKET_NAME: bucket.bucketName
-  }
-})
+1. **Uploader**
+   - FE/Admin에서 이벤트를 선택하면, RDB `event_photographers`를 조회해 dropdown 제공
+   - 사용자가 선택한 `photographer_id`를 S3 업로드 메타데이터로 포함
 
-bucket.grantRead(detectTextFn)
+2. **Preprocess Lambda**
+   - S3 HeadObject로 `photographer-id` 읽음
+   - state machine input / preprocess output에 포함
 
-detectTextFn.addToRolePolicy(
-  new iam.PolicyStatement({
-    actions: ['rekognition:DetectText'],
-    resources: ['*']
-  })
-)
-```
+3. **Fanout DynamoDB Lambda**
+   - `photographerId`가 존재한다면:
+     - (옵션 A) 바로 RDB `photographers`에서 handle/displayName 조회
+     - PHOTO 엔티티에 다음 정보 저장
 
-#### 3.4. Index Faces Lambda
-
-**리소스명**: `IndexFacesFunction`
-
-```typescript
-const indexFacesFn = new lambda.Function(this, 'IndexFacesFunction', {
-  runtime: lambda.Runtime.NODEJS_20_X,
-  handler: 'index.handler',
-  code: lambda.Code.fromAsset('src/index-faces'),
-  memorySize: 512,
-  timeout: cdk.Duration.seconds(30),
-  environment: {
-    BUCKET_NAME: bucket.bucketName,
-    MAX_FACES: '15',
-    QUALITY_FILTER: 'AUTO'
-    // COLLECTION_ID는 동적 생성 (orgId-eventId)
-  }
-})
-
-bucket.grantRead(indexFacesFn)
-
-indexFacesFn.addToRolePolicy(
-  new iam.PolicyStatement({
-    actions: [
-      'rekognition:IndexFaces',
-      'rekognition:CreateCollection', // Collection 생성 권한
-      'rekognition:DescribeCollection' // Collection 존재 확인 권한
-    ],
-    resources: ['*']
-  })
-)
-```
-
-#### 3.5. Fanout DynamoDB Lambda
-
-**리소스명**: `FanoutDynamoDBFunction`
-
-```typescript
-const fanoutFn = new lambda.Function(this, 'FanoutDynamoDBFunction', {
-  runtime: lambda.Runtime.NODEJS_20_X,
-  handler: 'index.handler',
-  code: lambda.Code.fromAsset('src/fanout-dynamodb'),
-  memorySize: 512,
-  timeout: cdk.Duration.minutes(1),
-  environment: {
-    TABLE_NAME: table.tableName
-  }
-})
-
-table.grantWriteData(fanoutFn)
-```
-
-### 4. Step Functions State Machine
-
-**리소스명**: `ImageProcessingWorkflow`
-
-#### ASL (Amazon States Language) 정의
-
-```json
+```jsonc
 {
-  "Comment": "Image Processing Workflow for BIB detection and face indexing",
-  "StartAt": "PreprocessImage",
-  "States": {
-    "PreprocessImage": {
-      "Type": "Task",
-      "Resource": "arn:aws:lambda:REGION:ACCOUNT:function:PreprocessFunction",
-      "TimeoutSeconds": 300,
-      "Retry": [
-        {
-          "ErrorEquals": ["States.TaskFailed"],
-          "IntervalSeconds": 2,
-          "MaxAttempts": 3,
-          "BackoffRate": 2.0
-        }
-      ],
-      "Catch": [
-        {
-          "ErrorEquals": ["States.ALL"],
-          "Next": "ProcessingFailed"
-        }
-      ],
-      "ResultPath": "$.preprocessResult",
-      "Next": "AnalyzeImage"
-    },
-    "AnalyzeImage": {
-      "Type": "Parallel",
-      "Branches": [
-        {
-          "StartAt": "DetectText",
-          "States": {
-            "DetectText": {
-              "Type": "Task",
-              "Resource": "arn:aws:lambda:REGION:ACCOUNT:function:DetectTextFunction",
-              "TimeoutSeconds": 30,
-              "Retry": [
-                {
-                  "ErrorEquals": ["States.TaskFailed"],
-                  "IntervalSeconds": 1,
-                  "MaxAttempts": 2,
-                  "BackoffRate": 2.0
-                }
-              ],
-              "End": true
-            }
-          }
-        },
-        {
-          "StartAt": "IndexFaces",
-          "States": {
-            "IndexFaces": {
-              "Type": "Task",
-              "Resource": "arn:aws:lambda:REGION:ACCOUNT:function:IndexFacesFunction",
-              "TimeoutSeconds": 30,
-              "Retry": [
-                {
-                  "ErrorEquals": ["States.TaskFailed"],
-                  "IntervalSeconds": 1,
-                  "MaxAttempts": 2,
-                  "BackoffRate": 2.0
-                }
-              ],
-              "End": true
-            }
-          }
-        }
-      ],
-      "ResultPath": "$.analysisResult",
-      "Next": "FanoutToDynamoDB"
-    },
-    "FanoutToDynamoDB": {
-      "Type": "Task",
-      "Resource": "arn:aws:lambda:REGION:ACCOUNT:function:FanoutDynamoDBFunction",
-      "TimeoutSeconds": 60,
-      "Retry": [
-        {
-          "ErrorEquals": ["States.TaskFailed"],
-          "IntervalSeconds": 2,
-          "MaxAttempts": 3,
-          "BackoffRate": 2.0
-        }
-      ],
-      "End": true
-    },
-    "ProcessingFailed": {
-      "Type": "Fail",
-      "Error": "ImageProcessingError",
-      "Cause": "Failed to process image"
-    }
-  }
+  "photographerId": "ph_01ABCXYZ",
+  "photographerHandle": "studio_aaa",
+  "photographerDisplayName": "Studio AAA",
+  "GSI2PK": "PHOTOGRAPHER#ph_01ABCXYZ",
+  "GSI2SK": "EVT#seoul-marathon-2024#TIME#2024-11-09T10:30:00.000Z"
 }
 ```
 
-#### CDK 구성
+이렇게 하면 갤러리/검색 API는 **DynamoDB에서 PHOTO만 조회**해도 insta/이름 정보를 바로 사용할 수 있습니다.
 
-```typescript
-const stateMachine = new sfn.StateMachine(this, 'ImageProcessingWorkflow', {
-  stateMachineName: `image-processing-${stage}`,
-  definition: preprocessTask.next(parallelAnalysis).next(fanoutTask),
-  timeout: cdk.Duration.minutes(15),
-  tracingEnabled: true, // X-Ray 추적
-  logs: {
-    destination: logGroup,
-    level: sfn.LogLevel.ALL
-  }
-})
+### 5.3 Photographer 프로필 변경 시 동기화
+
+Photographer의 인스타 핸들이나 표시 이름이 바뀌면:
+
+1. Admin이 RDB `photographers` 테이블을 수정
+2. API 서버가 `PHOTOGRAPHER_UPDATED` 메시지를 큐/토픽에 발행
+3. Sync Worker가 GSI2로 해당 photographerId의 PHOTO 아이템들을 조회
+4. `UpdateItem`으로 `photographerHandle`, `photographerDisplayName`을 일괄 갱신
+
+이 시나리오는 `RDB = Truth`, `Dynamo = Cache/Index` 구조를 반영합니다.
+
+---
+
+## 6. 조회 경로 (Gallery / Search API)
+
+### 6.1 이벤트 전체 사진 (Event Gallery)
+
+- 요청: `GET /events/{eventId}/photos`
+- 동작:
+  - PK = `ORG#{orgId}#EVT#{eventId}`
+  - `begins_with(SK, 'PHOTO#')`로 PHOTO만 조회
+
+```ts
+await docClient.query({
+  TableName: 'PhotoService-prod',
+  KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+  ExpressionAttributeValues: {
+    ':pk': 'ORG#snaprace-kr#EVT#seoul-marathon-2024',
+    ':sk': 'PHOTO#',
+  },
+  ScanIndexForward: false,
+});
 ```
 
-### 5. DynamoDB Table
+### 6.2 bib 기반 검색
 
-**리소스명**: `PhotoServiceTable`
+- 요청: `GET /events/{eventId}/photos?bib=1234`
+- 동작:
+  - GSI1에서 `GSI1PK = EVT#{eventId}#BIB#{bib}`로 BIB_INDEX 조회
+  - 필요시 PHOTO를 BatchGet (또는 BIB_INDEX에 최소 메타만 넣고 바로 렌더)
 
-```typescript
-const table = new dynamodb.Table(this, 'PhotoServiceTable', {
-  tableName: `PhotoService-${stage}`,
-  partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
-  sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
-  billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-  stream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
-  pointInTimeRecovery: true,
-  encryption: dynamodb.TableEncryption.AWS_MANAGED
-})
+### 6.3 Photographer 기반 검색
 
-// GSI1: BIB 기반 검색
-table.addGlobalSecondaryIndex({
-  indexName: 'GSI1',
-  partitionKey: { name: 'GSI1PK', type: dynamodb.AttributeType.STRING },
-  sortKey: { name: 'GSI1SK', type: dynamodb.AttributeType.STRING },
-  projectionType: dynamodb.ProjectionType.ALL
-})
-```
+- 요청: `GET /events/{eventId}/photos?photographerId=ph_01ABCXYZ`
+- 동작:
+  - GSI2에서 `GSI2PK = PHOTOGRAPHER#{photographerId}`
+  - `begins_with(GSI2SK, 'EVT#{eventId}#')` 조건으로 필터링
 
-### 6. Rekognition Collection
+갤러리 UI에서는 Photographer 필터, bib 검색, 일반 전체 보기 등의 모드를 조합해서 사용합니다.
 
-**리소스**: 동적 생성 (`{orgId}-{eventId}`)
+---
 
-#### 자동 생성 전략
+## 7. IAM 및 보안
 
-Rekognition Collection은 **Index Faces Lambda 실행 시 자동으로 생성**됩니다.
+### 7.1 Lambda 역할 최소 권한
 
-**Collection ID 규칙**:
+- Preprocess Lambda
+  - `s3:GetObject`, `s3:PutObject`
+- DetectText Lambda
+  - `rekognition:DetectText`, `s3:GetObject`
+- IndexFaces Lambda
+  - `rekognition:IndexFaces`, `rekognition:CreateCollection`, `rekognition:DescribeCollection`, `s3:GetObject`
+- Fanout DynamoDB Lambda
+  - `dynamodb:PutItem` (PhotoService 테이블)
+  - (옵션) `rds-data:ExecuteStatement` 또는 Supabase/RDS 조회 권한 (photographers)
 
-```
-{orgId}-{eventId}
+### 7.2 S3 접근 통제
+
+- 업로드는 presigned URL 또는 인증된 uploader만 허용
+- 공개 이미지는 CloudFront를 통해 서빙, S3는 직접 노출하지 않음
+
+---
+
+## 8. 모니터링 및 알람
+
+- SQS 큐 깊이: 처리 지연/백로그 감시
+- Step Functions 실패 횟수: 알람 설정
+- Lambda 에러율 / Duration: 병목 및 장애 탐지
+- DynamoDB Throttle (RCU/WCU): 인덱스/쿼리 튜닝 지표
 
 예시:
-- snaprace-kr-seoul-marathon-2024
-- runningclub-busan-half-2024
-```
 
-**장점**:
+- Step Functions 실패 5회 이상 → 알람
+- DLQ 메시지 존재 → 알람
 
-- ✅ **완전 자동화**: 수동 생성 불필요
-- ✅ **멱등성**: 이미 존재하면 생성 건너뜀
-- ✅ **이벤트별 분리**: 각 이벤트마다 독립적인 Collection
-- ✅ **성능 최적화**: Lambda 메모리 캐싱으로 API 호출 최소화
+---
 
-#### Lambda 내부 로직 (Index Faces)
+## 9. 요약
 
-```typescript
-// Lambda 컨테이너 재사용 시 캐시
-const existingCollections = new Set<string>()
+이 아키텍처는 다음을 만족하도록 설계되었습니다.
 
-async function ensureCollectionExists(collectionId: string): Promise<void> {
-  // 캐시 확인 (Warm Lambda)
-  if (existingCollections.has(collectionId)) {
-    return
-  }
+- 대규모 이벤트(수만~수십만 장 사진)를 처리 가능한 비동기 파이프라인
+- bib / 얼굴 / photographer 기준의 다양한 검색 패턴을 빠르게 처리
+- RDB와 DynamoDB의 역할을 명확히 분리하여 관리(Truth)와 조회(Read)를 최적화
+- Photographer 기반 사진-only 이벤트까지 유연하게 지원
 
-  try {
-    // Collection 존재 확인
-    await rekognitionClient.send(new DescribeCollectionCommand({ CollectionId: collectionId }))
-    existingCollections.add(collectionId)
-  } catch (error: any) {
-    if (error.name === 'ResourceNotFoundException') {
-      // Collection 생성
-      await rekognitionClient.send(new CreateCollectionCommand({ CollectionId: collectionId }))
-      existingCollections.add(collectionId)
-      console.log(`Collection created: ${collectionId}`)
-    } else {
-      throw error
-    }
-  }
-}
+세부 구현은 각 문서(RDB_SCHEMA.md, DYNAMODB_SCHEMA.md, LAMBDA_FUNCTIONS.md, STEP_FUNCTIONS_WORKFLOW.md, DEPLOYMENT.md)를 참고하여 진행합니다.
 
-export const handler = async (event: PreprocessOutput) => {
-  const collectionId = `${event.orgId}-${event.eventId}`
-
-  // Collection 확인/생성 (멱등성 보장)
-  await ensureCollectionExists(collectionId)
-
-  // 얼굴 인덱싱
-  await rekognitionClient.send(
-    new IndexFacesCommand({
-      CollectionId: collectionId, // 동적 ID
-      Image: { S3Object: { Bucket: event.bucketName, Name: event.processedKey } },
-      ExternalImageId: event.s3Uri
-    })
-  )
-}
-```
-
-#### IAM 권한
-
-Index Faces Lambda에 추가 권한 필요:
-
-```typescript
-indexFacesFn.addToRolePolicy(
-  new iam.PolicyStatement({
-    actions: ['rekognition:IndexFaces', 'rekognition:CreateCollection', 'rekognition:DescribeCollection'],
-    resources: ['*']
-  })
-)
-```
-
-#### Collection 정리
-
-이벤트 종료 후 Collection 삭제는 별도 Lambda로 처리:
-
-```bash
-# 수동 삭제
-aws rekognition delete-collection \
-  --collection-id snaprace-kr-seoul-marathon-2024 \
-  --region ap-northeast-2
-```
-
-## 🔐 IAM 권한 정리
-
-### Lambda 실행 역할 (Execution Role)
-
-각 Lambda는 최소 권한 원칙(Principle of Least Privilege)을 따릅니다.
-
-#### SFN Trigger Lambda
-
-- `sqs:ReceiveMessage`, `sqs:DeleteMessage`, `sqs:GetQueueAttributes` (SQS)
-- `states:StartExecution` (Step Functions)
-- `logs:CreateLogGroup`, `logs:CreateLogStream`, `logs:PutLogEvents` (CloudWatch)
-
-#### Preprocess Lambda
-
-- `s3:GetObject` (S3 raw/)
-- `s3:PutObject` (S3 processed/)
-- `logs:*`
-
-#### Detect Text Lambda
-
-- `s3:GetObject` (S3 processed/)
-- `rekognition:DetectText`
-- `logs:*`
-
-#### Index Faces Lambda
-
-- `s3:GetObject` (S3 processed/)
-- `rekognition:IndexFaces`
-- `rekognition:CreateCollection` (Collection 자동 생성)
-- `rekognition:DescribeCollection` (Collection 존재 확인)
-- `logs:*`
-
-#### Fanout DynamoDB Lambda
-
-- `dynamodb:PutItem`
-- `logs:*`
-
-### Step Functions 실행 역할
-
-- `lambda:InvokeFunction` (모든 Lambda 함수)
-
-## 📊 비용 추정
-
-### 예상 비용 (월 10,000장 기준)
-
-| 서비스                 | 사용량             | 월 예상 비용         | 비고                      |
-| ---------------------- | ------------------ | -------------------- | ------------------------- |
-| S3 Intelligent-Tiering | 50GB (processed)   | $0.58 - $1.15        | Frequent Access Tier 기준 |
-| S3 Intelligent-Tiering | 30GB (raw)         | $0.01 - $0.35        | Archive 자동 이동         |
-| S3 모니터링 요금       | 80GB (10K objects) | $0.25                | 객체당 $0.0025            |
-| S3 요청                | PUT 10K, GET 40K   | $0.05                |                           |
-| Lambda                 | 50K 실행 (각 함수) | $0.50                |                           |
-| Step Functions         | 10K 실행           | $0.25                |                           |
-| Rekognition DetectText | 10K 이미지         | $10.00               |                           |
-| Rekognition IndexFaces | 10K 이미지         | $10.00               |                           |
-| DynamoDB               | 30K 쓰기           | $0.38                |                           |
-| **합계**               |                    | **~$22.00 - $23.00** |                           |
-
-#### S3 Intelligent-Tiering 비용 상세
-
-**Tier별 저장 비용** (서울 리전 기준):
-
-- **Frequent Access Tier**: $0.023/GB (Standard와 동일)
-- **Infrequent Access Tier**: $0.0125/GB (30일 미접근 시 자동 이동)
-- **Archive Access Tier**: $0.004/GB (90일 미접근 시 자동 이동)
-- **Deep Archive Access Tier**: $0.00099/GB (180일 미접근 시 자동 이동)
-
-**모니터링 비용**: 1,000개 객체당 $0.0025
-
-**장점**:
-
-- ✅ 액세스 패턴에 따라 자동으로 최적화 (수동 관리 불필요)
-- ✅ 검색 비용 없음 (Frequent/Infrequent Tier)
-- ✅ 원본 이미지 자동 아카이빙 (90-180일 후)
-- ✅ 예측 가능한 성능 (밀리초 단위 액세스)
-
-> 💡 실제 비용은 이미지 크기, BIB 개수, 얼굴 개수, 액세스 패턴에 따라 달라질 수 있습니다.  
-> 💡 `raw/` 이미지가 자주 접근되지 않는 경우 최대 95% 비용 절감 가능
-
-## 🔍 모니터링 및 알람
-
-### CloudWatch Metrics
-
-- Step Functions 실행 성공/실패율
-- Lambda 함수별 duration, error rate
-- SQS Queue 깊이 (ApproximateNumberOfMessagesVisible)
-- DynamoDB 쓰기 용량 사용률
-
-### 권장 알람
-
-```typescript
-// Step Functions 실패 알람
-const sfnFailureAlarm = new cloudwatch.Alarm(this, 'SfnFailureAlarm', {
-  metric: stateMachine.metricFailed(),
-  threshold: 5,
-  evaluationPeriods: 1,
-  alarmDescription: 'Step Functions 실행 실패 5회 초과'
-})
-
-// DLQ 메시지 알람
-const dlqAlarm = new cloudwatch.Alarm(this, 'DLQAlarm', {
-  metric: dlq.metricApproximateNumberOfMessagesVisible(),
-  threshold: 1,
-  evaluationPeriods: 1,
-  alarmDescription: 'DLQ에 메시지 존재'
-})
-```
-
-## 🎯 확장 및 최적화 포인트
-
-### 비용 최적화
-
-1. **S3 Intelligent-Tiering 자동화**: 액세스 패턴에 따라 자동으로 비용 최적화
-   - `raw/` 이미지는 90-180일 후 Archive Tier로 자동 이동
-   - `processed/` 이미지는 30일 미접근 시 Infrequent Tier로 자동 이동
-   - 수동 관리 불필요, 예측 불가능한 액세스 패턴에 최적
-
-2. **객체 크기 최적화**: 128KB 이상 객체만 Intelligent-Tiering 사용
-   - 작은 파일은 Standard가 더 효율적 (모니터링 비용 고려)
-
-### 성능 최적화
-
-1. **Lambda 동시성 예약**: 피크 시간대 안정적인 처리
-2. **S3 Transfer Acceleration**: 글로벌 업로드 속도 향상
-3. **CloudFront 캐싱**: processed/ 이미지 전송 최적화
-4. **S3 Byte-Range Fetches**: 큰 이미지 부분 다운로드로 성능 향상
-
-### 기능 확장
-
-1. **이미지 메타데이터**: EXIF GPS, 촬영 시간 등 추출
-2. **중복 검출**: perceptual hash로 동일 이미지 필터링
-3. **화질 분석**: 흐린 이미지 자동 필터링
-4. **커스텀 레이블**: Rekognition Custom Labels로 특정 객체 검출
