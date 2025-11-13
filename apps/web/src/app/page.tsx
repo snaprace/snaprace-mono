@@ -135,7 +135,7 @@ export default function HomePage() {
                 <Button
                   type="submit"
                   size="lg"
-                  className="bg-secondary hover:bg-secondary/90 text-secondary-foreground h-14 w-full border-0 text-lg font-medium shadow-none"
+                  className="bg-primary/10 hover:bg-primary/20 text-primary border-primary/30 h-14 w-full border text-lg font-medium"
                   onClick={() => router.push(`/events/${selectedEventId}/null`)}
                 >
                   <Images className="mr-2 h-5 w-5" />
@@ -146,9 +146,8 @@ export default function HomePage() {
               {!faceSearchOnly && (
                 <Button
                   size="lg"
-                  className="bg-secondary hover:bg-secondary/90 text-secondary-foreground h-14 w-full border-0 text-lg font-medium shadow-none"
+                  className="bg-primary/10 hover:bg-primary/20 text-primary border-primary/30 h-14 w-full border text-lg font-medium"
                   onClick={() => router.push(`/events/${selectedEventId}/null`)}
-                  variant="outline"
                   // disabled={!bibNumber.trim() || !selectedEventId}
                 >
                   <Calendar className="mr-2 h-5 w-5" />
