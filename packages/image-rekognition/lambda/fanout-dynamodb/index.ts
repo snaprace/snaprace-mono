@@ -5,8 +5,15 @@ const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const TABLE_NAME = process.env.DDB_TABLE!;
 
 // TODO: photographer 프로필 조회는 추후 Supabase/RDS 연동 시 구현
-async function fetchPhotographerProfile(_photographerId: string) {
-  return null as any;
+type PhotographerProfile = {
+  instagram_handle?: string | null;
+  display_name?: string | null;
+};
+
+async function fetchPhotographerProfile(
+  _photographerId: string
+): Promise<PhotographerProfile | null> {
+  return null;
 }
 
 interface DetectTextResult {
@@ -33,7 +40,47 @@ export interface FanoutInput {
   indexFacesResult?: IndexFacesResult;
 }
 
-export const handler = async (event: FanoutInput) => {
+interface PhotoItem {
+  PK: string;
+  SK: string;
+  EntityType: "PHOTO";
+  ulid: string;
+  orgId: string;
+  eventId: string;
+  originalFilename: string;
+  rawKey: string;
+  processedKey: string;
+  s3Uri: string;
+  dimensions: { width: number; height: number };
+  format: string;
+  size: number;
+  bibs: string[];
+  bibCount: number;
+  faceIds: string[];
+  faceCount: number;
+  createdAt: string;
+  updatedAt: string;
+  photographerId?: string | null;
+  photographerHandle?: string | null;
+  photographerDisplayName?: string | null;
+  GSI2PK?: string;
+  GSI2SK?: string;
+}
+
+interface BibIndexItem {
+  PK: string;
+  SK: string;
+  EntityType: "BIB_INDEX";
+  GSI1PK: string;
+  GSI1SK: string;
+  ulid: string;
+  orgId: string;
+  eventId: string;
+  bib: string;
+  createdAt: string;
+}
+
+export const handler = async (event: FanoutInput): Promise<{ ok: true }> => {
   const {
     orgId,
     eventId,
@@ -67,7 +114,7 @@ export const handler = async (event: FanoutInput) => {
   const pk = `ORG#${orgId}#EVT#${eventId}`;
   const sk = `PHOTO#${ulid}`;
 
-  const photoItem: any = {
+  const photoItem: PhotoItem = {
     PK: pk,
     SK: sk,
     EntityType: "PHOTO",
@@ -110,12 +157,12 @@ export const handler = async (event: FanoutInput) => {
     new PutCommand({
       TableName: TABLE_NAME,
       Item: photoItem,
-    }) as any
+    })
   );
 
   // BIB_INDEX Put (bibs마다 1개씩)
   for (const bib of bibs) {
-    const bibItem = {
+    const bibItem: BibIndexItem = {
       PK: pk,
       SK: `BIB#${bib}#PHOTO#${ulid}`,
       EntityType: "BIB_INDEX",
@@ -132,7 +179,7 @@ export const handler = async (event: FanoutInput) => {
       new PutCommand({
         TableName: TABLE_NAME,
         Item: bibItem,
-      }) as any
+      })
     );
   }
 
