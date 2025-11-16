@@ -19,13 +19,21 @@
     "AUTH_SECRET",
     "AUTH_URL",
     "CRISP_WEBSITE_ID",
-    "NODE_ENV"
+    "NODE_ENV",
+    "NEXT_PUBLIC_SUPABASE_URL"
   ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**", "lib/**", "*.js", "*.d.ts"]
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "dist/**",
+        "lib/**",
+        "*.js",
+        "*.d.ts"
+      ]
     },
     "lint": {
       "dependsOn": ["^lint"]
