@@ -13,7 +13,7 @@ import * as path from "path";
 
 export class ImageRekognitionStack extends cdk.Stack {
   public readonly imageBucket: s3.Bucket;
-  public readonly photoServiceTable: dynamodb.Table;
+  public readonly photoServiceTable: dynamodb.TableV2;
   public readonly preprocessFn: NodejsFunction;
   public readonly detectTextFn: NodejsFunction;
   public readonly indexFacesFn: NodejsFunction;
@@ -69,7 +69,7 @@ export class ImageRekognitionStack extends cdk.Stack {
     // ===================================
     // DynamoDB Table: PhotoService
     // ===================================
-    this.photoServiceTable = new dynamodb.Table(this, "PhotoServiceTable", {
+    this.photoServiceTable = new dynamodb.TableV2(this, "PhotoServiceTable", {
       tableName: "PhotoService",
       // Primary Key
       partitionKey: {
@@ -81,17 +81,16 @@ export class ImageRekognitionStack extends cdk.Stack {
         type: dynamodb.AttributeType.STRING,
       },
 
-      // Billing
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      // Billing (on-demand)
+      billing: dynamodb.Billing.onDemand(),
 
       // Stream for CDC (Change Data Capture)
       // stream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
 
       // Point-in-Time Recovery
-      pointInTimeRecovery: true,
-
-      // Encryption
-      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      pointInTimeRecoverySpecification: {
+        pointInTimeRecoveryEnabled: true,
+      },
 
       // Lifecycle
       removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -207,28 +206,6 @@ export class ImageRekognitionStack extends cdk.Stack {
     });
 
     // ===================================
-    // Lambda: SfnTrigger
-    // ===================================
-    this.sfnTriggerFn = new NodejsFunction(this, "SfnTriggerFunction", {
-      runtime: lambda.Runtime.NODEJS_20_X,
-      handler: "handler",
-      entry: path.join(__dirname, "../lambda/sfn-trigger/index.ts"),
-      timeout: cdk.Duration.minutes(1),
-      memorySize: 256,
-      environment: {
-        STATE_MACHINE_ARN: this.stateMachine.stateMachineArn,
-        IMAGE_BUCKET: this.imageBucket.bucketName,
-      },
-    });
-
-    // SQS -> SfnTrigger Lambda 이벤트 소스
-    this.sfnTriggerFn.addEventSource(new SqsEventSource(imageUploadQueue));
-
-    // 권한: Step Functions 실행 + S3 HeadObject
-    this.stateMachine.grantStartExecution(this.sfnTriggerFn);
-    this.imageBucket.grantRead(this.sfnTriggerFn);
-
-    // ===================================
     // Step Functions: ImageProcessingWorkflow
     // ===================================
 
@@ -272,6 +249,28 @@ export class ImageRekognitionStack extends cdk.Stack {
       timeout: cdk.Duration.minutes(15),
       stateMachineName: "ImageProcessingWorkflow",
     });
+
+    // ===================================
+    // Lambda: SfnTrigger
+    // ===================================
+    this.sfnTriggerFn = new NodejsFunction(this, "SfnTriggerFunction", {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: "handler",
+      entry: path.join(__dirname, "../lambda/sfn-trigger/index.ts"),
+      timeout: cdk.Duration.minutes(1),
+      memorySize: 256,
+      environment: {
+        STATE_MACHINE_ARN: this.stateMachine.stateMachineArn,
+        IMAGE_BUCKET: this.imageBucket.bucketName,
+      },
+    });
+
+    // SQS -> SfnTrigger Lambda 이벤트 소스
+    this.sfnTriggerFn.addEventSource(new SqsEventSource(imageUploadQueue));
+
+    // 권한: Step Functions 실행 + S3 HeadObject
+    this.stateMachine.grantStartExecution(this.sfnTriggerFn);
+    this.imageBucket.grantRead(this.sfnTriggerFn);
 
     // ===================================
     // Outputs
