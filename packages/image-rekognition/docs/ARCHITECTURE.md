@@ -46,9 +46,9 @@ flowchart LR
     end
 
     subgraph Storage
-      S3[("S3 Bucket\n snaprace-images-{stage}")]
+      S3[("S3 Bucket\n snaprace-images")]
       RDB[("PostgreSQL / Supabase\n organizers / events / photographers / event_runners")]
-      DDB[("DynamoDB\n PhotoService-{stage}")]
+      DDB[("DynamoDB\n PhotoService")]
     end
 
     subgraph Processing
@@ -86,10 +86,10 @@ flowchart LR
 
 ### 3.1 S3 버킷 구조
 
-- 버킷명: `snaprace-images-{stage}`
+- 버킷명: `snaprace-images` (단일 스택 기준)
 
 ```text
-s3://snaprace-images-{stage}/
+s3://snaprace-images/
 └── {organizerId}/
     └── {eventId}/
         ├── raw/
@@ -101,7 +101,7 @@ s3://snaprace-images-{stage}/
 #### 예시
 
 ```text
-s3://snaprace-images-prod/
+s3://snaprace-images/
 └── snaprace-kr/
     └── seoul-marathon-2024/
         ├── raw/DSC_1234.jpg

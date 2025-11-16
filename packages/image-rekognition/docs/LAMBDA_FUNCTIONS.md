@@ -54,12 +54,16 @@ flowchart LR
 
 ### 2.2 공통 환경변수 패턴
 
+> ⚠️ 현재 구현은 **별도 stage(dev/prod) 없이 단일 스택**으로 동작합니다.  
+> 문서에 `{stage}` 표기가 남아있더라도 실제 CDK 구현은 고정 이름(`snaprace-images`, `PhotoService`)을 사용합니다.
+
 ```env
-STAGE=dev|prod
-IMAGE_BUCKET=snaprace-images-{stage}
-DDB_TABLE=PhotoService-{stage}
+IMAGE_BUCKET=snaprace-images
+DDB_TABLE=PhotoService
 REGION=ap-northeast-2
-RDS_CONNECTION_STRING=...
+
+# FanoutDynamoDB에서 Supabase RDB(photographers) 조회용
+SUPABASE_URL=...
 SUPABASE_SERVICE_ROLE_KEY=...
 ```
 
@@ -84,9 +88,9 @@ SUPABASE_SERVICE_ROLE_KEY=...
 ### 3.3 핸들러 시그니처 (예시)
 
 ```ts
-import { SQSEvent } from 'aws-lambda';
-import { SFNClient, StartExecutionCommand } from '@aws-sdk/client-sfn';
-import { S3Client, HeadObjectCommand } from '@aws-sdk/client-s3';
+import { SQSEvent } from "aws-lambda";
+import { SFNClient, StartExecutionCommand } from "@aws-sdk/client-sfn";
+import { S3Client, HeadObjectCommand } from "@aws-sdk/client-s3";
 
 const sfn = new SFNClient({});
 const s3 = new S3Client({});
@@ -101,17 +105,17 @@ export const handler = async (event: SQSEvent) => {
     if (!s3Record) continue;
 
     const bucket = s3Record.bucket.name;
-    const key = decodeURIComponent(s3Record.object.key.replace(/\+/g, ' '));
+    const key = decodeURIComponent(s3Record.object.key.replace(/\+/g, " "));
 
     // key 예시: snaprace-kr/seoul-marathon-2024/raw/DSC_1234.jpg
-    const [orgId, eventId, folder, ...rest] = key.split('/');
+    const [orgId, eventId, folder, ...rest] = key.split("/");
 
     // photographer-id 메타데이터 조회
     const head = await s3.send(
       new HeadObjectCommand({ Bucket: bucket, Key: key })
     );
 
-    const photographerId = head.Metadata?.['photographer-id'];
+    const photographerId = head.Metadata?.["photographer-id"];
 
     const input = {
       orgId,
@@ -125,7 +129,7 @@ export const handler = async (event: SQSEvent) => {
       new StartExecutionCommand({
         stateMachineArn: STATE_MACHINE_ARN,
         input: JSON.stringify(input),
-      }),
+      })
     );
   }
 };
@@ -157,7 +161,7 @@ export const handler = async (event: SQSEvent) => {
   "eventId": "seoul-marathon-2024",
   "bucketName": "snaprace-images-dev",
   "rawKey": "snaprace-kr/seoul-marathon-2024/raw/DSC_1234.jpg",
-  "photographerId": "ph_01ABCXYZ" // 없을 수 있음
+  "photographerId": "ph_01ABCXYZ", // 없을 수 있음
 }
 ```
 
@@ -175,16 +179,20 @@ export const handler = async (event: SQSEvent) => {
   "format": "jpeg",
   "size": 2048576,
   "ulid": "01HXY8FWZM5KJQD9K3Y6R8NZTP",
-  "photographerId": "ph_01ABCXYZ"
+  "photographerId": "ph_01ABCXYZ",
 }
 ```
 
 ### 4.4 구현 스케치
 
 ```ts
-import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-import sharp from 'sharp';
-import { ulid } from 'ulid';
+import {
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand,
+} from "@aws-sdk/client-s3";
+import sharp from "sharp";
+import { ulid } from "ulid";
 
 const s3 = new S3Client({});
 const BUCKET_NAME = process.env.IMAGE_BUCKET!;
@@ -192,13 +200,15 @@ const BUCKET_NAME = process.env.IMAGE_BUCKET!;
 export const handler = async (event: any) => {
   const { orgId, eventId, rawKey, photographerId } = event;
 
-  const getRes = await s3.send(new GetObjectCommand({
-    Bucket: BUCKET_NAME,
-    Key: rawKey,
-  }));
+  const getRes = await s3.send(
+    new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: rawKey,
+    })
+  );
 
   const body = await getRes.Body?.transformToByteArray();
-  if (!body) throw new Error('Empty S3 body');
+  if (!body) throw new Error("Empty S3 body");
 
   const id = ulid();
   const processedKey = `${orgId}/${eventId}/processed/${id}.jpg`;
@@ -216,8 +226,8 @@ export const handler = async (event: any) => {
       Bucket: BUCKET_NAME,
       Key: processedKey,
       Body: resized,
-      ContentType: 'image/jpeg',
-    }),
+      ContentType: "image/jpeg",
+    })
   );
 
   return {
@@ -228,7 +238,7 @@ export const handler = async (event: any) => {
       width: metadata.width ?? null,
       height: metadata.height ?? null,
     },
-    format: metadata.format ?? 'jpeg',
+    format: metadata.format ?? "jpeg",
     size: resized.length,
     ulid: id,
     photographerId: photographerId ?? null,
@@ -260,7 +270,7 @@ Preprocess 단계 출력의 일부를 사용:
   "processedKey": "snaprace-kr/seoul-marathon-2024/processed/01HXY...jpg",
   "orgId": "snaprace-kr",
   "eventId": "seoul-marathon-2024",
-  "ulid": "01HXY..."
+  "ulid": "01HXY...",
 }
 ```
 
@@ -270,14 +280,17 @@ Preprocess 단계 출력의 일부를 사용:
 {
   "bibs": ["1234", "5678"],
   "rawText": ["1234", "5678", "ADIDAS", "2024"],
-  "confidence": 0.9
+  "confidence": 0.9,
 }
 ```
 
 ### 5.4 구현 스케치
 
 ```ts
-import { RekognitionClient, DetectTextCommand } from '@aws-sdk/client-rekognition';
+import {
+  RekognitionClient,
+  DetectTextCommand,
+} from "@aws-sdk/client-rekognition";
 
 const rek = new RekognitionClient({});
 const BUCKET_NAME = process.env.IMAGE_BUCKET!;
@@ -293,13 +306,13 @@ export const handler = async (event: any) => {
           Name: processedKey,
         },
       },
-    }),
+    })
   );
 
   const bibCandidates: string[] = [];
 
   for (const t of res.TextDetections ?? []) {
-    if (t.Type === 'WORD' && t.DetectedText) {
+    if (t.Type === "WORD" && t.DetectedText) {
       // 간단 예시: 숫자 3~6자리를 bib 후보로 사용
       if (/^\d{3,6}$/.test(t.DetectedText)) {
         bibCandidates.push(t.DetectedText);
@@ -343,7 +356,7 @@ export const handler = async (event: any) => {
   "bucketName": "snaprace-images-dev",
   "processedKey": "snaprace-kr/seoul-marathon-2024/processed/01HXY...jpg",
   "ulid": "01HXY...",
-  "s3Uri": "s3://..."
+  "s3Uri": "s3://...",
 }
 ```
 
@@ -352,7 +365,7 @@ export const handler = async (event: any) => {
 ```jsonc
 {
   "faceIds": ["face-id-1", "face-id-2"],
-  "faceCount": 2
+  "faceCount": 2,
 }
 ```
 
@@ -364,7 +377,7 @@ import {
   DescribeCollectionCommand,
   CreateCollectionCommand,
   IndexFacesCommand,
-} from '@aws-sdk/client-rekognition';
+} from "@aws-sdk/client-rekognition";
 
 const rek = new RekognitionClient({});
 const BUCKET_NAME = process.env.IMAGE_BUCKET!;
@@ -380,7 +393,7 @@ async function ensureCollectionExists(collectionId: string) {
     );
     existingCollections.add(collectionId);
   } catch (err: any) {
-    if (err.name === 'ResourceNotFoundException') {
+    if (err.name === "ResourceNotFoundException") {
       await rek.send(
         new CreateCollectionCommand({ CollectionId: collectionId })
       );
@@ -408,8 +421,8 @@ export const handler = async (event: any) => {
       },
       ExternalImageId: s3Uri,
       MaxFaces: 15,
-      QualityFilter: 'AUTO',
-    }),
+      QualityFilter: "AUTO",
+    })
   );
 
   const faceIds = (res.FaceRecords ?? [])
@@ -461,13 +474,13 @@ Step Functions에서 Fanout에 전달되는 입력 예시:
   "detectTextResult": {
     "bibs": ["1234", "5678"],
     "rawText": ["1234", "5678", "ADIDAS"],
-    "confidence": 0.9
+    "confidence": 0.9,
   },
 
   "indexFacesResult": {
     "faceIds": ["face-1", "face-2"],
-    "faceCount": 2
-  }
+    "faceCount": 2,
+  },
 }
 ```
 
@@ -481,8 +494,8 @@ Step Functions에서 Fanout에 전달되는 입력 예시:
 ### 7.4 구현 스케치 (핵심 로직)
 
 ```ts
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const TABLE_NAME = process.env.DDB_TABLE!;
@@ -534,12 +547,12 @@ export const handler = async (event: any) => {
   const photoItem: any = {
     PK: pk,
     SK: sk,
-    EntityType: 'PHOTO',
+    EntityType: "PHOTO",
 
     ulid,
     orgId,
     eventId,
-    originalFilename: rawKey.split('/').slice(-1)[0],
+    originalFilename: rawKey.split("/").slice(-1)[0],
     rawKey,
     processedKey,
     s3Uri,
@@ -561,7 +574,8 @@ export const handler = async (event: any) => {
   if (photographerId) {
     photoItem.photographerId = photographerId;
     if (photographerHandle) photoItem.photographerHandle = photographerHandle;
-    if (photographerDisplayName) photoItem.photographerDisplayName = photographerDisplayName;
+    if (photographerDisplayName)
+      photoItem.photographerDisplayName = photographerDisplayName;
 
     photoItem.GSI2PK = `PHOTOGRAPHER#${photographerId}`;
     photoItem.GSI2SK = `EVT#${eventId}#TIME#${now}`;
@@ -574,7 +588,7 @@ export const handler = async (event: any) => {
     new PutCommand({
       TableName: TABLE_NAME,
       Item: photoItem,
-    }) as any,
+    }) as any
   );
 
   // BIB_INDEX Put (bibs마다 1개씩)
@@ -582,7 +596,7 @@ export const handler = async (event: any) => {
     const bibItem = {
       PK: pk,
       SK: `BIB#${bib}#PHOTO#${ulid}`,
-      EntityType: 'BIB_INDEX',
+      EntityType: "BIB_INDEX",
       GSI1PK: `EVT#${eventId}#BIB#${bib}`,
       GSI1SK: `PHOTO#${ulid}`,
       ulid,
@@ -596,7 +610,7 @@ export const handler = async (event: any) => {
       new PutCommand({
         TableName: TABLE_NAME,
         Item: bibItem,
-      }) as any,
+      }) as any
     );
   }
 
@@ -618,6 +632,9 @@ export const handler = async (event: any) => {
 ---
 
 ## 8. 에러 처리 및 재시도 전략
+
+> ℹ️ 에러 처리, DLQ, 모니터링은 **현재 코드에서는 최소 수준만 적용**되어 있으며,  
+> 아래 전략은 향후 단계에서 점진적으로 도입할 타겟 아키텍처입니다.
 
 - SQS → SFN Trigger
   - Lambda 레벨에서 실패 시 메시지는 visibility timeout 후 재시도
