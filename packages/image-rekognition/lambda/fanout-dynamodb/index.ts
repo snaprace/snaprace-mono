@@ -1,19 +1,39 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { getLambdaClient, type Database } from "@repo/supabase";
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const TABLE_NAME = process.env.DDB_TABLE!;
 
-// TODO: photographer 프로필 조회는 추후 Supabase/RDS 연동 시 구현
 type PhotographerProfile = {
   instagram_handle?: string | null;
   display_name?: string | null;
 };
 
+const supabase = getLambdaClient();
+
 async function fetchPhotographerProfile(
-  _photographerId: string
+  photographerId: string
 ): Promise<PhotographerProfile | null> {
-  return null;
+  if (!photographerId) return null;
+
+  const { data, error } = await supabase
+    .from("photographers")
+    .select("instagram_handle, display_name")
+    .eq("photographer_id", photographerId)
+    .maybeSingle<PhotographerProfile>();
+
+  if (error) {
+    console.error("Failed to fetch photographer profile from Supabase:", error);
+    return null;
+  }
+
+  if (!data) return null;
+
+  return {
+    instagram_handle: data.instagram_handle ?? null,
+    display_name: data.display_name ?? null,
+  };
 }
 
 interface DetectTextResult {

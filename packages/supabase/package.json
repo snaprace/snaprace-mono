@@ -2,10 +2,11 @@
   "name": "@repo/supabase",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
+    "test": "echo \"no tests\" && exit 0",
+    "build": "tsc -p tsconfig.json",
     "generate:types": "supabase gen types typescript --project-id wvlrlvkfgwsbbhcsuarh --schema public > src/types.ts"
   },
   "keywords": [],
@@ -14,8 +15,5 @@
   "dependencies": {
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.81.1"
-  },
-  "devDependencies": {
-    "@types/node": "^24.10.1"
   }
 }

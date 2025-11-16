@@ -181,6 +181,9 @@ export class ImageRekognitionStack extends cdk.Stack {
       memorySize: 512,
       environment: {
         DDB_TABLE: this.photoServiceTable.tableName,
+        // Supabase RDB Truth Layer 조회용 (photographers 등)
+        SUPABASE_URL: process.env.SUPABASE_URL ?? "",
+        SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY ?? "",
       },
     });
 

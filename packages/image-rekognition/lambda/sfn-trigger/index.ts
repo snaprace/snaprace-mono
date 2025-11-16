@@ -38,8 +38,20 @@ export const handler = async (event: SqsEvent): Promise<void> => {
       (s3Record.object.key as string).replace(/\+/g, " ")
     );
 
-    // key 예시: orgId/eventId/raw/filename.jpg
-    const [orgId, eventId] = (key as string).split("/");
+    // key 예시: {orgId}/{eventId}/raw/{filename}
+    const parts = (key as string).split("/");
+    if (parts.length < 4) {
+      console.log("Skipping object with unexpected key format:", key);
+      continue;
+    }
+
+    const [orgId, eventId, folder] = parts;
+
+    // raw 폴더가 아닌 경우(예: processed/, 기타 경로)는 무시
+    if (folder !== "raw") {
+      console.log("Skipping non-raw object key:", key);
+      continue;
+    }
 
     // photographer-id 메타데이터 조회
     const head = await s3.send(
