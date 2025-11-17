@@ -40,7 +40,7 @@ async function ensureCollectionExists(collectionId: string): Promise<void> {
 export const handler = async (
   event: IndexFacesInput
 ): Promise<IndexFacesOutput> => {
-  const { orgId, eventId, bucketName, processedKey, s3Uri } = event;
+  const { orgId, eventId, bucketName, processedKey, ulid } = event;
 
   const collectionId = `${orgId}-${eventId}`;
 
@@ -55,7 +55,7 @@ export const handler = async (
           Name: processedKey,
         },
       },
-      ExternalImageId: s3Uri,
+      ExternalImageId: ulid,
       MaxFaces: 15,
       QualityFilter: "AUTO",
     })

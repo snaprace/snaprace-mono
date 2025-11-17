@@ -11,25 +11,26 @@
     "cdk": "cdk"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.14",
     "@types/aws-lambda": "^8.10.145",
+    "@types/jest": "^29.5.14",
     "@types/node": "22.7.9",
+    "aws-cdk": "2.1031.1",
     "jest": "^29.7.0",
     "ts-jest": "^29.2.5",
-    "aws-cdk": "2.1031.1",
     "ts-node": "^10.9.2",
     "typescript": "~5.6.3"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.932.0",
+    "@aws-sdk/client-rekognition": "^3.932.0",
+    "@aws-sdk/client-s3": "^3.931.0",
+    "@aws-sdk/client-sfn": "^3.932.0",
+    "@aws-sdk/lib-dynamodb": "^3.932.0",
+    "@repo/supabase": "workspace:*",
     "aws-cdk-lib": "2.215.0",
     "constructs": "^10.0.0",
-    "@aws-sdk/client-s3": "^3.931.0",
-    "@aws-sdk/client-rekognition": "^3.932.0",
-    "@aws-sdk/client-dynamodb": "^3.932.0",
-    "@aws-sdk/lib-dynamodb": "^3.932.0",
-    "@aws-sdk/client-sfn": "^3.932.0",
+    "dotenv": "^17.2.3",
     "sharp": "^0.33.5",
-    "ulid": "^2.4.0",
-    "@repo/supabase": "workspace:*"
+    "ulid": "^2.4.0"
   }
 }

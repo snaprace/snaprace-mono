@@ -177,6 +177,9 @@ export class ImageRekognitionStack extends cdk.Stack {
       },
     });
 
+    // Grant S3 read permissions to DetectText Lambda (Rekognition S3Object access)
+    this.imageBucket.grantRead(this.detectTextFn);
+
     // ===================================
     // Lambda: IndexFaces
     // ===================================
@@ -191,6 +194,9 @@ export class ImageRekognitionStack extends cdk.Stack {
         IMAGE_BUCKET: this.imageBucket.bucketName,
       },
     });
+
+    // Grant S3 read permissions to IndexFaces Lambda (Rekognition S3Object access)
+    this.imageBucket.grantRead(this.indexFacesFn);
 
     // ===================================
     // Lambda: Fanout DynamoDB
