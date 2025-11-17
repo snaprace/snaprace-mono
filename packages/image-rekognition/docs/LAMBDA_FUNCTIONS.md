@@ -345,7 +345,7 @@ export const handler = async (event: any) => {
 
 - Rekognition IndexFaces API를 호출해 얼굴을 컬렉션에 저장
 - 컬렉션 ID는 `{orgId}-{eventId}` 형식으로 관리
-- ExternalImageId에 S3 URI 또는 `PHOTO#{ulid}` 등을 저장 (추후 역추적용)
+- ExternalImageId는 허용 패턴(`[a-zA-Z0-9_.\\-:]+`)을 만족하도록 `orgId:eventId:ulid` 형식을 사용 (슬래시 `/` 포함 금지)
 
 ### 6.2 입력
 
@@ -356,7 +356,7 @@ export const handler = async (event: any) => {
   "bucketName": "snaprace-images-dev",
   "processedKey": "snaprace-kr/seoul-marathon-2024/processed/01HXY...jpg",
   "ulid": "01HXY...",
-  "s3Uri": "s3://...",
+  "s3Uri": "s3://...", // 참고: ExternalImageId로는 사용하지 않음
 }
 ```
 
@@ -405,10 +405,13 @@ async function ensureCollectionExists(collectionId: string) {
 }
 
 export const handler = async (event: any) => {
-  const { orgId, eventId, processedKey, s3Uri } = event;
+  const { orgId, eventId, processedKey, ulid } = event;
   const collectionId = `${orgId}-${eventId}`;
 
   await ensureCollectionExists(collectionId);
+
+  // ExternalImageId는 [a-zA-Z0-9_.\-:]+ 만 허용 → 안전한 식별자 사용
+  const externalImageId = `${orgId}:${eventId}:${ulid}`;
 
   const res = await rek.send(
     new IndexFacesCommand({
@@ -419,7 +422,7 @@ export const handler = async (event: any) => {
           Name: processedKey,
         },
       },
-      ExternalImageId: s3Uri,
+      ExternalImageId: externalImageId,
       MaxFaces: 15,
       QualityFilter: "AUTO",
     })

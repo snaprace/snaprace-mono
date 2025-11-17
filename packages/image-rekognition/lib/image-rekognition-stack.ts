@@ -139,6 +139,24 @@ export class ImageRekognitionStack extends cdk.Stack {
       environment: {
         IMAGE_BUCKET: this.imageBucket.bucketName,
       },
+      bundling: {
+        externalModules: ["sharp"],
+        nodeModules: ["sharp"],
+        commandHooks: {
+          beforeBundling(): string[] {
+            return [];
+          },
+          beforeInstall(): string[] {
+            return [];
+          },
+          afterBundling(inputDir: string, outputDir: string): string[] {
+            return [
+              `cd ${outputDir}`,
+              "rm -rf node_modules/sharp && npm install --cpu=x64 --os=linux --libc=glibc sharp",
+            ];
+          },
+        },
+      },
     });
 
     // Grant S3 permissions to Preprocess Lambda
@@ -257,11 +275,11 @@ export class ImageRekognitionStack extends cdk.Stack {
     });
 
     // Preprocess: 재시도 후 실패 시 전체 실패 처리
-    preprocessTask.addRetry({
-      maxAttempts: 3,
-      backoffRate: 2.0,
-      interval: cdk.Duration.seconds(2),
-    });
+    // preprocessTask.addRetry({
+    //   maxAttempts: 3,
+    //   backoffRate: 2.0,
+    //   interval: cdk.Duration.seconds(2),
+    // });
     preprocessTask.addCatch(processingFailed, { resultPath: "$" });
 
     // DetectText: 실패 시 빈 결과로 대체
@@ -272,11 +290,11 @@ export class ImageRekognitionStack extends cdk.Stack {
         confidence: 0,
       }),
     });
-    detectTextTask.addRetry({
-      maxAttempts: 2,
-      backoffRate: 2.0,
-      interval: cdk.Duration.seconds(1),
-    });
+    // detectTextTask.addRetry({
+    //   maxAttempts: 2,
+    //   backoffRate: 2.0,
+    //   interval: cdk.Duration.seconds(1),
+    // });
     detectTextTask.addCatch(detectFallback, { resultPath: "$" });
 
     // IndexFaces: 실패 시 빈 결과로 대체
@@ -286,19 +304,19 @@ export class ImageRekognitionStack extends cdk.Stack {
         faceCount: 0,
       }),
     });
-    indexFacesTask.addRetry({
-      maxAttempts: 2,
-      backoffRate: 2.0,
-      interval: cdk.Duration.seconds(1),
-    });
+    // indexFacesTask.addRetry({
+    //   maxAttempts: 2,
+    //   backoffRate: 2.0,
+    //   interval: cdk.Duration.seconds(1),
+    // });
     indexFacesTask.addCatch(indexFallback, { resultPath: "$" });
 
     // Fanout: 재시도 후 실패 시 전체 실패 처리
-    fanoutTask.addRetry({
-      maxAttempts: 3,
-      backoffRate: 2.0,
-      interval: cdk.Duration.seconds(2),
-    });
+    // fanoutTask.addRetry({
+    //   maxAttempts: 3,
+    //   backoffRate: 2.0,
+    //   interval: cdk.Duration.seconds(2),
+    // });
     fanoutTask.addCatch(processingFailed, { resultPath: "$" });
 
     // 병렬 분석: DetectText와 IndexFaces를 동시에 실행
