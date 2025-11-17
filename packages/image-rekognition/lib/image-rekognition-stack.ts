@@ -182,7 +182,7 @@ export class ImageRekognitionStack extends cdk.Stack {
         DDB_TABLE: this.photoServiceTable.tableName,
         // Supabase RDB Truth Layer 조회용 (photographers 등)
         SUPABASE_URL: process.env.SUPABASE_URL ?? "",
-        SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY ?? "",
+        SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
       },
     });
 
@@ -209,7 +209,7 @@ export class ImageRekognitionStack extends cdk.Stack {
     // Step Functions: ImageProcessingWorkflow
     // ===================================
 
-    // Preprocess → DetectText → IndexFaces → Fanout 순차 실행
+    // Preprocess → Parallel(DetectText & IndexFaces) → Merge → Fanout
 
     const preprocessTask = new sfnTasks.LambdaInvoke(
       this,
@@ -220,18 +220,15 @@ export class ImageRekognitionStack extends cdk.Stack {
       }
     );
 
+    // 개별 분석 람다들은 결과 페이로드만 반환하도록 설정
     const detectTextTask = new sfnTasks.LambdaInvoke(this, "DetectTextTask", {
       lambdaFunction: this.detectTextFn,
-      // DetectText는 Preprocess 출력 전체를 입력으로 받고,
-      // 결과를 상태의 detectTextResult 아래에 병합
-      resultPath: "$.detectTextResult",
-      outputPath: "$.Payload",
+      payloadResponseOnly: true,
     });
 
     const indexFacesTask = new sfnTasks.LambdaInvoke(this, "IndexFacesTask", {
       lambdaFunction: this.indexFacesFn,
-      resultPath: "$.indexFacesResult",
-      outputPath: "$.Payload",
+      payloadResponseOnly: true,
     });
 
     const fanoutTask = new sfnTasks.LambdaInvoke(this, "FanoutDynamoDBTask", {
@@ -239,9 +236,40 @@ export class ImageRekognitionStack extends cdk.Stack {
       outputPath: "$.Payload",
     });
 
+    // 병렬 분석: DetectText와 IndexFaces를 동시에 실행
+    const parallelAnalysis = new sfn.Parallel(this, "AnalyzeImage", {
+      // 두 브랜치의 결과 배열([detect, index])을 객체로 변환하여 $.analysis에 저장
+      resultSelector: {
+        "detectTextResult.$": "$[0]",
+        "indexFacesResult.$": "$[1]",
+      },
+      resultPath: "$.analysis",
+    });
+
+    parallelAnalysis.branch(detectTextTask).branch(indexFacesTask);
+
+    // Preprocess 결과 + 병렬 분석 결과를 Fanout 입력 스키마로 병러합
+    const mergeResults = new sfn.Pass(this, "MergeResults", {
+      parameters: {
+        "orgId.$": "$.orgId",
+        "eventId.$": "$.eventId",
+        "bucketName.$": "$.bucketName",
+        "rawKey.$": "$.rawKey",
+        "processedKey.$": "$.processedKey",
+        "s3Uri.$": "$.s3Uri",
+        "dimensions.$": "$.dimensions",
+        "format.$": "$.format",
+        "size.$": "$.size",
+        "ulid.$": "$.ulid",
+        "photographerId.$": "$.photographerId",
+        "detectTextResult.$": "$.analysis.detectTextResult",
+        "indexFacesResult.$": "$.analysis.indexFacesResult",
+      },
+    });
+
     const definition = preprocessTask
-      .next(detectTextTask)
-      .next(indexFacesTask)
+      .next(parallelAnalysis)
+      .next(mergeResults)
       .next(fanoutTask);
 
     this.stateMachine = new sfn.StateMachine(this, "ImageProcessingWorkflow", {
