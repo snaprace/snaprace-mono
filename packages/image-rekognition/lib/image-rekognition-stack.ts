@@ -10,6 +10,8 @@ import * as sfn from "aws-cdk-lib/aws-stepfunctions";
 import * as sfnTasks from "aws-cdk-lib/aws-stepfunctions-tasks";
 import { Construct } from "constructs";
 import * as path from "path";
+import * as iam from "aws-cdk-lib/aws-iam";
+import * as logs from "aws-cdk-lib/aws-logs";
 
 export class ImageRekognitionStack extends cdk.Stack {
   public readonly imageBucket: s3.Bucket;
@@ -133,6 +135,7 @@ export class ImageRekognitionStack extends cdk.Stack {
       entry: path.join(__dirname, "../lambda/preprocess/index.ts"),
       timeout: cdk.Duration.minutes(5),
       memorySize: 1024,
+      logRetention: logs.RetentionDays.ONE_DAY,
       environment: {
         IMAGE_BUCKET: this.imageBucket.bucketName,
       },
@@ -150,6 +153,7 @@ export class ImageRekognitionStack extends cdk.Stack {
       entry: path.join(__dirname, "../lambda/detect-text/index.ts"),
       timeout: cdk.Duration.seconds(30),
       memorySize: 512,
+      logRetention: logs.RetentionDays.ONE_DAY,
       environment: {
         IMAGE_BUCKET: this.imageBucket.bucketName,
       },
@@ -164,6 +168,7 @@ export class ImageRekognitionStack extends cdk.Stack {
       entry: path.join(__dirname, "../lambda/index-faces/index.ts"),
       timeout: cdk.Duration.seconds(30),
       memorySize: 512,
+      logRetention: logs.RetentionDays.ONE_DAY,
       environment: {
         IMAGE_BUCKET: this.imageBucket.bucketName,
       },
@@ -178,6 +183,7 @@ export class ImageRekognitionStack extends cdk.Stack {
       entry: path.join(__dirname, "../lambda/fanout-dynamodb/index.ts"),
       timeout: cdk.Duration.seconds(30),
       memorySize: 512,
+      logRetention: logs.RetentionDays.ONE_DAY,
       environment: {
         DDB_TABLE: this.photoServiceTable.tableName,
         // Supabase RDB Truth Layer 조회용 (photographers 등)
@@ -191,9 +197,17 @@ export class ImageRekognitionStack extends cdk.Stack {
     // ===================================
     // SQS Queue: ImageUpload
     // ===================================
+    const imageUploadDlq = new sqs.Queue(this, "ImageUploadDLQ", {
+      retentionPeriod: cdk.Duration.days(14),
+    });
+
     const imageUploadQueue = new sqs.Queue(this, "ImageUploadQueue", {
       visibilityTimeout: cdk.Duration.minutes(5),
       retentionPeriod: cdk.Duration.days(4),
+      deadLetterQueue: {
+        queue: imageUploadDlq,
+        maxReceiveCount: 5,
+      },
     });
 
     // S3 ObjectCreated -> SQS 알림
@@ -236,6 +250,57 @@ export class ImageRekognitionStack extends cdk.Stack {
       outputPath: "$.Payload",
     });
 
+    // Retry/Catch/Fallback 정의
+    const processingFailed = new sfn.Fail(this, "ProcessingFailed", {
+      error: "ImageProcessingError",
+      cause: "Failed to process image",
+    });
+
+    // Preprocess: 재시도 후 실패 시 전체 실패 처리
+    preprocessTask.addRetry({
+      maxAttempts: 3,
+      backoffRate: 2.0,
+      interval: cdk.Duration.seconds(2),
+    });
+    preprocessTask.addCatch(processingFailed, { resultPath: "$" });
+
+    // DetectText: 실패 시 빈 결과로 대체
+    const detectFallback = new sfn.Pass(this, "DetectTextFallback", {
+      result: sfn.Result.fromObject({
+        bibs: [],
+        rawText: [],
+        confidence: 0,
+      }),
+    });
+    detectTextTask.addRetry({
+      maxAttempts: 2,
+      backoffRate: 2.0,
+      interval: cdk.Duration.seconds(1),
+    });
+    detectTextTask.addCatch(detectFallback, { resultPath: "$" });
+
+    // IndexFaces: 실패 시 빈 결과로 대체
+    const indexFallback = new sfn.Pass(this, "IndexFacesFallback", {
+      result: sfn.Result.fromObject({
+        faceIds: [],
+        faceCount: 0,
+      }),
+    });
+    indexFacesTask.addRetry({
+      maxAttempts: 2,
+      backoffRate: 2.0,
+      interval: cdk.Duration.seconds(1),
+    });
+    indexFacesTask.addCatch(indexFallback, { resultPath: "$" });
+
+    // Fanout: 재시도 후 실패 시 전체 실패 처리
+    fanoutTask.addRetry({
+      maxAttempts: 3,
+      backoffRate: 2.0,
+      interval: cdk.Duration.seconds(2),
+    });
+    fanoutTask.addCatch(processingFailed, { resultPath: "$" });
+
     // 병렬 분석: DetectText와 IndexFaces를 동시에 실행
     const parallelAnalysis = new sfn.Parallel(this, "AnalyzeImage", {
       // 두 브랜치의 결과 배열([detect, index])을 객체로 변환하여 $.analysis에 저장
@@ -248,7 +313,7 @@ export class ImageRekognitionStack extends cdk.Stack {
 
     parallelAnalysis.branch(detectTextTask).branch(indexFacesTask);
 
-    // Preprocess 결과 + 병렬 분석 결과를 Fanout 입력 스키마로 병러합
+    // Preprocess 결과 + 병렬 분석 결과를 Fanout 입력 스키마로 병합
     const mergeResults = new sfn.Pass(this, "MergeResults", {
       parameters: {
         "orgId.$": "$.orgId",
@@ -272,10 +337,21 @@ export class ImageRekognitionStack extends cdk.Stack {
       .next(mergeResults)
       .next(fanoutTask);
 
+    // 최소 비용 로그 설정: ERROR 레벨, 실행 데이터 미포함
+    const sfnLogGroup = new logs.LogGroup(this, "ImageProcessingLogs", {
+      retention: logs.RetentionDays.ONE_DAY,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
     this.stateMachine = new sfn.StateMachine(this, "ImageProcessingWorkflow", {
       definition,
       timeout: cdk.Duration.minutes(15),
       stateMachineName: "ImageProcessingWorkflow",
+      logs: {
+        destination: sfnLogGroup,
+        level: sfn.LogLevel.ERROR,
+        includeExecutionData: false,
+      },
     });
 
     // ===================================
@@ -287,6 +363,7 @@ export class ImageRekognitionStack extends cdk.Stack {
       entry: path.join(__dirname, "../lambda/sfn-trigger/index.ts"),
       timeout: cdk.Duration.minutes(1),
       memorySize: 256,
+      logRetention: logs.RetentionDays.ONE_DAY,
       environment: {
         STATE_MACHINE_ARN: this.stateMachine.stateMachineArn,
         IMAGE_BUCKET: this.imageBucket.bucketName,
@@ -300,6 +377,26 @@ export class ImageRekognitionStack extends cdk.Stack {
     this.stateMachine.grantStartExecution(this.sfnTriggerFn);
     this.imageBucket.grantRead(this.sfnTriggerFn);
 
+    // ===================================
+    // IAM: Rekognition permissions for Detect/Index lambdas
+    // ===================================
+    this.detectTextFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["rekognition:DetectText"],
+        resources: ["*"],
+      })
+    );
+
+    this.indexFacesFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "rekognition:CreateCollection",
+          "rekognition:DescribeCollection",
+          "rekognition:IndexFaces",
+        ],
+        resources: ["*"],
+      })
+    );
     // ===================================
     // Outputs
     // ===================================
