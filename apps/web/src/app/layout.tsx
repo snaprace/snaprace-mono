@@ -33,6 +33,12 @@ export const metadata: Metadata = {
       },
     ],
   },
+  icons: [
+    {
+      rel: "icon",
+      url: "/images/snaprace-logo-icon-only.svg",
+    },
+  ],
   twitter: {
     card: "summary_large_image",
     images: ["/images/og-landing.png"],

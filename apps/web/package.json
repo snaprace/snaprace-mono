@@ -13,6 +13,7 @@
     "timing:update-s3": "tsx src/scripts/raceresult/update-timingdata-s3.ts"
   },
   "dependencies": {
+    "@repo/supabase": "workspace:*",
     "@aws-sdk/client-dynamodb": "^3.873.0",
     "@aws-sdk/client-s3": "^3.873.0",
     "@aws-sdk/lib-dynamodb": "^3.873.0",
