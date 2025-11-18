@@ -53,7 +53,7 @@ export const handler = async (event: SqsEvent): Promise<void> => {
       continue;
     }
 
-    // photographer-id 메타데이터 조회
+    // instagram-handle 메타데이터 조회
     const head = await s3.send(
       new HeadObjectCommand({
         Bucket: bucket,
@@ -61,14 +61,14 @@ export const handler = async (event: SqsEvent): Promise<void> => {
       })
     );
 
-    const photographerId = head.Metadata?.["photographer-id"];
+    const instagramHandle = head.Metadata?.["instagram-handle"];
 
     const input = {
       orgId,
       eventId,
       bucketName: bucket,
       rawKey: key,
-      photographerId: photographerId ?? null,
+      instagramHandle: instagramHandle ?? null,
     };
 
     console.log("Starting state machine with input:", input);

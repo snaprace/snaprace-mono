@@ -350,7 +350,7 @@ export class ImageRekognitionStack extends cdk.Stack {
         "format.$": "$.format",
         "size.$": "$.size",
         "ulid.$": "$.ulid",
-        "photographerId.$": "$.photographerId",
+        "instagramHandle.$": "$.instagramHandle",
         "detectTextResult.$": "$.analysis.detectTextResult",
         "indexFacesResult.$": "$.analysis.indexFacesResult",
       },

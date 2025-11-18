@@ -14,7 +14,7 @@ interface PreprocessInput {
   eventId: string;
   bucketName: string;
   rawKey: string;
-  photographerId?: string | null;
+  instagramHandle?: string | null;
 }
 
 interface PreprocessOutput extends PreprocessInput {
@@ -34,7 +34,7 @@ export const handler = async (
 ): Promise<PreprocessOutput> => {
   console.log("Preprocess started:", JSON.stringify(event, null, 2));
 
-  const { orgId, eventId, rawKey, photographerId } = event;
+  const { orgId, eventId, rawKey, instagramHandle } = event;
 
   try {
     // 1. Download raw image from S3
@@ -96,7 +96,7 @@ export const handler = async (
         Metadata: {
           "original-key": rawKey,
           ulid: id,
-          ...(photographerId && { "photographer-id": photographerId }),
+          ...(instagramHandle && { "instagram-handle": instagramHandle }),
         },
       })
     );
@@ -118,7 +118,7 @@ export const handler = async (
       format: "jpeg",
       size: resized.length,
       ulid: id,
-      photographerId: photographerId || null,
+      instagramHandle: instagramHandle || null,
     };
 
     console.log("Preprocess completed:", JSON.stringify(result, null, 2));

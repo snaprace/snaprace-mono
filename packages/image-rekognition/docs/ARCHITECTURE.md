@@ -66,7 +66,7 @@ flowchart LR
       Api["API Gateway + Lambda/Next.js API"]
     end
 
-    Uploader -->|direct upload\n(+ S3 metadata: photographer-id)| S3
+    Uploader -->|direct upload\n(+ S3 metadata: instagram-handle)| S3
     S3 -->|ObjectCreated| SQS
     SQS --> L0 --> SFN
 
@@ -171,7 +171,7 @@ SQS 메시지는 S3 오브젝트 key, 버킷 이름, 사이즈 등을 포함합�
 
 - SQS를 폴링하며 메시지를 batch로 읽음
 - 각 레코드에 대해 S3 object key를 파싱하여 `{orgId, eventId, rawKey}` 추출
-- S3 HeadObject를 통해 `photographer-id` 등 메타데이터를 읽어 workflow input에 포함
+- S3 HeadObject를 통해 `instagram-handle` 메타데이터를 읽어 workflow input에 포함
 
 ```jsonc
 {
@@ -179,7 +179,7 @@ SQS 메시지는 S3 오브젝트 key, 버킷 이름, 사이즈 등을 포함합�
   "eventId": "seoul-marathon-2024",
   "bucketName": "snaprace-images-prod",
   "rawKey": "snaprace-kr/seoul-marathon-2024/raw/DSC_1234.jpg",
-  "photographerId": "ph_01ABCXYZ" // 없을 수 있음
+  "instagramHandle": "studio_aaa" // 없을 수 있음
 }
 ```
 
@@ -194,7 +194,7 @@ SQS 메시지는 S3 오브젝트 key, 버킷 이름, 사이즈 등을 포함합�
    - 리사이즈/압축 (Sharp)
    - processed 경로에 업로드 (`processed/{ulid}.jpg`)
    - S3 metadata 복사 및 일부 정규화
-   - 결과로 `processedKey`, `s3Uri`, `dimensions`, `photographerId` 등을 반환
+   - 결과로 `processedKey`, `s3Uri`, `dimensions`, `instagramHandle` 등을 반환
 
 2. **Parallel Analyze (DetectText / IndexFaces)**
    - DetectText Lambda: Rekognition DetectText 호출 → bib 후보 추출
@@ -204,11 +204,11 @@ SQS 메시지는 S3 오브젝트 key, 버킷 이름, 사이즈 등을 포함합�
 
 3. **Fanout DynamoDB (Lambda)**
    - Preprocess + DetectText + IndexFaces 결과를 종합
-   - bib 목록, faceId, S3 위치, photographerId 등을 기반으로
+   - bib 목록, faceId, S3 위치, instagramHandle 등을 기반으로
      - PHOTO 1개
      - BIB_INDEX (bib 개수만큼)
    - DynamoDB `PhotoService-{stage}`에 저장
-   - 필요 시 RDB `photographers`에서 handle/displayName을 읽어 denormalize
+   - Photographer 표시를 위해 instagramHandle만 저장 (RDB 조회 없음)
 
 ---
 
@@ -227,39 +227,31 @@ Admin / Backoffice에서는:
 
 1. **Uploader**
    - FE/Admin에서 이벤트를 선택하면, RDB `event_photographers`를 조회해 dropdown 제공
-   - 사용자가 선택한 `photographer_id`를 S3 업로드 메타데이터로 포함
+   - 사용자가 선택한 `instagram_handle`을 S3 업로드 메타데이터로 포함
 
 2. **Preprocess Lambda**
-   - S3 HeadObject로 `photographer-id` 읽음
+   - S3 HeadObject로 `instagram-handle` 읽음
    - state machine input / preprocess output에 포함
 
 3. **Fanout DynamoDB Lambda**
-   - `photographerId`가 존재한다면:
-     - (옵션 A) 바로 RDB `photographers`에서 handle/displayName 조회
+   - `instagramHandle`이 존재한다면:
      - PHOTO 엔티티에 다음 정보 저장
 
 ```jsonc
 {
-  "photographerId": "ph_01ABCXYZ",
-  "photographerHandle": "studio_aaa",
-  "photographerDisplayName": "Studio AAA",
-  "GSI2PK": "PHOTOGRAPHER#ph_01ABCXYZ",
+  "instagramHandle": "studio_aaa",
+  "GSI2PK": "PHOTOGRAPHER#studio_aaa",
   "GSI2SK": "EVT#seoul-marathon-2024#TIME#2024-11-09T10:30:00.000Z"
 }
 ```
 
-이렇게 하면 갤러리/검색 API는 **DynamoDB에서 PHOTO만 조회**해도 insta/이름 정보를 바로 사용할 수 있습니다.
+이렇게 하면 갤러리/검색 API는 **DynamoDB에서 PHOTO만 조회**해도 인스타 핸들 기반 필터가 가능합니다.
 
-### 5.3 Photographer 프로필 변경 시 동기화
+### 5.3 Photographer 핸들 변경 시 고려
 
-Photographer의 인스타 핸들이나 표시 이름이 바뀌면:
-
-1. Admin이 RDB `photographers` 테이블을 수정
-2. API 서버가 `PHOTOGRAPHER_UPDATED` 메시지를 큐/토픽에 발행
-3. Sync Worker가 GSI2로 해당 photographerId의 PHOTO 아이템들을 조회
-4. `UpdateItem`으로 `photographerHandle`, `photographerDisplayName`을 일괄 갱신
-
-이 시나리오는 `RDB = Truth`, `Dynamo = Cache/Index` 구조를 반영합니다.
+인스타 핸들이 바뀌면 GSI2 파티션 키가 변하므로, 운영 정책에 따라
+- 업로드 시 최신 핸들을 사용하거나,
+- 별도 동기화 워커로 기존 아이템의 `instagramHandle`/`GSI2PK`를 갱신합니다.
 
 ---
 

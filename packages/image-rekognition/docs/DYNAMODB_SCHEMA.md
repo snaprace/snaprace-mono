@@ -65,7 +65,7 @@ table.addGlobalSecondaryIndex({
 - `GSI1SK = PHOTO#{ulid}`
 
 ### GSI2 (Photographer 검색용)
-- `GSI2PK = PHOTOGRAPHER#{photographerId}`
+- `GSI2PK = PHOTOGRAPHER#{instagram_handle}`
 - `GSI2SK = EVT#{eventId}#TIME#{createdAt ISO}`
 
 ---
@@ -112,13 +112,11 @@ SK: PHOTO#{ulid}
   ],
   "faceCount": 2,
 
-  // Photographer (denormalized from RDB photographers)
-  "photographerId": "ph_01ABCXYZ",
-  "photographerHandle": "studio_aaa",
-  "photographerDisplayName": "Studio AAA",
+  // Photographer (instagram handle only)
+  "instagramHandle": "studio_aaa",
 
-  // GSI2: Photographer 기준 조회를 위한 인덱스 키
-  "GSI2PK": "PHOTOGRAPHER#ph_01ABCXYZ",
+  // GSI2: Photographer 기준 조회를 위한 인덱스 키 (instagram handle 사용)
+  "GSI2PK": "PHOTOGRAPHER#studio_aaa",
   "GSI2SK": "EVT#seoul-marathon-2024#TIME#2024-11-09T10:30:00.000Z",
 
   "createdAt": "2024-11-09T10:30:00.000Z",
@@ -147,10 +145,8 @@ SK: PHOTO#{ulid}
 | bibCount | number | ✅ | bib 개수 |
 | faceIds | string[] | ✅ | Rekognition FaceId 목록 |
 | faceCount | number | ✅ | 얼굴 개수 |
-| photographerId | string | ⛔(optional) | 포토그래퍼 ID (RDB photographers) |
-| photographerHandle | string | optional | RDB에서 가져온 insta handle (denormalize) |
-| photographerDisplayName | string | optional | RDB에서 가져온 표시 이름 |
-| GSI2PK | string | optional | `PHOTOGRAPHER#{photographerId}` |
+| instagramHandle | string | optional | 업로드 메타데이터에서 전달된 인스타 핸들 |
+| GSI2PK | string | optional | `PHOTOGRAPHER#{instagram_handle}` |
 | GSI2SK | string | optional | `EVT#{eventId}#TIME#{createdAt}` |
 | createdAt | string | ✅ | ISO8601 생성 시간 |
 | updatedAt | string | ✅ | ISO8601 갱신 시간 |
@@ -304,7 +300,7 @@ const params = {
   IndexName: 'GSI2',
   KeyConditionExpression: 'GSI2PK = :pk',
   ExpressionAttributeValues: {
-    ':pk': 'PHOTOGRAPHER#ph_01ABCXYZ',
+    ':pk': 'PHOTOGRAPHER#studio_aaa',
   },
   ScanIndexForward: false, // 최신순
 };
@@ -320,7 +316,7 @@ const params = {
   IndexName: 'GSI2',
   KeyConditionExpression: 'GSI2PK = :pk AND begins_with(GSI2SK, :evt)',
   ExpressionAttributeValues: {
-    ':pk': 'PHOTOGRAPHER#ph_01ABCXYZ',
+    ':pk': 'PHOTOGRAPHER#studio_aaa',
     ':evt': 'EVT#seoul-marathon-2024#',
   },
 };
@@ -331,12 +327,12 @@ const params = {
 ## 6. RDB와의 관계
 
 - `orgId`, `eventId` → RDB의 `organizers.organizer_id`, `events.event_id` 참조
-- `photographerId` → RDB의 `photographers.photographer_id` 참조
+- Photographer 상세 프로필은 RDB `photographers`에서 관리하며, DynamoDB에는 `instagramHandle` 문자열만 저장
 - Runner/bib ↔ PHOTO 매핑은 RDB `event_runners`와 논리적으로 연결되지만, Dynamo에서는 bib 문자열만 저장
 
 **Truth vs Cache**
 - Truth: RDB (`organizers`, `events`, `event_runners`, `photographers`, `event_photographers`)
-- Dynamo: 조회 최적화를 위한 캐시/인덱스 (PHOTO, BIB_INDEX)
+- Dynamo: 조회 최적화를 위한 캐시/인덱스 (PHOTO, BIB_INDEX). Photographer 관련으로는 instagramHandle만 보관
 
 ---
 

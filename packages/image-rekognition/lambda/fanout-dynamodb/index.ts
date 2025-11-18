@@ -1,40 +1,39 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
-import { getLambdaClient } from "@repo/supabase/src/lambda";
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const TABLE_NAME = process.env.DDB_TABLE!;
 
-type PhotographerProfile = {
-  instagram_handle?: string | null;
-  display_name?: string | null;
-};
+// type PhotographerProfile = {
+//   instagram_handle?: string | null;
+//   display_name?: string | null;
+// };
 
-const supabase = getLambdaClient();
+// const supabase = getLambdaClient();
 
-async function fetchPhotographerProfile(
-  photographerId: string
-): Promise<PhotographerProfile | null> {
-  if (!photographerId) return null;
+// async function fetchPhotographerProfile(
+//   photographerId: string
+// ): Promise<PhotographerProfile | null> {
+//   if (!photographerId) return null;
 
-  const { data, error } = await supabase
-    .from("photographers")
-    .select("instagram_handle, display_name")
-    .eq("photographer_id", photographerId)
-    .maybeSingle<PhotographerProfile>();
+//   const { data, error } = await supabase
+//     .from("photographers")
+//     .select("instagram_handle, display_name")
+//     .eq("photographer_id", photographerId)
+//     .maybeSingle<PhotographerProfile>();
 
-  if (error) {
-    console.error("Failed to fetch photographer profile from Supabase:", error);
-    return null;
-  }
+//   if (error) {
+//     console.error("Failed to fetch photographer profile from Supabase:", error);
+//     return null;
+//   }
 
-  if (!data) return null;
+//   if (!data) return null;
 
-  return {
-    instagram_handle: data.instagram_handle ?? null,
-    display_name: data.display_name ?? null,
-  };
-}
+//   return {
+//     instagram_handle: data.instagram_handle ?? null,
+//     display_name: data.display_name ?? null,
+//   };
+// }
 
 interface DetectTextResult {
   bibs?: string[];
@@ -55,7 +54,7 @@ export interface FanoutInput {
   format: string;
   size: number;
   ulid: string;
-  photographerId?: string | null;
+  instagramHandle?: string | null;
   detectTextResult?: DetectTextResult;
   indexFacesResult?: IndexFacesResult;
 }
@@ -80,9 +79,7 @@ interface PhotoItem {
   faceCount: number;
   createdAt: string;
   updatedAt: string;
-  photographerId?: string | null;
-  photographerHandle?: string | null;
-  photographerDisplayName?: string | null;
+  instagramHandle?: string | null;
   GSI2PK?: string;
   GSI2SK?: string;
 }
@@ -111,7 +108,7 @@ export const handler = async (event: FanoutInput): Promise<{ ok: true }> => {
     format,
     size,
     ulid,
-    photographerId,
+    instagramHandle,
     detectTextResult,
     indexFacesResult,
   } = event;
@@ -119,16 +116,16 @@ export const handler = async (event: FanoutInput): Promise<{ ok: true }> => {
   const bibs: string[] = detectTextResult?.bibs ?? [];
   const faceIds: string[] = indexFacesResult?.faceIds ?? [];
 
-  let photographerHandle: string | null = null;
-  let photographerDisplayName: string | null = null;
+  // let photographerHandle: string | null = null;
+  // let photographerDisplayName: string | null = null;
 
-  if (photographerId) {
-    const profile = await fetchPhotographerProfile(photographerId);
-    if (profile) {
-      photographerHandle = profile.instagram_handle ?? null;
-      photographerDisplayName = profile.display_name ?? null;
-    }
-  }
+  // if (photographerId) {
+  //   const profile = await fetchPhotographerProfile(photographerId);
+  //   if (profile) {
+  //     photographerHandle = profile.instagram_handle ?? null;
+  //     photographerDisplayName = profile.display_name ?? null;
+  //   }
+  // }
 
   const now = new Date().toISOString();
   const pk = `ORG#${orgId}#EVT#${eventId}`;
@@ -160,13 +157,10 @@ export const handler = async (event: FanoutInput): Promise<{ ok: true }> => {
     updatedAt: now,
   };
 
-  if (photographerId) {
-    photoItem.photographerId = photographerId;
-    if (photographerHandle) photoItem.photographerHandle = photographerHandle;
-    if (photographerDisplayName)
-      photoItem.photographerDisplayName = photographerDisplayName;
-
-    photoItem.GSI2PK = `PHOTOGRAPHER#${photographerId}`;
+  if (instagramHandle) {
+    photoItem.instagramHandle = instagramHandle;
+    // Photographer 검색(GSI2)은 instagram_handle을 파티션 키 식별자로 사용
+    photoItem.GSI2PK = `PHOTOGRAPHER#${instagramHandle}`;
     photoItem.GSI2SK = `EVT#${eventId}#TIME#${now}`;
   }
 

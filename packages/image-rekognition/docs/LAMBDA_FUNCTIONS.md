@@ -78,7 +78,7 @@ SUPABASE_SERVICE_ROLE_KEY=...
 - SQS `ImageUpload` 큐를 소비
 - 메시지(batch)를 처리하여 Step Functions `ImageProcessingWorkflow` 실행 시작
 - S3 Object key에서 `orgId`, `eventId`를 파싱
-- S3 HeadObject로 `photographer-id` 메타데이터를 읽어 workflow input에 포함
+- S3 HeadObject로 `instagram-handle` 메타데이터를 읽어 workflow input에 포함
 
 ### 3.2 트리거
 
@@ -110,19 +110,19 @@ export const handler = async (event: SQSEvent) => {
     // key 예시: snaprace-kr/seoul-marathon-2024/raw/DSC_1234.jpg
     const [orgId, eventId, folder, ...rest] = key.split("/");
 
-    // photographer-id 메타데이터 조회
+    // instagram-handle 메타데이터 조회
     const head = await s3.send(
       new HeadObjectCommand({ Bucket: bucket, Key: key })
     );
 
-    const photographerId = head.Metadata?.["photographer-id"];
+    const instagramHandle = head.Metadata?.["instagram-handle"];
 
     const input = {
       orgId,
       eventId,
       bucketName: bucket,
       rawKey: key,
-      photographerId: photographerId ?? null,
+      instagramHandle: instagramHandle ?? null,
     };
 
     await sfn.send(
@@ -161,7 +161,7 @@ export const handler = async (event: SQSEvent) => {
   "eventId": "seoul-marathon-2024",
   "bucketName": "snaprace-images-dev",
   "rawKey": "snaprace-kr/seoul-marathon-2024/raw/DSC_1234.jpg",
-  "photographerId": "ph_01ABCXYZ", // 없을 수 있음
+  "instagramHandle": "studio_aaa" // 없을 수 있음
 }
 ```
 
@@ -179,7 +179,7 @@ export const handler = async (event: SQSEvent) => {
   "format": "jpeg",
   "size": 2048576,
   "ulid": "01HXY8FWZM5KJQD9K3Y6R8NZTP",
-  "photographerId": "ph_01ABCXYZ",
+  "instagramHandle": "studio_aaa"
 }
 ```
 
@@ -198,7 +198,7 @@ const s3 = new S3Client({});
 const BUCKET_NAME = process.env.IMAGE_BUCKET!;
 
 export const handler = async (event: any) => {
-  const { orgId, eventId, rawKey, photographerId } = event;
+  const { orgId, eventId, rawKey, instagramHandle } = event;
 
   const getRes = await s3.send(
     new GetObjectCommand({
@@ -227,6 +227,9 @@ export const handler = async (event: any) => {
       Key: processedKey,
       Body: resized,
       ContentType: "image/jpeg",
+      Metadata: {
+        "instagram-handle": instagramHandle ?? "",
+      }
     })
   );
 
@@ -241,7 +244,7 @@ export const handler = async (event: any) => {
     format: metadata.format ?? "jpeg",
     size: resized.length,
     ulid: id,
-    photographerId: photographerId ?? null,
+    instagramHandle: instagramHandle ?? null,
   };
 };
 ```
@@ -454,7 +457,7 @@ export const handler = async (event: any) => {
 
 - Preprocess, DetectText, IndexFaces 결과를 종합
 - DynamoDB `PHOTO` 및 `BIB_INDEX` 아이템을 생성
-- PhotographerId가 있는 경우 **RDB에서 photographer 프로필 조회 후 denormalize**
+- Photographer 표시를 위해 `instagramHandle`만 PHOTO에 저장 (RDB 조회 없음)
 
 ### 7.2 입력 (Step Functions Parallel + 이전 상태 결과)
 
@@ -472,7 +475,7 @@ Step Functions에서 Fanout에 전달되는 입력 예시:
   "format": "jpeg",
   "size": 2048576,
   "ulid": "01HXY...",
-  "photographerId": "ph_01ABCXYZ",
+  "instagramHandle": "studio_aaa",
 
   "detectTextResult": {
     "bibs": ["1234", "5678"],
@@ -489,10 +492,8 @@ Step Functions에서 Fanout에 전달되는 입력 예시:
 
 ### 7.3 처리 로직 개요
 
-1. RDB에서 photographer 정보 조회 (photographerId가 있는 경우)
-   - `SELECT instagram_handle, display_name FROM photographers WHERE photographer_id = $1`
-2. DynamoDB PHOTO 아이템 생성
-3. bib 배열에 대해 BIB_INDEX 아이템 생성
+1. DynamoDB PHOTO 아이템 생성 (instagramHandle 있으면 포함 + GSI2 키 설정)
+2. bib 배열에 대해 BIB_INDEX 아이템 생성
 
 ### 7.4 구현 스케치 (핵심 로직)
 
