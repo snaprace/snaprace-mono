@@ -4,12 +4,8 @@ import type { Database } from "./types";
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error("Missing Supabase environment variables");
-}
-
-export const createLambdaClient = () => {
-  return createClient<Database>(supabaseUrl, supabaseServiceKey, {
+export const createLambdaClient = (url: string, key: string) => {
+  return createClient<Database>(url, key, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
@@ -17,11 +13,17 @@ export const createLambdaClient = () => {
   });
 };
 
-let lambdaClient: ReturnType<typeof createLambdaClient>;
+let lambdaClient: ReturnType<typeof createLambdaClient> | null = null;
 
 export const getLambdaClient = () => {
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error(
+      "Missing Supabase environment variables when creating lambda client"
+    );
+  }
+
   if (!lambdaClient) {
-    lambdaClient = createLambdaClient();
+    lambdaClient = createLambdaClient(supabaseUrl, supabaseServiceKey);
   }
   return lambdaClient;
 };
