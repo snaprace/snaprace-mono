@@ -435,6 +435,7 @@ export class ImageRekognitionStack extends cdk.Stack {
     this.sfnTriggerFn.addToRolePolicy(
       new iam.PolicyStatement({
         actions: [
+          "s3:GetObject",
           "s3:HeadObject",
           "s3:GetObjectTagging",
           "s3:PutObjectTagging",
