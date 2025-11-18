@@ -32,13 +32,9 @@ interface PreprocessOutput extends PreprocessInput {
 export const handler = async (
   event: PreprocessInput
 ): Promise<PreprocessOutput> => {
-  console.log("Preprocess started:", JSON.stringify(event, null, 2));
-
   const { orgId, eventId, rawKey, instagramHandle } = event;
 
   try {
-    // 1. Download raw image from S3
-    console.log(`Downloading image from S3: ${rawKey}`);
     const getResult = await s3.send(
       new GetObjectCommand({
         Bucket: BUCKET_NAME,
@@ -50,30 +46,18 @@ export const handler = async (
     if (!body) {
       throw new Error("Empty S3 body");
     }
-    console.log(`Downloaded ${body.length} bytes`);
 
     // 2. Generate ULID for processed image
     const id = ulid();
     const processedKey = `${orgId}/${eventId}/processed/${id}.jpg`;
 
     // 3. Process image with Sharp
-    console.log("Processing image with Sharp...");
     const image = sharp(body).rotate(); // Auto-rotate based on EXIF
-    const metadata = await image.metadata();
-
-    console.log("Original image metadata:", {
-      width: metadata.width,
-      height: metadata.height,
-      format: metadata.format,
-      space: metadata.space,
-      channels: metadata.channels,
-      hasAlpha: metadata.hasAlpha,
-    });
 
     // Resize and compress
     const resized = await image
       .resize({
-        width: 4096,
+        width: 2048,
         withoutEnlargement: true,
         fit: "inside",
       })
@@ -83,10 +67,7 @@ export const handler = async (
       })
       .toBuffer();
 
-    console.log(`Processed image size: ${resized.length} bytes`);
-
     // 4. Upload processed image to S3
-    console.log(`Uploading processed image to S3: ${processedKey}`);
     await s3.send(
       new PutObjectCommand({
         Bucket: BUCKET_NAME,
@@ -121,7 +102,9 @@ export const handler = async (
       instagramHandle: instagramHandle || null,
     };
 
-    console.log("Preprocess completed:", JSON.stringify(result, null, 2));
+    console.log(
+      `preprocess_ok ulid=${id} size=${resized.length}B w=${processedMetadata.width} h=${processedMetadata.height}`
+    );
     return result;
   } catch (error) {
     console.error("Preprocess failed:", error);

@@ -26,8 +26,6 @@ interface SqsEvent {
 }
 
 export const handler = async (event: SqsEvent): Promise<void> => {
-  console.log("SfnTrigger event:", JSON.stringify(event, null, 2));
-
   for (const record of event.Records ?? []) {
     const body = JSON.parse(record.body) as S3EventBody;
     const s3Record = body.Records?.[0]?.s3;
@@ -70,8 +68,6 @@ export const handler = async (event: SqsEvent): Promise<void> => {
       rawKey: key,
       instagramHandle: instagramHandle ?? null,
     };
-
-    console.log("Starting state machine with input:", input);
 
     await sfn.send(
       new StartExecutionCommand({
