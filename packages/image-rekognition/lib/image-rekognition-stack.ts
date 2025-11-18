@@ -57,6 +57,34 @@ export class ImageRekognitionStack extends cdk.Stack {
         },
       ],
 
+      // Lifecycle: raw는 짧게 보관 후 만료(원하면 숫자 조정)
+      lifecycleRules: [
+        // processed는 업로드 즉시 Intelligent-Tiering 스토리지 클래스로 전환
+        {
+          id: "ProcessedToIntelligentTiering",
+          enabled: true,
+          tagFilters: { folder: "processed" },
+          transitions: [
+            {
+              storageClass: s3.StorageClass.INTELLIGENT_TIERING,
+              transitionAfter: cdk.Duration.days(0),
+            },
+          ],
+        },
+        // raw는 업로드 즉시 Deep Archive로 전환 (장기보관, 복구 지연/최소요금 주의)
+        {
+          id: "RawToDeepArchive",
+          enabled: true,
+          tagFilters: { folder: "raw" },
+          transitions: [
+            {
+              storageClass: s3.StorageClass.DEEP_ARCHIVE,
+              transitionAfter: cdk.Duration.days(0),
+            },
+          ],
+        },
+      ],
+
       // Block public access by default (CloudFront will serve)
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
 
@@ -399,7 +427,7 @@ export class ImageRekognitionStack extends cdk.Stack {
 
     // 권한: Step Functions 실행 + S3 HeadObject
     this.stateMachine.grantStartExecution(this.sfnTriggerFn);
-    this.imageBucket.grantRead(this.sfnTriggerFn);
+    this.imageBucket.grantReadWrite(this.sfnTriggerFn);
 
     // ===================================
     // IAM: Rekognition permissions for Detect/Index lambdas

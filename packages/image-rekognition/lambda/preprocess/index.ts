@@ -74,6 +74,8 @@ export const handler = async (
         Key: processedKey,
         Body: resized,
         ContentType: "image/jpeg",
+        // 객체 태그: processed로 구분하여 버킷 수명주기/Intelligent-Tiering 필터에 활용
+        Tagging: "folder=processed",
         Metadata: {
           "original-key": rawKey,
           ulid: id,
