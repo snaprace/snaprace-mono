@@ -1,39 +1,11 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import {
+  BatchWriteCommand,
+  DynamoDBDocumentClient,
+} from "@aws-sdk/lib-dynamodb";
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const TABLE_NAME = process.env.DDB_TABLE!;
-
-// type PhotographerProfile = {
-//   instagram_handle?: string | null;
-//   display_name?: string | null;
-// };
-
-// const supabase = getLambdaClient();
-
-// async function fetchPhotographerProfile(
-//   photographerId: string
-// ): Promise<PhotographerProfile | null> {
-//   if (!photographerId) return null;
-
-//   const { data, error } = await supabase
-//     .from("photographers")
-//     .select("instagram_handle, display_name")
-//     .eq("photographer_id", photographerId)
-//     .maybeSingle<PhotographerProfile>();
-
-//   if (error) {
-//     console.error("Failed to fetch photographer profile from Supabase:", error);
-//     return null;
-//   }
-
-//   if (!data) return null;
-
-//   return {
-//     instagram_handle: data.instagram_handle ?? null,
-//     display_name: data.display_name ?? null,
-//   };
-// }
 
 interface DetectTextResult {
   bibs?: string[];
@@ -97,6 +69,37 @@ interface BibIndexItem {
   createdAt: string;
 }
 
+async function batchWriteItems(items: Array<PhotoItem | BibIndexItem>) {
+  for (let i = 0; i < items.length; i += 25) {
+    let pending = items.slice(i, i + 25);
+
+    while (pending.length > 0) {
+      const response = await ddb.send(
+        new BatchWriteCommand({
+          RequestItems: {
+            [TABLE_NAME]: pending.map((item) => ({
+              PutRequest: { Item: item },
+            })),
+          },
+        })
+      );
+
+      const unprocessed =
+        response.UnprocessedItems?.[TABLE_NAME]?.map(
+          (req) => req.PutRequest?.Item
+        ) ?? [];
+
+      pending = unprocessed.filter(
+        (item): item is PhotoItem | BibIndexItem => !!item
+      );
+
+      if (pending.length > 0) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    }
+  }
+}
+
 export const handler = async (event: FanoutInput): Promise<{ ok: true }> => {
   const {
     orgId,
@@ -115,17 +118,6 @@ export const handler = async (event: FanoutInput): Promise<{ ok: true }> => {
 
   const bibs: string[] = detectTextResult?.bibs ?? [];
   const faceIds: string[] = indexFacesResult?.faceIds ?? [];
-
-  // let photographerHandle: string | null = null;
-  // let photographerDisplayName: string | null = null;
-
-  // if (photographerId) {
-  //   const profile = await fetchPhotographerProfile(photographerId);
-  //   if (profile) {
-  //     photographerHandle = profile.instagram_handle ?? null;
-  //     photographerDisplayName = profile.display_name ?? null;
-  //   }
-  // }
 
   const now = new Date().toISOString();
   const pk = `ORG#${orgId}#EVT#${eventId}`;
@@ -159,22 +151,14 @@ export const handler = async (event: FanoutInput): Promise<{ ok: true }> => {
 
   if (instagramHandle) {
     photoItem.instagramHandle = instagramHandle;
-    // Photographer 검색(GSI2)은 instagram_handle을 파티션 키 식별자로 사용
     photoItem.GSI2PK = `PHOTOGRAPHER#${instagramHandle}`;
     photoItem.GSI2SK = `EVT#${eventId}#TIME#${now}`;
   }
 
-  const puts: PutCommand[] = [];
+  const items: Array<PhotoItem | BibIndexItem> = [];
 
-  // PHOTO Put
-  puts.push(
-    new PutCommand({
-      TableName: TABLE_NAME,
-      Item: photoItem,
-    })
-  );
+  items.push(photoItem);
 
-  // BIB_INDEX Put (bibs마다 1개씩)
   for (const bib of bibs) {
     const bibItem: BibIndexItem = {
       PK: pk,
@@ -189,17 +173,11 @@ export const handler = async (event: FanoutInput): Promise<{ ok: true }> => {
       createdAt: now,
     };
 
-    puts.push(
-      new PutCommand({
-        TableName: TABLE_NAME,
-        Item: bibItem,
-      })
-    );
+    items.push(bibItem);
   }
 
-  for (const cmd of puts) {
-    await ddb.send(cmd);
-  }
+  await batchWriteItems(items);
 
   return { ok: true };
 };
+

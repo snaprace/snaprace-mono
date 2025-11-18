@@ -187,8 +187,13 @@ export class ImageRekognitionStack extends cdk.Stack {
       },
     });
 
-    // Grant S3 permissions to Preprocess Lambda
-    this.imageBucket.grantReadWrite(this.preprocessFn);
+    // Grant least-privilege S3 permissions to Preprocess Lambda
+    this.preprocessFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["s3:GetObject", "s3:PutObject", "s3:PutObjectTagging"],
+        resources: [`${this.imageBucket.bucketArn}/*`],
+      })
+    );
 
     // ===================================
     // Lambda: DetectText
@@ -425,9 +430,18 @@ export class ImageRekognitionStack extends cdk.Stack {
     // SQS -> SfnTrigger Lambda 이벤트 소스
     this.sfnTriggerFn.addEventSource(new SqsEventSource(imageUploadQueue));
 
-    // 권한: Step Functions 실행 + S3 HeadObject
+    // 권한: Step Functions 실행 + 필요한 S3 메타데이터/태그 접근
     this.stateMachine.grantStartExecution(this.sfnTriggerFn);
-    this.imageBucket.grantReadWrite(this.sfnTriggerFn);
+    this.sfnTriggerFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "s3:HeadObject",
+          "s3:GetObjectTagging",
+          "s3:PutObjectTagging",
+        ],
+        resources: [`${this.imageBucket.bucketArn}/*`],
+      })
+    );
 
     // ===================================
     // IAM: Rekognition permissions for Detect/Index lambdas
