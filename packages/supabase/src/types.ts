@@ -59,35 +59,35 @@ export type Database = {
       event_runners: {
         Row: {
           age: number | null
-          bib_number: string
+          bib_number: number
           event_id: string
           finish_time: string | null
+          first_name: string | null
           gender: string | null
-          name: string | null
+          last_name: string | null
           source: string | null
-          team: string | null
           timing_result: Json | null
         }
         Insert: {
           age?: number | null
-          bib_number: string
+          bib_number: number
           event_id: string
           finish_time?: string | null
+          first_name?: string | null
           gender?: string | null
-          name?: string | null
+          last_name?: string | null
           source?: string | null
-          team?: string | null
           timing_result?: Json | null
         }
         Update: {
           age?: number | null
-          bib_number?: string
+          bib_number?: number
           event_id?: string
           finish_time?: string | null
+          first_name?: string | null
           gender?: string | null
-          name?: string | null
+          last_name?: string | null
           source?: string | null
-          team?: string | null
           timing_result?: Json | null
         }
         Relationships: [
@@ -152,7 +152,7 @@ export type Database = {
       }
       organizers: {
         Row: {
-          active: boolean | null
+          active: boolean
           branding_meta: Json | null
           created_at: string | null
           name: string
@@ -160,7 +160,7 @@ export type Database = {
           subdomain: string
         }
         Insert: {
-          active?: boolean | null
+          active: boolean
           branding_meta?: Json | null
           created_at?: string | null
           name: string
@@ -168,7 +168,7 @@ export type Database = {
           subdomain: string
         }
         Update: {
-          active?: boolean | null
+          active?: boolean
           branding_meta?: Json | null
           created_at?: string | null
           name?: string
