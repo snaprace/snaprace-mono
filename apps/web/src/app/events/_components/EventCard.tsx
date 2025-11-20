@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { formatEventDate } from "@/utils/date";
+import { displayDate } from "@/utils/date";
 
 interface EventCardProps {
   id: string;
@@ -12,6 +12,7 @@ interface EventCardProps {
 }
 
 export default function EventCard({ id, name, image, date }: EventCardProps) {
+  console.log("date", date);
   return (
     <div className="text-center">
       <Link href={`/events/${id}/null`} className="block cursor-pointer">
@@ -50,7 +51,7 @@ export default function EventCard({ id, name, image, date }: EventCardProps) {
             {name}
           </h3>
           <p className="text-muted-foreground tablet:text-base text-sm">
-            {formatEventDate(date)}
+            {displayDate(date)}
           </p>
         </div>
       </Link>

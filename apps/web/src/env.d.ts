@@ -19,5 +19,10 @@ declare module "@/env" {
     CRISP_WEBSITE_ID: string;
     GOOGLE_ANALYTICS_ID?: string;
     NEXT_PUBLIC_SITE_URL: string;
+    // Supabase DB
+    SUPABASE_URL: string;
+    SUPABASE_ANON_KEY: string;
+    NEXT_PUBLIC_SUPABASE_URL: string;
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: string;
   };
 }

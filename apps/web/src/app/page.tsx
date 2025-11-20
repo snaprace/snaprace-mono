@@ -29,7 +29,7 @@ export default function HomePage() {
 
   const faceSearchOnly =
     events.find((event) => event.event_id === selectedEventId)
-      ?.face_search_only ?? false;
+      ?.display_mode === "PHOTOS_ONLY";
 
   useEffect(() => {
     if (events.length > 0 && !selectedEventId) {
@@ -93,7 +93,7 @@ export default function HomePage() {
                             value={event.event_id}
                             className="!h-14"
                           >
-                            {event.event_name}
+                            {event.name}
                           </SelectItem>
                         ))}
                     </SelectContent>

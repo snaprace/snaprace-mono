@@ -111,7 +111,7 @@ export default function EventPhotoPage() {
     { enabled: !!event },
   );
 
-  const faceSearchOnly = eventQuery.data?.face_search_only ?? false;
+  const faceSearchOnly = eventQuery.data?.display_mode === "PHOTOS_ONLY";
   const cloudfrontUrl = "https://images.snap-race.com/";
 
   const galleryQuery = api.galleries.getByBibNumber.useQuery(
@@ -125,10 +125,10 @@ export default function EventPhotoPage() {
   );
 
   const allPhotosQueryV2 = api.photos.getByEventV2.useQuery(
-    { organizer: eventQuery.data?.organization_id ?? "", eventId: event },
+    { organizer: eventQuery.data?.organizer_id ?? "", eventId: event },
     {
       enabled:
-        !!eventQuery.data?.organization_id &&
+        !!eventQuery.data?.organizer_id &&
         !!event &&
         isAllPhotos &&
         faceSearchOnly,
@@ -137,7 +137,7 @@ export default function EventPhotoPage() {
 
   const bibPhotosQueryV2 = api.photos.getByBibV2.useQuery(
     {
-      organizer: eventQuery.data?.organization_id ?? "",
+      organizer: eventQuery.data?.organizer_id ?? "",
       eventId: event,
       bibNumber,
     },
@@ -239,9 +239,9 @@ export default function EventPhotoPage() {
   } = useSelfieUpload({
     eventId: event,
     bibNumber,
-    organizerId: eventQuery.data?.organization_id ?? "",
+    organizerId: eventQuery.data?.organizer_id ?? "",
     existingPhotos: !isAllPhotos ? photos : undefined,
-    faceSearchOnly: eventQuery.data?.face_search_only ?? false,
+    faceSearchOnly: eventQuery.data?.display_mode === "PHOTOS_ONLY",
   });
 
   const handleLabelClick = (e: React.MouseEvent) => {
@@ -501,7 +501,7 @@ export default function EventPhotoPage() {
               ) : (
                 <div>
                   <h1 className="text-sm font-semibold md:text-xl">
-                    {eventQuery.data?.event_name}
+                    {eventQuery.data?.name}
                   </h1>
                   <p className="text-muted-foreground text-xs md:text-sm">
                     {!isAllPhotos && bibNumber ? (
@@ -554,8 +554,8 @@ export default function EventPhotoPage() {
 
       <RunnerSpotlight
         eventId={event}
-        eventName={eventQuery.data?.event_name ?? ""}
-        organizationId={eventQuery.data?.organization_id ?? ""}
+        eventName={eventQuery.data?.name ?? ""}
+        organizationId={eventQuery.data?.organizer_id ?? ""}
         event={eventQuery.data ?? null}
         bibNumber={bibNumber}
         isAllPhotos={isAllPhotos}
@@ -631,7 +631,7 @@ export default function EventPhotoPage() {
               <BulkDownloadButton
                 photos={photos}
                 selectedPhotos={getSelectedPhotoUrls}
-                event={eventQuery.data?.event_name || ""}
+                event={eventQuery.data?.name || ""}
                 bibNumber={bibNumber}
                 isSelectionMode={isSelectionMode}
               />
@@ -713,7 +713,7 @@ export default function EventPhotoPage() {
             selfieMatchedSet={selfieMatchedSet}
             event={event}
             bibNumber={bibNumber}
-            organizerId={eventQuery.data?.organization_id}
+            organizerId={eventQuery.data?.organizer_id}
             isSelectionMode={isSelectionMode}
             selectedPhotos={selectedPhotos}
             onPhotoSelect={handlePhotoSelect}
@@ -742,7 +742,7 @@ export default function EventPhotoPage() {
         onIndexChange={handlePhotoIndexChange}
         event={event}
         bibNumber={bibNumber}
-        organizerId={eventQuery.data?.organization_id}
+        organizerId={eventQuery.data?.organizer_id}
         onPhotoChange={(index) => {
           // Update clicked photo rect when navigating
           const photoElement = photoRefs.current.get(index);
@@ -759,7 +759,7 @@ export default function EventPhotoPage() {
         onClose={() => setIsConsentModalOpen(false)}
         onAgree={handleConsentAgree}
         onDeny={handleConsentDeny}
-        eventName={eventQuery.data?.event_name}
+        eventName={eventQuery.data?.name}
       />
 
       {/* Mobile Bib Search Modal */}

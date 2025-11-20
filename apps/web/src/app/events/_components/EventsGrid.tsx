@@ -14,8 +14,8 @@ export default function EventsGrid({ events }: EventsGridProps) {
         <EventCard
           key={event.event_id}
           id={event.event_id}
-          name={event.event_name}
-          image={event.event_image_url}
+          name={event.name}
+          image={event.thumbnail_image || ""}
           date={event.event_date}
         />
       ))}
