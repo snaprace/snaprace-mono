@@ -113,8 +113,6 @@ export function PhotoSingleView({
   const currentPhoto = photos[currentIndex];
   const filename = generatePhotoFilename(event ?? "", bibNumber, currentIndex);
 
-  console.log("currentPhoto", currentPhoto);
-
   const handleClose = useCallback(() => {
     onClose();
   }, [onClose]);

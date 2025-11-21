@@ -51,7 +51,7 @@ export const trackEvent = (eventName: string, parameters?: EventParameters) => {
     try {
       // Skip tracking in development environment
       if (process.env.NODE_ENV === "development") {
-        console.log("Analytics Event (dev):", eventName, parameters);
+        // console.log("Analytics Event (dev):", eventName, parameters);
         return;
       }
 
