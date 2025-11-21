@@ -157,7 +157,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/supabase
       '@supabase/supabase-js':
-        specifier: ^2.83.0
+        specifier: 2.83.0
         version: 2.83.0
       '@t3-oss/env-nextjs':
         specifier: ^0.12.0
@@ -461,10 +461,10 @@ importers:
     dependencies:
       '@supabase/ssr':
         specifier: ^0.7.0
-        version: 0.7.0(@supabase/supabase-js@2.81.1)
+        version: 0.7.0(@supabase/supabase-js@2.83.0)
       '@supabase/supabase-js':
-        specifier: ^2.81.1
-        version: 2.81.1
+        specifier: 2.83.0
+        version: 2.83.0
       '@types/node':
         specifier: ^24.10.1
         version: 24.10.1
@@ -10248,9 +10248,9 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@supabase/ssr@0.7.0(@supabase/supabase-js@2.81.1)':
+  '@supabase/ssr@0.7.0(@supabase/supabase-js@2.83.0)':
     dependencies:
-      '@supabase/supabase-js': 2.81.1
+      '@supabase/supabase-js': 2.83.0
       cookie: 1.0.2
 
   '@supabase/storage-js@2.81.1':

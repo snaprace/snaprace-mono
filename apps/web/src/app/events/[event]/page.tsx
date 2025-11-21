@@ -1,14 +1,21 @@
 "use client";
 
-import { useMemo, useRef, useState, useEffect, startTransition } from "react";
+import {
+  useMemo,
+  useRef,
+  useState,
+  useEffect,
+  startTransition,
+  use,
+} from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Camera, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/trpc/react";
 import { MasonryPhotoSkeleton } from "@/components/states/EventsSkeleton";
 import { ErrorState } from "@/components/states/ErrorState";
-import { NoPhotosState } from "@/components/states/EmptyState";
+import { EmptyState, NoPhotosState } from "@/components/states/EmptyState";
 import { useSelfieUpload } from "@/hooks/useSelfieUpload";
 import { PhotoSingleView } from "@/components/PhotoSingleView";
 import { InfinitePhotoGrid } from "@/components/InfinitePhotoGrid";
@@ -76,8 +83,17 @@ function groupPhotosByPhotographer(photos: string[]): Record<string, string[]> {
   return grouped;
 }
 
-export default function EventAllPhotosPage() {
+interface EventAllPhotosPageProps {
+  params: Promise<{ event: string }>;
+}
+
+export default function EventAllPhotosPage({
+  params,
+}: EventAllPhotosPageProps) {
+  const { event } = use(params);
+
   const router = useRouter();
+
   const photoRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -91,8 +107,8 @@ export default function EventAllPhotosPage() {
   useAnalyticsTracking();
   usePerformanceTracking();
 
-  const params = useParams();
-  const event = params?.event as string;
+  // const params = useParams();
+  // const event = params?.event as string;
   // 전체 사진 페이지이므로 bibNumber는 없음
   const bibNumber = "";
   const isAllPhotos = true;
@@ -102,244 +118,255 @@ export default function EventAllPhotosPage() {
     { enabled: !!event },
   );
 
+  if (!eventQuery.data) {
+    return (
+      <EmptyState
+        icon={<Camera className="text-muted-foreground h-10 w-10" />}
+        title="Event Not Found"
+        message="The event you are looking for does not exist. Please check the event URL and try again."
+        action={{
+          label: "Back to Events",
+          onClick: () => router.push("/events"),
+        }}
+      />
+    );
+  }
+
   const faceSearchOnly = eventQuery.data?.display_mode === "PHOTOS_ONLY";
   const cloudfrontUrl = "https://images.snap-race.com/";
 
   // 전체 사진 쿼리만 유지
-  const allPhotosQuery = api.photos.getByEventId.useQuery(
-    { eventId: event },
-    { enabled: !!event && !faceSearchOnly },
-  );
+  // const allPhotosQuery = api.photos.getByEventId.useQuery(
+  //   { eventId: event },
+  //   { enabled: !!event && !faceSearchOnly },
+  // );
 
-  const allPhotosQueryV2 = api.photos.getByEventV2.useQuery(
-    { organizer: eventQuery.data?.organizer_id ?? "", eventId: event },
-    {
-      enabled: !!eventQuery.data?.organizer_id && !!event && faceSearchOnly,
-    },
-  );
+  // const allPhotosQueryV2 = api.photos.getByEventV2.useQuery(
+  //   { organizer: eventQuery.data?.organizer_id ?? "", eventId: event },
+  //   {
+  //     enabled: !!eventQuery.data?.organizer_id && !!event && faceSearchOnly,
+  //   },
+  // );
 
-  const photos = useMemo(() => {
-    if (faceSearchOnly && allPhotosQueryV2.data) {
-      return (
-        allPhotosQueryV2.data?.map((photo) =>
-          encodeURI(cloudfrontUrl + photo.s3Path),
-        ) ?? []
-      );
-    }
+  // const photos = useMemo(() => {
+  //   if (faceSearchOnly && allPhotosQueryV2.data) {
+  //     return (
+  //       allPhotosQueryV2.data?.map((photo) =>
+  //         encodeURI(cloudfrontUrl + photo.s3Path),
+  //       ) ?? []
+  //     );
+  //   }
 
-    if (allPhotosQuery.data) {
-      const allPhotos: string[] = [];
-      if (allPhotosQuery.data) {
-        allPhotosQuery.data.forEach((photo) => {
-          allPhotos.push(photo.imageUrl);
-        });
-      }
-      return allPhotos;
-    }
+  //   if (allPhotosQuery.data) {
+  //     const allPhotos: string[] = [];
+  //     if (allPhotosQuery.data) {
+  //       allPhotosQuery.data.forEach((photo) => {
+  //         allPhotos.push(photo.imageUrl);
+  //       });
+  //     }
+  //     return allPhotos;
+  //   }
 
-    return [];
-  }, [allPhotosQuery.data, faceSearchOnly, allPhotosQueryV2.data]);
+  //   return [];
+  // }, [allPhotosQuery.data, faceSearchOnly, allPhotosQueryV2.data]);
 
-  const {
-    searchBib,
-    setSearchBib,
-    columnCount,
-    isMobile,
-    isModalOpen,
-    currentPhotoIndex,
-    setClickedPhotoRect,
-  } = usePhotoState(photos);
+  // const {
+  //   searchBib,
+  //   setSearchBib,
+  //   columnCount,
+  //   isMobile,
+  //   isModalOpen,
+  //   currentPhotoIndex,
+  //   setClickedPhotoRect,
+  // } = usePhotoState(photos);
 
-  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  // const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   // 선택 기능은 전체 페이지에서는 지원하지 않거나 필요 시 추가 (기존 로직상 !isAllPhotos일 때만 표시되었으므로 제거)
   // 단, 로직 자체는 훅을 사용하더라도 UI 렌더링을 안 하면 됨.
 
-  const { handlePhotoClick, handlePhotoIndexChange, handleCloseSingleView } =
-    usePhotoHandlers({
-      event,
-      bibParam: "null",
-      isMobile,
-      photoRefs,
-      setClickedPhotoRect,
-      photos,
-    });
+  // const { handlePhotoClick, handlePhotoIndexChange, handleCloseSingleView } =
+  //   usePhotoHandlers({
+  //     event,
+  //     bibParam: "null",
+  //     isMobile,
+  //     photoRefs,
+  //     setClickedPhotoRect,
+  //     photos,
+  //   });
 
-  const {
-    isProcessed,
-    isProcessing,
-    uploadSelfie,
-    uploadedFile,
-    reset,
-    response,
-    hasError: selfieUploadError,
-  } = useSelfieUpload({
-    eventId: event,
-    bibNumber,
-    organizerId: eventQuery.data?.organizer_id ?? "",
-    existingPhotos: undefined, // 전체 사진일 때는 undefined
-    faceSearchOnly: eventQuery.data?.display_mode === "PHOTOS_ONLY",
-  });
+  // const {
+  //   isProcessed,
+  //   isProcessing,
+  //   uploadSelfie,
+  //   uploadedFile,
+  //   reset,
+  //   response,
+  //   hasError: selfieUploadError,
+  // } = useSelfieUpload({
+  //   eventId: event,
+  //   bibNumber,
+  //   organizerId: eventQuery.data?.organizer_id ?? "",
+  //   existingPhotos: undefined, // 전체 사진일 때는 undefined
+  //   faceSearchOnly: eventQuery.data?.display_mode === "PHOTOS_ONLY",
+  // });
 
-  const isUploading = isProcessing; // galleryQuery가 없으므로 isProcessing만 체크
+  // const isUploading = isProcessing; // galleryQuery가 없으므로 isProcessing만 체크
 
-  const handleLabelClick = (e: React.MouseEvent) => {
-    e.preventDefault();
+  // const handleLabelClick = (e: React.MouseEvent) => {
+  //   e.preventDefault();
 
-    if (!faceSearchOnly || isUploading) return; // bibNumber가 없으므로 faceSearchOnly일 때만
+  //   if (!faceSearchOnly || isUploading) return; // bibNumber가 없으므로 faceSearchOnly일 때만
 
-    if (hasFacialRecognitionConsent(event)) {
-      fileInputRef.current?.click();
-    } else {
-      trackSelfieConsentOpen(event, bibNumber);
-      setIsConsentModalOpen(true);
-    }
-  };
+  //   if (hasFacialRecognitionConsent(event)) {
+  //     fileInputRef.current?.click();
+  //   } else {
+  //     trackSelfieConsentOpen(event, bibNumber);
+  //     setIsConsentModalOpen(true);
+  //   }
+  // };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      try {
-        trackSelfieStart(
-          event,
-          bibNumber,
-          file.type,
-          Math.round(file.size / 1024),
-        );
+  // const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (file) {
+  //     try {
+  //       trackSelfieStart(
+  //         event,
+  //         bibNumber,
+  //         file.type,
+  //         Math.round(file.size / 1024),
+  //       );
 
-        const startedAt = performance.now();
+  //       const startedAt = performance.now();
 
-        const uploadResult = await uploadSelfie(file);
-        const matchedCount = uploadResult.matchedPhotos.length;
+  //       const uploadResult = await uploadSelfie(file);
+  //       const matchedCount = uploadResult.matchedPhotos.length;
 
-        const latencyMs = Math.round(performance.now() - startedAt);
-        trackSelfieUpload({
-          event_id: event,
-          bib_number: bibNumber,
-          success: true,
-          matched_photos: matchedCount,
-          latency_ms: latencyMs,
-          file_type: file.type,
-          file_size_kb: Math.round(file.size / 1024),
-        });
+  //       const latencyMs = Math.round(performance.now() - startedAt);
+  //       trackSelfieUpload({
+  //         event_id: event,
+  //         bib_number: bibNumber,
+  //         success: true,
+  //         matched_photos: matchedCount,
+  //         latency_ms: latencyMs,
+  //         file_type: file.type,
+  //         file_size_kb: Math.round(file.size / 1024),
+  //       });
 
-        trackSelfieResults(event, bibNumber, matchedCount, {
-          latency_ms: latencyMs,
-        });
-      } catch (error) {
-        console.error("Selfie upload error:", error);
-        trackSelfieUpload({
-          event_id: event,
-          bib_number: bibNumber,
-          success: false,
-        });
-        trackSelfieError(
-          event,
-          bibNumber,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    }
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
+  //       trackSelfieResults(event, bibNumber, matchedCount, {
+  //         latency_ms: latencyMs,
+  //       });
+  //     } catch (error) {
+  //       console.error("Selfie upload error:", error);
+  //       trackSelfieUpload({
+  //         event_id: event,
+  //         bib_number: bibNumber,
+  //         success: false,
+  //       });
+  //       trackSelfieError(
+  //         event,
+  //         bibNumber,
+  //         error instanceof Error ? error.message : String(error),
+  //       );
+  //     }
+  //   }
+  //   if (fileInputRef.current) {
+  //     fileInputRef.current.value = "";
+  //   }
+  // };
 
-  const handleConsentAgree = () => {
-    storeFacialRecognitionConsent(true, event);
-    setIsConsentModalOpen(false);
-    setTimeout(() => {
-      fileInputRef.current?.click();
-    }, 100);
-    trackSelfieConsentDecision(event, bibNumber, true);
-  };
+  // const handleConsentAgree = () => {
+  //   storeFacialRecognitionConsent(true, event);
+  //   setIsConsentModalOpen(false);
+  //   setTimeout(() => {
+  //     fileInputRef.current?.click();
+  //   }, 100);
+  //   trackSelfieConsentDecision(event, bibNumber, true);
+  // };
 
-  const handleConsentDeny = () => {
-    setIsConsentModalOpen(false);
-    trackSelfieConsentDecision(event, bibNumber, false);
-  };
+  // const handleConsentDeny = () => {
+  //   setIsConsentModalOpen(false);
+  //   trackSelfieConsentDecision(event, bibNumber, false);
+  // };
 
-  const resetAndPromptSelfieUpload = () => {
-    reset();
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-      fileInputRef.current.click();
-    }
-    trackSelfieRetry(event, bibNumber);
-  };
+  // const resetAndPromptSelfieUpload = () => {
+  //   reset();
+  //   if (fileInputRef.current) {
+  //     fileInputRef.current.value = "";
+  //     fileInputRef.current.click();
+  //   }
+  //   trackSelfieRetry(event, bibNumber);
+  // };
 
   const handleBibSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchBib.trim()) {
-      setIsSearchModalOpen(false);
-      router.push(`/events/${event}/${searchBib.trim()}`);
-    }
+    // if (searchBib.trim()) {
+    //   setIsSearchModalOpen(false);
+    //   router.push(`/events/${event}/${searchBib.trim()}`);
+    // }
   };
 
-  const selfieMatchedSet = useMemo(() => {
-    if (faceSearchOnly && response?.selfie_matched_photos) {
-      return new Set(response.selfie_matched_photos);
-    }
-    return new Set<string>();
-  }, [faceSearchOnly, response?.selfie_matched_photos]);
+  // const selfieMatchedSet = useMemo(() => {
+  //   if (faceSearchOnly && response?.selfie_matched_photos) {
+  //     return new Set(response.selfie_matched_photos);
+  //   }
+  //   return new Set<string>();
+  // }, [faceSearchOnly, response?.selfie_matched_photos]);
 
-  const isLoading =
-    eventQuery.isLoading ||
-    allPhotosQuery.isLoading ||
-    allPhotosQueryV2.isLoading;
+  const isLoading = eventQuery.isLoading;
 
-  const selfieMatchedCount = response?.selfie_matched_photos?.length ?? 0;
-  const selfieEnhanced = (response?.selfie_matched_photos?.length ?? 0) > 0;
+  // const selfieMatchedCount = response?.selfie_matched_photos?.length ?? 0;
+  // const selfieEnhanced = (response?.selfie_matched_photos?.length ?? 0) > 0;
 
-  const hasSelfieResults = selfieEnhanced || selfieMatchedCount > 0;
+  // const hasSelfieResults = selfieEnhanced || selfieMatchedCount > 0;
 
-  useEffect(() => {
-    if (hasSelfieResults && selectedPhotographer !== "all") {
-      setSelectedPhotographer("all");
-    }
-  }, [hasSelfieResults, selectedPhotographer]);
+  // useEffect(() => {
+  //   if (hasSelfieResults && selectedPhotographer !== "all") {
+  //     setSelectedPhotographer("all");
+  //   }
+  // }, [hasSelfieResults, selectedPhotographer]);
 
-  const displayedPhotos = useMemo(() => {
-    if (isProcessing) {
-      return photos;
-    }
+  // const displayedPhotos = useMemo(() => {
+  //   if (isProcessing) {
+  //     return photos;
+  //   }
 
-    if (faceSearchOnly && response?.selfie_matched_photos?.length) {
-      return response.selfie_matched_photos;
-    }
+  //   if (faceSearchOnly && response?.selfie_matched_photos?.length) {
+  //     return response.selfie_matched_photos;
+  //   }
 
-    // 일반 모드에서 셀카 검색 결과가 있어도 전체 페이지에서는 어떻게 보여줄지?
-    // 기존 코드: faceSearchOnly가 아니어도 전체 뷰일때는 처리 없음 (기존 코드는 bib뷰랑 섞여서 복잡했음)
-    // 여기서는 faceSearchOnly일때만 처리
+  //   // 일반 모드에서 셀카 검색 결과가 있어도 전체 페이지에서는 어떻게 보여줄지?
+  //   // 기존 코드: faceSearchOnly가 아니어도 전체 뷰일때는 처리 없음 (기존 코드는 bib뷰랑 섞여서 복잡했음)
+  //   // 여기서는 faceSearchOnly일때만 처리
 
-    return photos;
-  }, [faceSearchOnly, response?.selfie_matched_photos, photos, isProcessing]);
+  //   return photos;
+  // }, [faceSearchOnly, response?.selfie_matched_photos, photos, isProcessing]);
 
-  const photosByPhotographer = useMemo(() => {
-    return groupPhotosByPhotographer(displayedPhotos);
-  }, [displayedPhotos]);
+  // const photosByPhotographer = useMemo(() => {
+  //   return groupPhotosByPhotographer(displayedPhotos);
+  // }, [displayedPhotos]);
 
-  const photographers = useMemo(() => {
-    if (!photosByPhotographer) return [];
-    return Object.entries(photosByPhotographer)
-      .map(([name, photos]) => ({ name, count: photos.length }))
-      .sort((a, b) => b.count - a.count);
-  }, [photosByPhotographer]);
+  // const photographers = useMemo(() => {
+  //   if (!photosByPhotographer) return [];
+  //   return Object.entries(photosByPhotographer)
+  //     .map(([name, photos]) => ({ name, count: photos.length }))
+  //     .sort((a, b) => b.count - a.count);
+  // }, [photosByPhotographer]);
 
-  const filteredPhotos = useMemo(() => {
-    if (selectedPhotographer === "all" || !photosByPhotographer) {
-      return displayedPhotos;
-    }
-    return photosByPhotographer[selectedPhotographer] || [];
-  }, [selectedPhotographer, photosByPhotographer, displayedPhotos]);
+  // const filteredPhotos = useMemo(() => {
+  //   if (selectedPhotographer === "all" || !photosByPhotographer) {
+  //     return displayedPhotos;
+  //   }
+  //   return photosByPhotographer[selectedPhotographer] || [];
+  // }, [selectedPhotographer, photosByPhotographer, displayedPhotos]);
 
-  const displayedPhotoCount = filteredPhotos.length;
+  // const displayedPhotoCount = filteredPhotos.length;
 
-  const hasError = eventQuery.error || allPhotosQuery.error;
+  // const hasError = eventQuery.error || allPhotosQuery.error;
 
-  if (hasError) {
-    return <ErrorState message="Failed to load event data" />;
-  }
+  // if (hasError) {
+  //   return <ErrorState message="Failed to load event data" />;
+  // }
 
   return (
     <div className="min-h-screen bg-white">
@@ -350,7 +377,7 @@ export default function EventAllPhotosPage() {
             <div className="w-10 md:w-auto">
               <Button
                 variant="ghost"
-                onClick={() => router.push("/")}
+                // onClick={() => router.push("/")}
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="h-2 w-2 md:h-4 md:w-4" />
@@ -369,12 +396,12 @@ export default function EventAllPhotosPage() {
                   <h1 className="text-sm font-semibold md:text-xl">
                     {eventQuery.data?.name}
                   </h1>
-                  <p className="text-muted-foreground text-xs md:text-sm">
+                  {/* <p className="text-muted-foreground text-xs md:text-sm">
                     All Photos
                     {" • "}
                     {displayedPhotoCount} photo
                     {displayedPhotoCount !== 1 ? "s" : ""}
-                  </p>
+                  </p> */}
                 </div>
               )}
             </div>
@@ -384,7 +411,7 @@ export default function EventAllPhotosPage() {
                 variant="ghost"
                 size="icon"
                 className="md:hidden"
-                onClick={() => setIsSearchModalOpen(true)}
+                // onClick={() => setIsSearchModalOpen(true)}
                 aria-label="Open search"
               >
                 <Search className="h-4 w-4" />
@@ -396,20 +423,20 @@ export default function EventAllPhotosPage() {
                 <Input
                   type="text"
                   placeholder="Enter bib"
-                  value={searchBib}
-                  onChange={(e) => setSearchBib(e.target.value)}
+                  // value={searchBib}
+                  // onChange={(e) => setSearchBib(e.target.value)}
                   className="w-[100px] border border-gray-200"
                 />
-                <Button type="submit" size="sm" disabled={!searchBib.trim()}>
+                {/* <Button type="submit" size="sm" disabled={!searchBib.trim()}>
                   <Search />
-                </Button>
+                </Button> */}
               </form>
             </div>
           </div>
         </div>
       </div>
 
-      <RunnerSpotlight
+      {/* <RunnerSpotlight
         eventId={event}
         eventName={eventQuery.data?.name ?? ""}
         organizationId={eventQuery.data?.organizer_id ?? ""}
@@ -426,7 +453,7 @@ export default function EventAllPhotosPage() {
         onLabelClick={handleLabelClick}
         onFileChange={handleFileUpload}
         onRetryUpload={resetAndPromptSelfieUpload}
-      />
+      /> */}
 
       {partners.length > 0 && (
         <div className="bg-background/60 top-16 z-10 w-full">
@@ -510,7 +537,7 @@ export default function EventAllPhotosPage() {
       )} */}
 
       {/* Full-width Photo Grid */}
-      <div className="mt-4 w-full px-[4px] sm:px-[20px]">
+      {/* <div className="mt-4 w-full px-[4px] sm:px-[20px]">
         {isLoading ? (
           <MasonryPhotoSkeleton />
         ) : filteredPhotos.length > 0 ? (
@@ -535,7 +562,7 @@ export default function EventAllPhotosPage() {
             onViewAllPhotos={() => {}}
           />
         )}
-      </div>
+      </div> */}
 
       {/* <section className="bg-muted/20 mt-auto border-t px-4 py-4">
         <div className="text-muted-foreground text-center text-xs">
@@ -543,7 +570,7 @@ export default function EventAllPhotosPage() {
         </div>
       </section> */}
 
-      <PhotoSingleView
+      {/* <PhotoSingleView
         isOpen={isModalOpen}
         onClose={handleCloseSingleView}
         photos={filteredPhotos}
@@ -559,17 +586,17 @@ export default function EventAllPhotosPage() {
           }
         }}
         selfieMatchedSet={selfieMatchedSet}
-      />
+      /> */}
 
-      <FacialRecognitionConsentModal
+      {/* <FacialRecognitionConsentModal
         isOpen={isConsentModalOpen}
         onClose={() => setIsConsentModalOpen(false)}
         onAgree={handleConsentAgree}
         onDeny={handleConsentDeny}
         eventName={eventQuery.data?.name}
-      />
+      /> */}
 
-      <Dialog open={isSearchModalOpen} onOpenChange={setIsSearchModalOpen}>
+      {/* <Dialog open={isSearchModalOpen} onOpenChange={setIsSearchModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Search by Bib Number</DialogTitle>
@@ -595,7 +622,7 @@ export default function EventAllPhotosPage() {
             </div>
           </form>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
     </div>
   );
 }

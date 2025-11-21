@@ -12,7 +12,6 @@ interface EventCardProps {
 }
 
 export default function EventCard({ id, name, image, date }: EventCardProps) {
-  console.log("date", date);
   return (
     <div className="text-center">
       <Link href={`/events/${id}/null`} className="block cursor-pointer">

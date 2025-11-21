@@ -13,6 +13,11 @@ export const ERROR_MESSAGES = {
     FETCH_FAILED: "Failed to fetch event data.",
     LIST_FAILED: "Failed to fetch events list.",
   },
+  RESULTS: {
+    NOT_FOUND: "Results not found.",
+    FETCH_FAILED: "Failed to fetch race results.",
+    BIB_NOT_FOUND: "No timing results were found for the provided bib number.",
+  },
 };
 
 export const trpcError = {

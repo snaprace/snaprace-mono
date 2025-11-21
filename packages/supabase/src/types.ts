@@ -143,8 +143,6 @@ export type Database = {
           name: string
           organizer_id: string
           participant_count: number | null
-          photos_meta: Json | null
-          results_integration: Json | null
           thumbnail_image: string | null
         }
         Insert: {
@@ -156,8 +154,6 @@ export type Database = {
           name: string
           organizer_id: string
           participant_count?: number | null
-          photos_meta?: Json | null
-          results_integration?: Json | null
           thumbnail_image?: string | null
         }
         Update: {
@@ -169,8 +165,6 @@ export type Database = {
           name?: string
           organizer_id?: string
           participant_count?: number | null
-          photos_meta?: Json | null
-          results_integration?: Json | null
           thumbnail_image?: string | null
         }
         Relationships: [
