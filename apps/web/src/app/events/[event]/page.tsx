@@ -43,7 +43,6 @@ import {
 } from "@/lib/consent-storage";
 import { useOrganizationHelper } from "@/hooks/useOrganizationHelper";
 import Link from "next/link";
-import { RunnerSpotlight } from "./[bib]/_components/RunnerSpotlight";
 import {
   Select,
   SelectContent,
@@ -57,6 +56,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { EventInsightsPanel } from "./_components/EventInsightsPanel";
+import { LeaderboardSection } from "./_components/LeaderboardSection";
 
 // 사진 URL에서 작가명 추출
 function extractPhotographer(photoUrl: string): string | null {
@@ -368,6 +369,14 @@ export default function EventAllPhotosPage({
   //   return <ErrorState message="Failed to load event data" />;
   // }
 
+  const insightSections = [
+    <LeaderboardSection
+      key="leaderboard"
+      eventId={event}
+      organizationId={eventQuery.data?.organizer_id}
+    />,
+  ];
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -436,24 +445,11 @@ export default function EventAllPhotosPage({
         </div>
       </div>
 
-      {/* <RunnerSpotlight
-        eventId={event}
-        eventName={eventQuery.data?.name ?? ""}
-        organizationId={eventQuery.data?.organizer_id ?? ""}
-        event={eventQuery.data ?? null}
-        bibNumber={bibNumber}
-        isAllPhotos={isAllPhotos}
-        isUploading={isUploading}
-        uploadedFile={uploadedFile}
-        selfieEnhanced={selfieEnhanced}
-        selfieMatchedCount={selfieMatchedCount}
-        isProcessed={isProcessed}
-        hasError={selfieUploadError}
-        inputRef={fileInputRef}
-        onLabelClick={handleLabelClick}
-        onFileChange={handleFileUpload}
-        onRetryUpload={resetAndPromptSelfieUpload}
-      /> */}
+      <EventInsightsPanel
+        // title="Race Insights"
+        // description="Track leading finishers and divisions as results stream in."
+        sections={insightSections}
+      />
 
       {partners.length > 0 && (
         <div className="bg-background/60 top-16 z-10 w-full">
