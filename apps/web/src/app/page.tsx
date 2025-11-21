@@ -28,8 +28,8 @@ export default function HomePage() {
   const events = useMemo(() => eventsQuery.data ?? [], [eventsQuery.data]);
 
   const faceSearchOnly =
-    events.find((event) => event.event_id === selectedEventId)
-      ?.display_mode === "PHOTOS_ONLY";
+    events.find((event) => event.event_id === selectedEventId)?.display_mode ===
+    "PHOTOS_ONLY";
 
   useEffect(() => {
     if (events.length > 0 && !selectedEventId) {
@@ -136,7 +136,7 @@ export default function HomePage() {
                   type="submit"
                   size="lg"
                   className="bg-primary/10 hover:bg-primary/20 text-primary border-primary/30 h-14 w-full border text-lg font-medium"
-                  onClick={() => router.push(`/events/${selectedEventId}/null`)}
+                  onClick={() => router.push(`/events/${selectedEventId}`)}
                 >
                   <Images className="mr-2 h-5 w-5" />
                   Go to All Photos
@@ -147,8 +147,7 @@ export default function HomePage() {
                 <Button
                   size="lg"
                   className="bg-primary/10 hover:bg-primary/20 text-primary border-primary/30 h-14 w-full border text-lg font-medium"
-                  onClick={() => router.push(`/events/${selectedEventId}/null`)}
-                  // disabled={!bibNumber.trim() || !selectedEventId}
+                  onClick={() => router.push(`/events/${selectedEventId}`)}
                 >
                   <Calendar className="mr-2 h-5 w-5" />
                   Go to Event
@@ -156,13 +155,6 @@ export default function HomePage() {
               )}
             </form>
           </div>
-
-          {/* <p className="text-muted-foreground mt-4 text-sm">
-            Don&apos;t know your bib number?{" "}
-            <Link href="/events" className="text-primary hover:underline">
-              Browse all events
-            </Link>
-          </p> */}
         </div>
       </section>
 

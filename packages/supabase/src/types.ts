@@ -59,36 +59,69 @@ export type Database = {
       event_runners: {
         Row: {
           age: number | null
+          age_group: string | null
+          avg_pace_seconds: number | null
           bib_number: number
+          chip_time_seconds: number | null
+          city: string | null
+          division_place: string | null
+          event_distance_km: number | null
+          event_distance_mi: number | null
           event_id: string
-          finish_time: string | null
+          event_slug: string | null
           first_name: string | null
           gender: string | null
+          gun_time_seconds: number | null
           last_name: string | null
+          overall_place: number | null
           source: string | null
-          timing_result: Json | null
+          source_payload: Json | null
+          start_time_seconds: number | null
+          state: string | null
         }
         Insert: {
           age?: number | null
+          age_group?: string | null
+          avg_pace_seconds?: number | null
           bib_number: number
+          chip_time_seconds?: number | null
+          city?: string | null
+          division_place?: string | null
+          event_distance_km?: number | null
+          event_distance_mi?: number | null
           event_id: string
-          finish_time?: string | null
+          event_slug?: string | null
           first_name?: string | null
           gender?: string | null
+          gun_time_seconds?: number | null
           last_name?: string | null
+          overall_place?: number | null
           source?: string | null
-          timing_result?: Json | null
+          source_payload?: Json | null
+          start_time_seconds?: number | null
+          state?: string | null
         }
         Update: {
           age?: number | null
+          age_group?: string | null
+          avg_pace_seconds?: number | null
           bib_number?: number
+          chip_time_seconds?: number | null
+          city?: string | null
+          division_place?: string | null
+          event_distance_km?: number | null
+          event_distance_mi?: number | null
           event_id?: string
-          finish_time?: string | null
+          event_slug?: string | null
           first_name?: string | null
           gender?: string | null
+          gun_time_seconds?: number | null
           last_name?: string | null
+          overall_place?: number | null
           source?: string | null
-          timing_result?: Json | null
+          source_payload?: Json | null
+          start_time_seconds?: number | null
+          state?: string | null
         }
         Relationships: [
           {
@@ -227,7 +260,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      event_type: "RESULTS_AND_PHOTOS" | "PHOTOS_ONLY"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -354,6 +387,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      event_type: ["RESULTS_AND_PHOTOS", "PHOTOS_ONLY"],
+    },
   },
 } as const

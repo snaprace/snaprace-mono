@@ -1,14 +1,7 @@
 "use client";
 
-import {
-  useMemo,
-  useRef,
-  useCallback,
-  useState,
-  useEffect,
-  startTransition,
-} from "react";
-import { useRouter, useParams, redirect } from "next/navigation";
+import { useMemo, useRef, useState, useEffect, startTransition } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,9 +16,6 @@ import { usePhotoState } from "@/hooks/usePhotoState";
 import { usePhotoHandlers } from "@/hooks/usePhotoHandlers";
 import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BulkDownloadButton } from "@/components/BulkDownloadButton";
-import { PhotoSelectionControls } from "@/components/PhotoSelectionControls";
-import { usePhotoSelection } from "@/hooks/usePhotoSelection";
 import {
   useAnalyticsTracking,
   usePerformanceTracking,
@@ -46,7 +36,14 @@ import {
 } from "@/lib/consent-storage";
 import { useOrganizationHelper } from "@/hooks/useOrganizationHelper";
 import Link from "next/link";
-import { RunnerSpotlight } from "./_components/RunnerSpotlight";
+import { RunnerSpotlight } from "./[bib]/_components/RunnerSpotlight";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -54,12 +51,39 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-export default function EventBibPage() {
+// 사진 URL에서 작가명 추출
+function extractPhotographer(photoUrl: string): string | null {
+  // URL 패턴: .../raw/@photographer-number.jpg
+  const regex = /@([^-]+)-\d+\.(jpg|jpeg|png)/i;
+  const match = regex.exec(photoUrl);
+  return match?.[1] ?? null;
+}
+
+// 작가별로 사진 그룹화
+function groupPhotosByPhotographer(photos: string[]): Record<string, string[]> {
+  const grouped: Record<string, string[]> = {};
+
+  photos.forEach((photo) => {
+    const photographer = extractPhotographer(photo);
+    if (photographer) {
+      if (!grouped[photographer]) {
+        grouped[photographer] = [];
+      }
+      grouped[photographer].push(photo);
+    }
+  });
+
+  return grouped;
+}
+
+export default function EventAllPhotosPage() {
   const router = useRouter();
   const photoRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
+  const [selectedPhotographer, setSelectedPhotographer] =
+    useState<string>("all");
 
   const org = useOrganizationHelper();
   const partners = org.partners;
@@ -69,15 +93,9 @@ export default function EventBibPage() {
 
   const params = useParams();
   const event = params?.event as string;
-  const bibParam = params?.bib as string;
-
-  // 기존 .../null 링크에 대한 방어 코드
-  if (bibParam === "null") {
-    redirect(`/events/${event}`);
-  }
-
-  const bibNumber = bibParam;
-  const isAllPhotos = false; // 항상 개별 뷰
+  // 전체 사진 페이지이므로 bibNumber는 없음
+  const bibNumber = "";
+  const isAllPhotos = true;
 
   const eventQuery = api.events.getById.useQuery(
     { eventId: event },
@@ -87,38 +105,40 @@ export default function EventBibPage() {
   const faceSearchOnly = eventQuery.data?.display_mode === "PHOTOS_ONLY";
   const cloudfrontUrl = "https://images.snap-race.com/";
 
-  const galleryQuery = api.galleries.getByBibNumber.useQuery(
-    { eventId: event, bibNumber },
-    { enabled: !!event && !!bibNumber && !faceSearchOnly },
+  // 전체 사진 쿼리만 유지
+  const allPhotosQuery = api.photos.getByEventId.useQuery(
+    { eventId: event },
+    { enabled: !!event && !faceSearchOnly },
   );
 
-  const bibPhotosQueryV2 = api.photos.getByBibV2.useQuery(
+  const allPhotosQueryV2 = api.photos.getByEventV2.useQuery(
+    { organizer: eventQuery.data?.organizer_id ?? "", eventId: event },
     {
-      organizer: eventQuery.data?.organizer_id ?? "",
-      eventId: event,
-      bibNumber,
+      enabled: !!eventQuery.data?.organizer_id && !!event && faceSearchOnly,
     },
-    { enabled: !!event && !!bibNumber && faceSearchOnly },
   );
 
   const photos = useMemo(() => {
-    if (faceSearchOnly && bibPhotosQueryV2.data) {
+    if (faceSearchOnly && allPhotosQueryV2.data) {
       return (
-        bibPhotosQueryV2.data.map((photo) =>
+        allPhotosQueryV2.data?.map((photo) =>
           encodeURI(cloudfrontUrl + photo.s3Path),
         ) ?? []
       );
     }
 
-    if (galleryQuery.data) {
-      const data = galleryQuery.data;
-      const selfiePhotos = data.selfie_matched_photos ?? [];
-      const bibPhotos = data.bib_matched_photos ?? [];
-      return [...selfiePhotos, ...bibPhotos];
+    if (allPhotosQuery.data) {
+      const allPhotos: string[] = [];
+      if (allPhotosQuery.data) {
+        allPhotosQuery.data.forEach((photo) => {
+          allPhotos.push(photo.imageUrl);
+        });
+      }
+      return allPhotos;
     }
 
     return [];
-  }, [galleryQuery.data, faceSearchOnly, bibPhotosQueryV2.data]);
+  }, [allPhotosQuery.data, faceSearchOnly, allPhotosQueryV2.data]);
 
   const {
     searchBib,
@@ -132,28 +152,13 @@ export default function EventBibPage() {
 
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
-  const {
-    selectedPhotos,
-    selectedCount,
-    isSelectionMode,
-    togglePhotoSelection,
-    selectAll,
-    clearSelection,
-    toggleSelectionMode,
-    getSelectedPhotoUrls,
-  } = usePhotoSelection(photos);
-
-  const handlePhotoSelect = useCallback(
-    (index: number) => {
-      togglePhotoSelection(index);
-    },
-    [togglePhotoSelection],
-  );
+  // 선택 기능은 전체 페이지에서는 지원하지 않거나 필요 시 추가 (기존 로직상 !isAllPhotos일 때만 표시되었으므로 제거)
+  // 단, 로직 자체는 훅을 사용하더라도 UI 렌더링을 안 하면 됨.
 
   const { handlePhotoClick, handlePhotoIndexChange, handleCloseSingleView } =
     usePhotoHandlers({
       event,
-      bibParam,
+      bibParam: "null",
       isMobile,
       photoRefs,
       setClickedPhotoRect,
@@ -172,17 +177,16 @@ export default function EventBibPage() {
     eventId: event,
     bibNumber,
     organizerId: eventQuery.data?.organizer_id ?? "",
-    existingPhotos: photos,
+    existingPhotos: undefined, // 전체 사진일 때는 undefined
     faceSearchOnly: eventQuery.data?.display_mode === "PHOTOS_ONLY",
   });
 
-  const isUploading =
-    isProcessing || galleryQuery.isLoading || galleryQuery.isFetching;
+  const isUploading = isProcessing; // galleryQuery가 없으므로 isProcessing만 체크
 
   const handleLabelClick = (e: React.MouseEvent) => {
     e.preventDefault();
 
-    if (!bibNumber || isUploading) return;
+    if (!faceSearchOnly || isUploading) return; // bibNumber가 없으므로 faceSearchOnly일 때만
 
     if (hasFacialRecognitionConsent(event)) {
       fileInputRef.current?.click();
@@ -206,14 +210,7 @@ export default function EventBibPage() {
         const startedAt = performance.now();
 
         const uploadResult = await uploadSelfie(file);
-
-        let matchedCount = 0;
-        if (faceSearchOnly) {
-          matchedCount = uploadResult.matchedPhotos.length;
-        } else {
-          const { data } = await galleryQuery.refetch();
-          matchedCount = data?.selfie_matched_photos?.length ?? 0;
-        }
+        const matchedCount = uploadResult.matchedPhotos.length;
 
         const latencyMs = Math.round(performance.now() - startedAt);
         trackSelfieUpload({
@@ -262,14 +259,14 @@ export default function EventBibPage() {
     trackSelfieConsentDecision(event, bibNumber, false);
   };
 
-  const resetAndPromptSelfieUpload = useCallback(() => {
+  const resetAndPromptSelfieUpload = () => {
     reset();
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
       fileInputRef.current.click();
     }
     trackSelfieRetry(event, bibNumber);
-  }, [reset, event, bibNumber]);
+  };
 
   const handleBibSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -283,57 +280,62 @@ export default function EventBibPage() {
     if (faceSearchOnly && response?.selfie_matched_photos) {
       return new Set(response.selfie_matched_photos);
     }
-    if (galleryQuery.data?.selfie_matched_photos?.length) {
-      return new Set(galleryQuery.data.selfie_matched_photos);
-    }
     return new Set<string>();
-  }, [
-    galleryQuery.data?.selfie_matched_photos,
-    faceSearchOnly,
-    response?.selfie_matched_photos,
-  ]);
+  }, [faceSearchOnly, response?.selfie_matched_photos]);
 
   const isLoading =
     eventQuery.isLoading ||
-    galleryQuery.isLoading ||
-    bibPhotosQueryV2.isLoading;
+    allPhotosQuery.isLoading ||
+    allPhotosQueryV2.isLoading;
 
-  const selfieMatchedCount = faceSearchOnly
-    ? (response?.selfie_matched_photos?.length ?? 0)
-    : Array.isArray(galleryQuery.data?.selfie_matched_photos)
-      ? galleryQuery.data.selfie_matched_photos.length
-      : 0;
+  const selfieMatchedCount = response?.selfie_matched_photos?.length ?? 0;
+  const selfieEnhanced = (response?.selfie_matched_photos?.length ?? 0) > 0;
 
-  const selfieEnhanced = faceSearchOnly
-    ? (response?.selfie_matched_photos?.length ?? 0) > 0
-    : typeof galleryQuery.data?.selfie_enhanced === "boolean"
-      ? galleryQuery.data.selfie_enhanced
-      : false;
+  const hasSelfieResults = selfieEnhanced || selfieMatchedCount > 0;
+
+  useEffect(() => {
+    if (hasSelfieResults && selectedPhotographer !== "all") {
+      setSelectedPhotographer("all");
+    }
+  }, [hasSelfieResults, selectedPhotographer]);
 
   const displayedPhotos = useMemo(() => {
-    if (isProcessing || galleryQuery.isFetching) {
+    if (isProcessing) {
       return photos;
     }
 
     if (faceSearchOnly && response?.selfie_matched_photos?.length) {
-      return [...(response.selfie_matched_photos ?? []), ...photos];
+      return response.selfie_matched_photos;
     }
-    if (faceSearchOnly && selfieEnhanced) {
-      return [...(response?.selfie_matched_photos ?? []), ...photos];
-    }
+
+    // 일반 모드에서 셀카 검색 결과가 있어도 전체 페이지에서는 어떻게 보여줄지?
+    // 기존 코드: faceSearchOnly가 아니어도 전체 뷰일때는 처리 없음 (기존 코드는 bib뷰랑 섞여서 복잡했음)
+    // 여기서는 faceSearchOnly일때만 처리
+
     return photos;
-  }, [
-    faceSearchOnly,
-    response?.selfie_matched_photos,
-    selfieEnhanced,
-    photos,
-    isProcessing,
-    galleryQuery.isFetching,
-  ]);
+  }, [faceSearchOnly, response?.selfie_matched_photos, photos, isProcessing]);
 
-  const displayedPhotoCount = displayedPhotos.length;
+  const photosByPhotographer = useMemo(() => {
+    return groupPhotosByPhotographer(displayedPhotos);
+  }, [displayedPhotos]);
 
-  const hasError = eventQuery.error || galleryQuery.error;
+  const photographers = useMemo(() => {
+    if (!photosByPhotographer) return [];
+    return Object.entries(photosByPhotographer)
+      .map(([name, photos]) => ({ name, count: photos.length }))
+      .sort((a, b) => b.count - a.count);
+  }, [photosByPhotographer]);
+
+  const filteredPhotos = useMemo(() => {
+    if (selectedPhotographer === "all" || !photosByPhotographer) {
+      return displayedPhotos;
+    }
+    return photosByPhotographer[selectedPhotographer] || [];
+  }, [selectedPhotographer, photosByPhotographer, displayedPhotos]);
+
+  const displayedPhotoCount = filteredPhotos.length;
+
+  const hasError = eventQuery.error || allPhotosQuery.error;
 
   if (hasError) {
     return <ErrorState message="Failed to load event data" />;
@@ -348,11 +350,11 @@ export default function EventBibPage() {
             <div className="w-10 md:w-auto">
               <Button
                 variant="ghost"
-                onClick={() => router.push(`/events/${event}`)}
+                onClick={() => router.push("/")}
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="h-2 w-2 md:h-4 md:w-4" />
-                <span className="hidden md:block">Back to Event</span>
+                <span className="hidden md:block">Back</span>
               </Button>
             </div>
 
@@ -368,10 +370,7 @@ export default function EventBibPage() {
                     {eventQuery.data?.name}
                   </h1>
                   <p className="text-muted-foreground text-xs md:text-sm">
-                    Bib #{bibNumber}{" "}
-                    {galleryQuery.data?.runner_name && (
-                      <>• {galleryQuery.data.runner_name}</>
-                    )}
+                    All Photos
                     {" • "}
                     {displayedPhotoCount} photo
                     {displayedPhotoCount !== 1 ? "s" : ""}
@@ -453,58 +452,70 @@ export default function EventBibPage() {
         </div>
       )}
 
-      {/* Photo Selection and Bulk Download Controls */}
-      {!isMobile && photos.length > 0 && (
-        <div className="container mx-auto mt-4 px-4">
-          <div className="flex items-center justify-between">
-            <div className="text-muted-foreground text-xs">
-              {isSelectionMode && selectedCount > 0 ? (
-                selectedCount >= 10 ? (
-                  <span className="flex items-center gap-2">
-                    <span className="inline-flex h-2 w-2 rounded-full bg-green-500"></span>
-                    Selected photos will be downloaded as ZIP
-                  </span>
-                ) : (
-                  <span>Selected photos will be downloaded individually</span>
-                )
-              ) : photos.length >= 10 ? (
-                <span className="flex items-center gap-2">
-                  <span className="inline-flex h-2 w-2 rounded-full bg-green-500"></span>
-                  All photos will be downloaded as ZIP
-                </span>
-              ) : (
-                <span>All photos will be downloaded individually</span>
-              )}
-            </div>
-            <div className="flex items-center gap-4">
-              <PhotoSelectionControls
-                isSelectionMode={isSelectionMode}
-                selectedCount={selectedCount}
-                totalCount={photos.length}
-                onToggleSelectionMode={toggleSelectionMode}
-                onSelectAll={selectAll}
-                onClearSelection={clearSelection}
-              />
-
-              <BulkDownloadButton
-                photos={photos}
-                selectedPhotos={getSelectedPhotoUrls}
-                event={eventQuery.data?.name || ""}
-                bibNumber={bibNumber}
-                isSelectionMode={isSelectionMode}
-              />
-            </div>
+      {/* Photographer Filter - Only for All Photos */}
+      {/* {photographers.length > 1 && !hasSelfieResults && (
+        <div className="container mx-auto mt-4 px-[4px] md:mt-6 md:px-4">
+          <div className="flex items-center gap-2">
+            <Select
+              value={selectedPhotographer}
+              onValueChange={(value) => {
+                startTransition(() => {
+                  setSelectedPhotographer(value);
+                });
+              }}
+            >
+              <SelectTrigger className="bg-background border-border w-full md:w-[280px]">
+                <SelectValue placeholder="Select photographer" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium">
+                      All Photographers
+                    </span>
+                    <span className="text-muted-foreground text-xs">
+                      ({displayedPhotos.length})
+                    </span>
+                  </div>
+                </SelectItem>
+                {photographers.map((photographer) => (
+                  <SelectItem key={photographer.name} value={photographer.name}>
+                    <div className="flex items-center justify-between gap-3">
+                      <span>@{photographer.name}</span>
+                      <span className="text-muted-foreground text-xs">
+                        ({photographer.count})
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedPhotographer !== "all" && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  startTransition(() => {
+                    setSelectedPhotographer("all");
+                  });
+                }}
+                className="text-muted-foreground text-xs md:text-sm"
+              >
+                <span className="md:hidden">Clear</span>
+                <span className="hidden md:inline">Clear filter</span>
+              </Button>
+            )}
           </div>
         </div>
-      )}
+      )} */}
 
-      {/* Photo Grid - Only Individual Photos */}
+      {/* Full-width Photo Grid */}
       <div className="mt-4 w-full px-[4px] sm:px-[20px]">
         {isLoading ? (
           <MasonryPhotoSkeleton />
-        ) : displayedPhotos.length > 0 ? (
+        ) : filteredPhotos.length > 0 ? (
           <InfinitePhotoGrid
-            photos={displayedPhotos}
+            photos={filteredPhotos}
             columnCount={columnCount}
             isMobile={isMobile}
             onPhotoClick={handlePhotoClick}
@@ -513,30 +524,30 @@ export default function EventBibPage() {
             event={event}
             bibNumber={bibNumber}
             organizerId={eventQuery.data?.organizer_id}
-            isSelectionMode={isSelectionMode}
-            selectedPhotos={selectedPhotos}
-            onPhotoSelect={handlePhotoSelect}
+            isSelectionMode={false}
+            selectedPhotos={new Set()}
+            onPhotoSelect={() => {}}
           />
         ) : (
           <NoPhotosState
-            isAllPhotos={false}
+            isAllPhotos={isAllPhotos}
             bibNumber={bibNumber}
-            onViewAllPhotos={() => router.push(`/events/${event}`)}
+            onViewAllPhotos={() => {}}
           />
         )}
       </div>
 
-      <section className="bg-muted/20 mt-auto border-t px-4 py-4">
+      {/* <section className="bg-muted/20 mt-auto border-t px-4 py-4">
         <div className="text-muted-foreground text-center text-xs">
           <p>© {new Date().getFullYear()} SnapRace. All rights reserved.</p>
         </div>
-      </section>
+      </section> */}
 
       <PhotoSingleView
         isOpen={isModalOpen}
         onClose={handleCloseSingleView}
-        photos={displayedPhotos}
-        currentIndex={Math.min(currentPhotoIndex, displayedPhotos.length - 1)}
+        photos={filteredPhotos}
+        currentIndex={Math.min(currentPhotoIndex, filteredPhotos.length - 1)}
         onIndexChange={handlePhotoIndexChange}
         event={event}
         bibNumber={bibNumber}

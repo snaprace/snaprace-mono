@@ -54,12 +54,12 @@ export function RunnerSpotlight({
 }: RunnerSpotlightProps) {
   const timingEnabled = !isAllPhotos && bibNumber.length > 0;
 
-  const faceSearchOnly = event?.face_search_only ?? false;
+  // const faceSearchOnly = event?.face_search_only ?? false;
 
   const timingQuery = api.results.getTimingByBib.useQuery(
     { eventId, bib: bibNumber },
     {
-      enabled: timingEnabled && !faceSearchOnly,
+      enabled: timingEnabled,
     },
   );
 
@@ -92,7 +92,7 @@ export function RunnerSpotlight({
     <div className="container mx-auto mt-8 px-1 md:px-4">
       <section className="border-border/60 bg-muted/30 overflow-hidden rounded-3xl border p-4 shadow-sm md:p-6">
         <div className="grid gap-4">
-          {!faceSearchOnly && showTimingCard ? (
+          {showTimingCard ? (
             <TimingSummaryCard
               status={timingStatus}
               detail={detail}
@@ -100,27 +100,25 @@ export function RunnerSpotlight({
             />
           ) : null}
 
-          {!faceSearchOnly && (
-            <EventLeaderboard
-              eventId={eventId}
-              eventName={eventName}
-              organizationId={organizationId}
-              highlightBib={!isAllPhotos ? bibNumber : undefined}
-            />
-          )}
+          <EventLeaderboard
+            eventId={eventId}
+            eventName={eventName}
+            organizationId={organizationId}
+            highlightBib={!isAllPhotos ? bibNumber : undefined}
+          />
 
-          {!faceSearchOnly && event?.finishline_video_info && (
+          {/* {!faceSearchOnly && event?.finishline_video_info && (
             <FinishVideo
               event={event}
               timingDetail={detail}
               isAllPhotos={isAllPhotos}
             />
-          )}
+          )} */}
 
-          {(bibNumber || faceSearchOnly) && (
+          {bibNumber && (
             <SelfieUploadCard
               bibNumber={bibNumber}
-              disabled={!(bibNumber || faceSearchOnly)}
+              disabled={!bibNumber}
               isUploading={isUploading}
               uploadedFile={uploadedFile}
               selfieEnhanced={selfieEnhanced}
