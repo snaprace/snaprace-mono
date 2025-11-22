@@ -49,9 +49,15 @@ export const eventsRouter = createTRPCRouter({
   getById: publicProcedure
     .input(z.object({ eventId: z.string() }))
     .query(async ({ ctx, input }) => {
-      return getEventById({
+      const event = await getEventById({
         supabase: ctx.supabase,
         eventId: input.eventId,
       });
+
+      if (!event) {
+        return null;
+      }
+
+      return event;
     }),
 });

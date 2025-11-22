@@ -14,9 +14,9 @@ interface EventCardProps {
 export default function EventCard({ id, name, image, date }: EventCardProps) {
   return (
     <div className="text-center">
-      <Link href={`/events/${id}/null`} className="block cursor-pointer">
+      <Link href={`/events/${id}`} className="block cursor-pointer">
         {/* Event Image */}
-        <div className="relative mb-4 aspect-[4/3] w-full overflow-hidden">
+        <div className="relative mb-4 aspect-4/3 w-full overflow-hidden">
           <Image
             src={
               Boolean(image)
