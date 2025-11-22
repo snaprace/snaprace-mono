@@ -75,21 +75,28 @@ export class PhotoService {
       ? Buffer.from(JSON.stringify(result.LastEvaluatedKey)).toString("base64")
       : undefined;
 
-    return { items, nextCursor };
+    const mappedItems = items.map((item) => ({
+      orgId: item.orgId,
+      eventId: item.eventId,
+      // imageUrl: `https://images.snap-race.com/${item.processedKey || item.rawKey}`,
+      instagramHandle: item.instagramHandle,
+      // We need the key for the image loader to work with the image handler
+      key: item.processedKey || item.rawKey,
+    }));
+
+    return { items: mappedItems, nextCursor };
   }
 
   /**
    * Get photos by Bib number, paginated.
    * Uses GSI1 (EVT#...#BIB#...) to find photo IDs, then BatchGet to fetch details.
    */
-  static async getPhotosByBib({
-    organizerId,
+  static async getPhotosByBib({    
     eventId,
     bibNumber,
     limit = 20,
     cursor,
   }: {
-    organizerId: string;
     eventId: string;
     bibNumber: string;
     limit?: number;
@@ -150,7 +157,15 @@ export class PhotoService {
     const photoMap = new Map(photoItems.map((p) => [p.ulid, p]));
     const sortedPhotos = indexItems
       .map((item) => photoMap.get(item.ulid))
-      .filter((p): p is PhotoItem => !!p);
+      .filter((p): p is PhotoItem => !!p)
+      .map((item) => ({
+        orgId: item.orgId,
+        eventId: item.eventId,
+        imageUrl: `https://images.snap-race.com/${item.processedKey}`, // item.rawKey
+        instagramHandle: item.instagramHandle,
+        // We need the key for the image loader to work with the image handler
+        key: item.processedKey,
+      }));
 
     const nextCursor = queryResult.LastEvaluatedKey
       ? Buffer.from(JSON.stringify(queryResult.LastEvaluatedKey)).toString("base64")

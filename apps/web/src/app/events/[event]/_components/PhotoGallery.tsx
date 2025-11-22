@@ -1,6 +1,6 @@
 "use client";
 
-export function PhotoGallerySection() {
+export function PhotoGallery() {
   return (
     <section className="mt-8 border-t pt-6">
       <div className="text-muted-foreground text-sm">
