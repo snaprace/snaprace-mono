@@ -4,6 +4,7 @@ import { EventInsightsPanel } from "@/app/events/[event]/_components/EventInsigh
 import { LeaderboardSection } from "@/app/events/[event]/_components/LeaderboardSection";
 import { PhotoGallerySection } from "@/app/events/[event]/_components/PhotoGallerySection";
 import { TimingResultSection } from "@/app/events/[event]/_components/TimingResultSection";
+import { PhotoService } from "@/server/services/photo-service";
 
 export default async function EventBibPage({
   params,
@@ -12,9 +13,22 @@ export default async function EventBibPage({
 }) {
   const { event, bib } = await params;
 
+  console.log("event", event);
+  console.log("bib", bib);
+
   if (bib === "null") {
     redirect(`/events/${event}`);
   }
+
+  const photos = await PhotoService.getPhotosByBib({
+    organizerId: "winningeventsgroup",
+    eventId: event,
+    bibNumber: bib,
+    limit: 20,
+    cursor: undefined,
+  });
+
+  console.log("photos", photos);
 
   return (
     <>

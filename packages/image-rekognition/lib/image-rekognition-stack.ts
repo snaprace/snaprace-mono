@@ -43,8 +43,6 @@ export class ImageRekognitionStack extends cdk.Stack {
           ],
           allowedOrigins: ["*"], // TODO: Restrict to actual domains in production
           allowedHeaders: ["*"],
-          exposedHeaders: ["ETag"],
-          maxAge: 3000,
         },
       ],
 
@@ -95,6 +93,21 @@ export class ImageRekognitionStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
     });
+
+    // CloudFront OAC Policy 추가
+    this.imageBucket.addToResourcePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["s3:GetObject"],
+        principals: [new iam.ServicePrincipal("cloudfront.amazonaws.com")],
+        resources: [this.imageBucket.arnForObjects("*")],
+        conditions: {
+          StringEquals: {
+            "AWS:SourceArn": `arn:aws:cloudfront::${this.account}:distribution/E34Y5NMKCC4FLC`,
+          },
+        },
+      })
+    );
 
     // ===================================
     // DynamoDB Table: PhotoService
