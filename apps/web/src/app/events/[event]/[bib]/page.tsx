@@ -28,7 +28,7 @@ export default async function EventBibPage({
           />,
         ]}
       />
-      <div className="container mx-auto mt-8 px-1 md:px-4">
+      <div>
         <PhotoGallery />
       </div>
     </>

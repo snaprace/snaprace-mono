@@ -14,7 +14,7 @@ export default async function EventPage({
       <EventInsightsPanel
         sections={[<LeaderboardSection key="leaderboard" eventId={eventId} />]}
       />
-      <div className="container mx-auto mt-8 px-1 md:px-4">
+      <div>
         <PhotoGallery />
       </div>
     </>

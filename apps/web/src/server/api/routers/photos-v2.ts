@@ -33,7 +33,6 @@ export const photosV2Router = createTRPCRouter({
     )
     .query(async ({ input }) => {
       return PhotoService.getPhotosByBib({
-        organizerId: input.organizerId,
         eventId: input.eventId,
         bibNumber: input.bibNumber,
         limit: input.limit,
