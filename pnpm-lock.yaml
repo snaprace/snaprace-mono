@@ -261,6 +261,9 @@ importers:
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.3.1
+      thumbhash:
+        specifier: ^0.1.1
+        version: 0.1.1
       ulid:
         specifier: ^3.0.1
         version: 3.0.1
@@ -409,6 +412,9 @@ importers:
       sharp:
         specifier: ^0.33.5
         version: 0.33.5
+      thumbhash:
+        specifier: ^0.1.1
+        version: 0.1.1
       ulid:
         specifier: ^2.4.0
         version: 2.4.0
@@ -5927,6 +5933,9 @@ packages:
 
   third-party-capital@1.0.20:
     resolution: {integrity: sha512-oB7yIimd8SuGptespDAZnNkzIz+NWaJCu2RMsbs4Wmp9zSDUM8Nhi3s2OOcqYuv3mN4hitXc8DVx+LyUmbUDiA==}
+
+  thumbhash@0.1.1:
+    resolution: {integrity: sha512-kH5pKeIIBPQXAOni2AiY/Cu/NKdkFREdpH+TLdM0g6WA7RriCv0kPLgP731ady67MhTAqrVG/4mnEeibVuCJcg==}
 
   tiktok-video-element@0.1.1:
     resolution: {integrity: sha512-BaiVzvNz2UXDKTdSrXzrNf4q6Ecc+/utYUh7zdEu2jzYcJVDoqYbVfUl0bCfMoOeeAqg28vD/yN63Y3E9jOrlA==}
@@ -13552,6 +13561,8 @@ snapshots:
       minimatch: 9.0.5
 
   third-party-capital@1.0.20: {}
+
+  thumbhash@0.1.1: {}
 
   tiktok-video-element@0.1.1: {}
 

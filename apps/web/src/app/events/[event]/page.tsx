@@ -1,8 +1,8 @@
 import { EventInsightsPanel } from "./_components/EventInsightsPanel";
 import { LeaderboardSection } from "./_components/LeaderboardSection";
-import {  PhotoGallery } from "./_components/PhotoGallery";
-export default async function EventPage({
+import { PhotoGallery } from "./_components/PhotoGallery";
 
+export default async function EventPage({
   params,
 }: {
   params: Promise<{ event: string }>;
@@ -15,7 +15,7 @@ export default async function EventPage({
         sections={[<LeaderboardSection key="leaderboard" eventId={eventId} />]}
       />
       <div>
-        <PhotoGallery />
+        <PhotoGallery eventId={eventId} organizerId={"winningeventsgroup"} />
       </div>
     </>
   );

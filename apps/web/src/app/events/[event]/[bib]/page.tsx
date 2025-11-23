@@ -29,7 +29,7 @@ export default async function EventBibPage({
         ]}
       />
       <div>
-        <PhotoGallery />
+        <PhotoGallery eventId={event} organizerId={"winningeventsgroup"} />
       </div>
     </>
   );
