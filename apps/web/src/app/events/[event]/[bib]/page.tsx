@@ -1,9 +1,9 @@
-import { redirect } from "next/navigation";
-
+import { notFound, redirect } from "next/navigation";
 import { EventInsightsPanel } from "@/app/events/[event]/_components/EventInsightsPanel";
 import { LeaderboardSection } from "@/app/events/[event]/_components/LeaderboardSection";
 import { PhotoGallery } from "@/app/events/[event]/_components/PhotoGallery";
 import { TimingResultSection } from "@/app/events/[event]/_components/TimingResultSection";
+import { getEventById } from "@/server/services/events";
 
 export default async function EventBibPage({
   params,
@@ -14,6 +14,12 @@ export default async function EventBibPage({
 
   if (bib === "null") {
     redirect(`/events/${event}`);
+  }
+
+  const eventData = await getEventById({ eventId: event });
+
+  if (!eventData) {
+    notFound();
   }
 
   return (
@@ -29,7 +35,11 @@ export default async function EventBibPage({
         ]}
       />
       <div>
-        <PhotoGallery eventId={event} organizerId={"winningeventsgroup"} />
+        <PhotoGallery
+          eventId={event}
+          organizerId={eventData.organizer_id}
+          bib={bib}
+        />
       </div>
     </>
   );

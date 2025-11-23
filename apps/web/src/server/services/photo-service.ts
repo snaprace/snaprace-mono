@@ -180,4 +180,64 @@ export class PhotoService {
 
     return { items: sortedPhotos, nextCursor };
   }
+
+  /**
+   * Get photo count for an event.
+   * Uses Query with Select: "COUNT"
+   */
+  static async getPhotoCountByEvent({
+    organizerId,
+    eventId,
+  }: {
+    organizerId: string;
+    eventId: string;
+  }) {
+    if (!TABLES.PHOTO_SERVICE) {
+      throw new Error("DYNAMO_PHOTO_SERVICE_TABLE is not configured");
+    }
+
+    const pk = `ORG#${organizerId}#EVT#${eventId}`;
+    const command = new QueryCommand({
+      TableName: TABLES.PHOTO_SERVICE,
+      KeyConditionExpression: "PK = :pk AND begins_with(SK, :skPrefix)",
+      ExpressionAttributeValues: {
+        ":pk": pk,
+        ":skPrefix": "PHOTO#",
+      },
+      Select: "COUNT",
+    });
+
+    const result = await dynamoClient.send(command);
+    return result.Count ?? 0;
+  }
+
+  /**
+   * Get photo count by Bib number.
+   * Uses Query with Select: "COUNT" on GSI1
+   */
+  static async getPhotoCountByBib({
+    eventId,
+    bibNumber,
+  }: {
+    eventId: string;
+    bibNumber: string;
+  }) {
+    if (!TABLES.PHOTO_SERVICE) {
+      throw new Error("DYNAMO_PHOTO_SERVICE_TABLE is not configured");
+    }
+
+    const gsi1pk = `EVT#${eventId}#BIB#${bibNumber}`;
+    const command = new QueryCommand({
+      TableName: TABLES.PHOTO_SERVICE,
+      IndexName: "GSI1",
+      KeyConditionExpression: "GSI1PK = :pk",
+      ExpressionAttributeValues: {
+        ":pk": gsi1pk,
+      },
+      Select: "COUNT",
+    });
+
+    const result = await dynamoClient.send(command);
+    return result.Count ?? 0;
+  }
 }

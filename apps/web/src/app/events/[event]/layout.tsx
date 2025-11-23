@@ -1,9 +1,6 @@
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 
-import { createServerClient } from "@repo/supabase";
-
-import { env } from "@/env";
 import { getEventById } from "@/server/services/events";
 import { EventHeader } from "./_components/EventHeader";
 
@@ -14,12 +11,8 @@ export default async function EventLayout({
   children: ReactNode;
   params: Promise<{ event: string }>;
 }) {
-  const supabase = createServerClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
-
-  const event = await getEventById({
-    supabase,
-    eventId: (await params).event,
-  });
+  const eventId = (await params).event;
+  const event = await getEventById({ eventId });
 
   if (!event) {
     notFound();

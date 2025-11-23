@@ -39,4 +39,32 @@ export const photosV2Router = createTRPCRouter({
         cursor: input.cursor,
       });
     }),
+
+  getPhotoCountByEvent: publicProcedure
+    .input(
+      z.object({
+        organizerId: z.string(),
+        eventId: z.string(),
+      }),
+    )
+    .query(async ({ input }) => {
+      return PhotoService.getPhotoCountByEvent({
+        organizerId: input.organizerId,
+        eventId: input.eventId,
+      });
+    }),
+
+  getPhotoCountByBib: publicProcedure
+    .input(
+      z.object({
+        eventId: z.string(),
+        bibNumber: z.string(),
+      }),
+    )
+    .query(async ({ input }) => {
+      return PhotoService.getPhotoCountByBib({
+        eventId: input.eventId,
+        bibNumber: input.bibNumber,
+      });
+    }),
 });

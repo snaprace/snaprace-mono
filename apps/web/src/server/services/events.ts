@@ -1,6 +1,8 @@
+import { env } from "@/env";
 import { ERROR_MESSAGES, trpcError } from "@/server/api/error-utils";
-import type { Database, Tables } from "@repo/supabase";
+import { createServerClient, type Database, type Tables } from "@repo/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { cache } from "react";
 
 type EventRow = Tables<"events">;
 type DatabaseClient = SupabaseClient<Database>;
@@ -30,26 +32,29 @@ export async function listEvents(options: {
   return data ?? [];
 }
 
-export async function getEventById(options: {
-  supabase: DatabaseClient;
-  eventId: string;
-}): Promise<EventRow | null> {
-  const { supabase, eventId } = options;
+export const getEventById = cache(
+  async (options: { eventId: string }): Promise<EventRow | null> => {
+    const supabase = createServerClient(
+      env.SUPABASE_URL,
+      env.SUPABASE_ANON_KEY,
+    );
+    const { eventId } = options;
 
-  const { data, error } = await supabase
-    .from("events")
-    .select("*")
-    .eq("event_id", eventId)
-    .maybeSingle();
+    const { data, error } = await supabase
+      .from("events")
+      .select("*")
+      .eq("event_id", eventId)
+      .maybeSingle();
 
-  if (error) {
-    console.error("getEventById failed", error);
-    throw trpcError.internal(ERROR_MESSAGES.EVENT.FETCH_FAILED);
-  }
+    if (error) {
+      console.error("getEventById failed", error);
+      throw trpcError.internal(ERROR_MESSAGES.EVENT.FETCH_FAILED);
+    }
 
-  if (!data) {
-    return null;
-  }
+    if (!data) {
+      return null;
+    }
 
-  return data;
-}
+    return data;
+  },
+);

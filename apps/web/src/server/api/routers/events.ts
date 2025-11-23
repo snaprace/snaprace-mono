@@ -16,8 +16,6 @@ export const EventSchema = z.object({
   participant_count: z.number().nullable(),
   event_type: z.string().nullable(),
   display_mode: z.string(),
-  results_integration: z.any().nullable(), // Define more specific schema if needed
-  photos_meta: z.any().nullable(),
 });
 
 export const eventsRouter = createTRPCRouter({
@@ -48,11 +46,8 @@ export const eventsRouter = createTRPCRouter({
 
   getById: publicProcedure
     .input(z.object({ eventId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      const event = await getEventById({
-        supabase: ctx.supabase,
-        eventId: input.eventId,
-      });
+    .query(async ({ input }) => {
+      const event = await getEventById({ eventId: input.eventId });
 
       if (!event) {
         return null;
