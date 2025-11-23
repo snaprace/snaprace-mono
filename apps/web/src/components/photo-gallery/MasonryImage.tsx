@@ -2,6 +2,8 @@ import Image from "next/image";
 import type { RenderImageContext, RenderImageProps } from "react-photo-album";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Photo } from "@/hooks/photos/usePhotoGallery";
+import { Badge } from "@/components/ui/badge";
+import { Camera } from "lucide-react";
 
 export function MasonryImage(
   { alt = "", title, className, onClick }: RenderImageProps,
@@ -37,7 +39,17 @@ export function MasonryImage(
         blurDataURL={customPhoto.blurDataURL}
         className="cursor-pointer object-cover transition-opacity duration-300 hover:opacity-90"
       />
+      {customPhoto.isSelfieMatch && (
+        <div className="absolute top-2 left-2 z-10">
+          <Badge
+            variant="secondary"
+            className="flex items-center gap-1 bg-black/50 text-white backdrop-blur-sm hover:bg-black/70"
+          >
+            <Camera className="h-3 w-3" />
+            <span className="text-xs">Selfie Match</span>
+          </Badge>
+        </div>
+      )}
     </div>
   );
 }
-

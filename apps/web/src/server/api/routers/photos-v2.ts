@@ -10,6 +10,7 @@ export const photosV2Router = createTRPCRouter({
         image: z.string(),
         organizerId: z.string(),
         eventId: z.string(),
+        bib: z.string().optional(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -18,6 +19,7 @@ export const photosV2Router = createTRPCRouter({
           image: input.image,
           organizerId: input.organizerId,
           eventId: input.eventId,
+          bib: input.bib,
         });
       } catch (error) {
         console.error("Failed to search by selfie:", error);

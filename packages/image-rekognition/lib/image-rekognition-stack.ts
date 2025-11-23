@@ -491,6 +491,7 @@ export class ImageRekognitionStack extends cdk.Stack {
       logRetention: logs.RetentionDays.ONE_DAY,
       environment: {
         IMAGE_BUCKET: this.imageBucket.bucketName,
+        DDB_TABLE: this.photoServiceTable.tableName,
       },
     });
 
@@ -501,8 +502,9 @@ export class ImageRekognitionStack extends cdk.Stack {
       })
     );
 
-    // Grant S3 read permissions (for HeadObject to get metadata)
-    this.imageBucket.grantRead(this.searchBySelfieFn);
+    
+    // Grant DynamoDB read permissions
+    this.photoServiceTable.grantReadData(this.searchBySelfieFn);
 
     // ===================================
     // Outputs

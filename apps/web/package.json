@@ -81,7 +81,8 @@
     "vaul": "^1.1.2",
     "web-vitals": "^5.1.0",
     "yet-another-react-lightbox": "^3.25.0",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",

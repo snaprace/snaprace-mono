@@ -1,45 +1,129 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { api } from "@/trpc/react";
+import { toast } from "sonner";
+import type { Photo } from "@/hooks/photos/usePhotoGallery";
 
 interface SearchSelfieSectionProps {
   eventId: string;
+  organizerId: string;
   bib?: string;
+  onPhotosFound: (photos: Photo[] | null) => void; // null means reset/clear
 }
 
 export function SearchSelfieSection({
   eventId,
+  organizerId,
   bib,
+  onPhotosFound,
 }: SearchSelfieSectionProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [matchedCount, setMatchedCount] = useState(0);
+  const [showNoMatches, setShowNoMatches] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
-  // Placeholder state/logic
-  const isUploading = false;
-  const uploadedFile = null;
-  const selfieEnhanced = false;
-  const matchedCount = 0;
-  const showNoMatches = false;
-  const hasError = false;
-  const disabled = false;
+  const searchSelfieMutation = api.photosV2.searchBySelfie.useMutation({
+    onSuccess: (data) => {
+      const matches = data.photos || [];
+      setMatchedCount(matches.length);
+      setIsUploading(false);
+
+      if (matches.length === 0) {
+        setShowNoMatches(true);
+        onPhotosFound([]); // Empty array to indicate "search done but no results" if needed, or handle in UI
+        toast.info("No matching photos found.");
+      } else {
+        setShowNoMatches(false);
+        // Map to Photo type
+        const mappedPhotos: Photo[] = matches.map((p) => ({
+          id: p.photoId,
+          src: p.url,
+          width: p.width || 0,
+          height: p.height || 0,
+          isSelfieMatch: true,
+          similarity: p.similarity,
+        }));
+
+        onPhotosFound(mappedPhotos);
+        toast.success(`Found ${matches.length} new matching photos!`);
+      }
+    },
+    onError: (error) => {
+      console.error("Selfie search error:", error);
+      setIsUploading(false);
+      setHasError(true);
+      toast.error("Failed to process selfie. Please try again.");
+    },
+  });
 
   const handleLabelClick = (e: React.MouseEvent) => {
     e.preventDefault();
     inputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Logic to be implemented
-    console.log("File selected", e.target.files?.[0]);
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset state
+    setShowNoMatches(false);
+    setHasError(false);
+    setMatchedCount(0);
+    onPhotosFound(null); // Reset parent state
+
+    // Validate file size (e.g., 10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadedFile(null); // Reset file state
+      if (inputRef.current) {
+        inputRef.current.value = ""; // Reset file input
+      }
+      toast.error("File size too large. Please upload an image under 10MB.");
+      return;
+    }
+
+    // Only set file if validation passes
+    setUploadedFile(file);
+    setIsUploading(true);
+
+    // Convert to base64
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64String = reader.result as string;
+      // Call API
+      searchSelfieMutation.mutate({
+        image: base64String,
+        organizerId,
+        eventId,
+        bib, // Pass bib number if available
+      });
+    };
+    reader.onerror = () => {
+      setIsUploading(false);
+      setHasError(true);
+      setUploadedFile(null); // Reset file on read error
+      if (inputRef.current) inputRef.current.value = "";
+      toast.error("Failed to read file.");
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleRetry = () => {
-    // Logic to be implemented
-    console.log("Retry clicked");
+    setUploadedFile(null);
+    setMatchedCount(0);
+    setShowNoMatches(false);
+    setHasError(false);
+    onPhotosFound(null);
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
   };
 
-  const uploadDisabled = disabled || isUploading;
+  const uploadDisabled = isUploading;
 
   return (
     <section className="border-border/60 bg-background/95 overflow-hidden rounded-2xl">
@@ -51,9 +135,7 @@ export function SearchSelfieSection({
                 Face Match Selfie Upload
               </h4>
               <p className="text-muted-foreground text-sm">
-                {disabled
-                  ? "Provide a bib number to enable face matching."
-                  : "Upload a selfie to find more photos instantly."}
+                Upload a selfie to find photos automatically.
               </p>
             </div>
 
@@ -70,13 +152,15 @@ export function SearchSelfieSection({
               <label
                 htmlFor="selfie-upload"
                 className="block"
-                onClick={handleLabelClick}
+                onClick={!uploadedFile ? handleLabelClick : undefined}
               >
                 <div
                   className={`group border-muted-foreground/30 relative overflow-hidden rounded-xl border border-dashed p-6 transition-all ${
                     uploadDisabled
                       ? "bg-muted/10 cursor-not-allowed opacity-60"
-                      : "hover:border-primary/50 hover:bg-primary/5 cursor-pointer"
+                      : uploadedFile
+                        ? "border-primary/50 bg-primary/5 cursor-default"
+                        : "hover:border-primary/50 hover:bg-primary/5 cursor-pointer"
                   }`}
                 >
                   {isUploading ? (
@@ -84,16 +168,18 @@ export function SearchSelfieSection({
                       <div className="flex flex-col items-center gap-3">
                         <div className="border-primary/30 border-t-primary h-10 w-10 animate-spin rounded-full border-4" />
                         <p className="text-muted-foreground text-xs">
-                          loading...
+                          Searching for matching photos...
                         </p>
                       </div>
                     </div>
                   ) : null}
 
+                  {/* Success UI - only show when we have matches */}
                   {uploadedFile &&
-                  selfieEnhanced &&
                   !isUploading &&
-                  !hasError ? (
+                  !hasError &&
+                  !showNoMatches &&
+                  matchedCount > 0 ? (
                     <div className="bg-background/90 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-sm">
                       <div className="flex flex-col items-center gap-3">
                         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10 text-green-600">
@@ -103,12 +189,13 @@ export function SearchSelfieSection({
                           <p className="text-sm font-medium">Selfie matched!</p>
                           <p className="text-muted-foreground text-xs">
                             Found {matchedCount} photo
-                            {/* {matchedCount === 1 ? "" : "s"} */}
+                            {matchedCount !== 1 ? "s" : ""}
                           </p>
                         </div>
                         <Button
                           size="sm"
                           variant="ghost"
+                          className="cursor-pointer"
                           onClick={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
@@ -123,23 +210,28 @@ export function SearchSelfieSection({
 
                   <div className="flex flex-col items-center gap-3 text-center">
                     <div className="relative h-20 w-20">
-                      <Image
-                        src="/images/selfie-upload.png"
-                        alt="Upload selfie"
-                        width={80}
-                        height={80}
-                        className={`${
-                          uploadDisabled ? "grayscale" : ""
-                        } transition-all`}
-                      />
+                      {uploadedFile ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={URL.createObjectURL(uploadedFile)}
+                          alt="Preview"
+                          className="h-full w-full rounded-full object-cover"
+                        />
+                      ) : (
+                        <Image
+                          src="/images/selfie-upload.png"
+                          alt="Upload selfie"
+                          width={80}
+                          height={80}
+                          className="transition-all group-hover:scale-105"
+                        />
+                      )}
                     </div>
                     <div>
                       <p className="text-sm font-medium">
-                        {disabled
-                          ? "Bib number required"
-                          : uploadedFile
-                            ? (uploadedFile as File).name
-                            : "Click to upload your selfie"}
+                        {uploadedFile
+                          ? (uploadedFile as File).name
+                          : "Click to upload your selfie"}
                       </p>
                       <p className="text-muted-foreground mt-1 text-xs">
                         {uploadedFile
@@ -157,10 +249,13 @@ export function SearchSelfieSection({
                 <div className="flex items-start gap-2">
                   <span className="mt-0.5 text-lg">!</span>
                   <div className="space-y-1">
-                    <p className="font-medium">No additional photos found.</p>
+                    <p className="font-medium">
+                      {hasError ? "Processing Error" : "No matches found"}
+                    </p>
                     <p className="text-xs">
-                      Try uploading a different selfie with better lighting or a
-                      clearer view of your face.
+                      {hasError
+                        ? "Something went wrong. Please try again."
+                        : "Try uploading a different selfie with better lighting or a clearer view of your face."}
                     </p>
                   </div>
                   <Button

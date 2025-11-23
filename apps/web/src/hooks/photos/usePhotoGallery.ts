@@ -8,6 +8,8 @@ export type Photo = {
   height: number;
   id: string;
   blurDataURL?: string;
+  isSelfieMatch?: boolean;
+  similarity?: number;
 };
 
 interface UsePhotoGalleryProps {

@@ -1,30 +1,61 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { usePhotoGallery } from "@/hooks/photos/usePhotoGallery";
+import { usePhotoGallery, type Photo } from "@/hooks/photos/usePhotoGallery";
 import { useIsMobile } from "@/hooks/useMobile";
 import { GalleryGrid, GalleryLightbox } from "@/components/photo-gallery";
+import { toast } from "sonner";
 
 interface PhotoGalleryProps {
   eventId: string;
   organizerId: string;
   bib?: string;
+  overridePhotos?: Photo[]; // For event page filtering (Selfie Search)
+  extraPhotos?: Photo[]; // For bib page merging (Selfie Search)
 }
 
-export function PhotoGallery({ eventId, organizerId, bib }: PhotoGalleryProps) {
+export function PhotoGallery({
+  eventId,
+  organizerId,
+  bib,
+  overridePhotos,
+  extraPhotos,
+}: PhotoGalleryProps) {
   const isMobile = useIsMobile();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [index, setIndex] = useState(-1);
 
-  const { photos, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
-    usePhotoGallery({
-      eventId,
-      organizerId,
-      bib,
-    });
+  const {
+    photos: fetchedPhotos,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+  } = usePhotoGallery({
+    eventId,
+    organizerId,
+    bib,
+  });
+
+  const photos = useMemo(() => {
+    if (overridePhotos) {
+      return overridePhotos;
+    }
+    if (extraPhotos && extraPhotos.length > 0) {
+      // 서버에서 이미 중복을 제거하고 내려주지만,
+      // usePhotoGallery의 fetchedPhotos가 업데이트(pagination 등)되면서 발생할 수 있는
+      // 혹시 모를 key 중복 에러를 방지하기 위해 간단한 중복 체크는 유지합니다.
+      // 하지만 로직은 훨씬 단순화되었습니다.
+      const existingIds = new Set(fetchedPhotos.map((p) => p.id));
+      const newUniquePhotos = extraPhotos.filter((p) => !existingIds.has(p.id));
+
+      return [...newUniquePhotos, ...fetchedPhotos];
+    }
+    return fetchedPhotos;
+  }, [fetchedPhotos, overridePhotos, extraPhotos]);
 
   // Sync URL -> State
   useEffect(() => {
@@ -84,8 +115,8 @@ export function PhotoGallery({ eventId, organizerId, bib }: PhotoGalleryProps) {
     <>
       <GalleryGrid
         photos={photos}
-        isLoading={isLoading}
-        hasNextPage={hasNextPage}
+        isLoading={isLoading && !overridePhotos} // Don't show loading if we have override photos
+        hasNextPage={hasNextPage && !overridePhotos} // Disable pagination if filtering
         isFetchingNextPage={isFetchingNextPage}
         fetchNextPage={fetchNextPage}
         onPhotoClick={handlePhotoClick}

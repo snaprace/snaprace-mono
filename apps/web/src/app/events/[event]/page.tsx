@@ -1,9 +1,6 @@
-import { SearchSelfieSection } from "./_components/SearchSelfieSection";
-import { EventInsightsPanel } from "./_components/EventInsightsPanel";
-import { LeaderboardSection } from "./_components/LeaderboardSection";
-import { PhotoGallery } from "./_components/PhotoGallery";
 import { getEventById } from "@/server/services/events";
 import { notFound } from "next/navigation";
+import { EventPageContent } from "./_components/EventPageContent";
 
 export default async function EventPage({
   params,
@@ -19,16 +16,6 @@ export default async function EventPage({
   }
 
   return (
-    <>
-      <EventInsightsPanel
-        sections={[
-          <LeaderboardSection key="leaderboard" eventId={eventId} />,
-          <SearchSelfieSection key="selfie" eventId={eventId} />,
-        ]}
-      />
-      <div>
-        <PhotoGallery eventId={eventId} organizerId={event.organizer_id} />
-      </div>
-    </>
+    <EventPageContent eventId={eventId} organizerId={event.organizer_id} />
   );
 }

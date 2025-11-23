@@ -39,7 +39,7 @@ export function LeaderboardPagination({
   }
 
   return (
-    <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col items-center gap-3 px-2 sm:flex-row sm:items-center sm:justify-between">
       {/* Rows per page */}
       <div className="flex items-center gap-1.5 md:gap-2">
         <span className="text-muted-foreground text-xs md:text-sm">Rows:</span>

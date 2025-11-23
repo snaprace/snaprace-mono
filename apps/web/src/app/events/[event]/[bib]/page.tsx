@@ -1,10 +1,6 @@
 import { notFound, redirect } from "next/navigation";
-import { EventInsightsPanel } from "@/app/events/[event]/_components/EventInsightsPanel";
-import { LeaderboardSection } from "@/app/events/[event]/_components/LeaderboardSection";
-import { PhotoGallery } from "@/app/events/[event]/_components/PhotoGallery";
-import { SearchSelfieSection } from "@/app/events/[event]/_components/SearchSelfieSection";
-import { TimingResultSection } from "@/app/events/[event]/_components/TimingResultSection";
 import { getEventById } from "@/server/services/events";
+import { BibPageContent } from "./_components/BibPageContent";
 
 export default async function EventBibPage({
   params,
@@ -24,25 +20,10 @@ export default async function EventBibPage({
   }
 
   return (
-    <>
-      <EventInsightsPanel
-        sections={[
-          <TimingResultSection key="timing" eventId={event} bib={bib} />,
-          <LeaderboardSection
-            key="leaderboard"
-            eventId={event}
-            highlightBib={bib}
-          />,
-          <SearchSelfieSection key="selfie" eventId={event} bib={bib} />,
-        ]}
-      />
-      <div>
-        <PhotoGallery
-          eventId={event}
-          organizerId={eventData.organizer_id}
-          bib={bib}
-        />
-      </div>
-    </>
+    <BibPageContent
+      eventId={event}
+      organizerId={eventData.organizer_id}
+      bib={bib}
+    />
   );
 }

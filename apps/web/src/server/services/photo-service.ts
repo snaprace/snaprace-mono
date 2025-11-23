@@ -1,4 +1,8 @@
-import { QueryCommand, BatchGetCommand } from "@aws-sdk/lib-dynamodb";
+import {
+  QueryCommand,
+  BatchGetCommand,
+  type QueryCommandOutput,
+} from "@aws-sdk/lib-dynamodb";
 import { dynamoClient, TABLES } from "@/lib/dynamodb";
 import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
 import { env } from "@/env";
@@ -44,6 +48,20 @@ export interface BibIndexItem {
   eventId: string;
   bib: string;
   createdAt: string;
+}
+
+export interface SelfiePhoto {
+  photoId: string;
+  url: string;
+  similarity: number;
+  photographer: { instagramHandle: string } | null;
+  width: number;
+  height: number;
+}
+
+export interface SearchBySelfieResult {
+  photos: SelfiePhoto[];
+  matches: number;
 }
 
 export class PhotoService {
@@ -210,18 +228,27 @@ export class PhotoService {
     }
 
     const pk = `ORG#${organizerId}#EVT#${eventId}`;
-    const command = new QueryCommand({
-      TableName: TABLES.PHOTO_SERVICE,
-      KeyConditionExpression: "PK = :pk AND begins_with(SK, :skPrefix)",
-      ExpressionAttributeValues: {
-        ":pk": pk,
-        ":skPrefix": "PHOTO#",
-      },
-      Select: "COUNT",
-    });
+    let totalCount = 0;
+    let lastEvaluatedKey: QueryCommandOutput["LastEvaluatedKey"] | undefined;
 
-    const result = await dynamoClient.send(command);
-    return result.Count ?? 0;
+    do {
+      const command = new QueryCommand({
+        TableName: TABLES.PHOTO_SERVICE,
+        KeyConditionExpression: "PK = :pk AND begins_with(SK, :skPrefix)",
+        ExpressionAttributeValues: {
+          ":pk": pk,
+          ":skPrefix": "PHOTO#",
+        },
+        Select: "COUNT",
+        ExclusiveStartKey: lastEvaluatedKey,
+      });
+
+      const result = await dynamoClient.send(command);
+      totalCount += result.Count ?? 0;
+      lastEvaluatedKey = result.LastEvaluatedKey;
+    } while (lastEvaluatedKey);
+
+    return totalCount;
   }
 
   /**
@@ -240,18 +267,27 @@ export class PhotoService {
     }
 
     const gsi1pk = `EVT#${eventId}#BIB#${bibNumber}`;
-    const command = new QueryCommand({
-      TableName: TABLES.PHOTO_SERVICE,
-      IndexName: "GSI1",
-      KeyConditionExpression: "GSI1PK = :pk",
-      ExpressionAttributeValues: {
-        ":pk": gsi1pk,
-      },
-      Select: "COUNT",
-    });
+    let totalCount = 0;
+    let lastEvaluatedKey: QueryCommandOutput["LastEvaluatedKey"] | undefined;
 
-    const result = await dynamoClient.send(command);
-    return result.Count ?? 0;
+    do {
+      const command = new QueryCommand({
+        TableName: TABLES.PHOTO_SERVICE,
+        IndexName: "GSI1",
+        KeyConditionExpression: "GSI1PK = :pk",
+        ExpressionAttributeValues: {
+          ":pk": gsi1pk,
+        },
+        Select: "COUNT",
+        ExclusiveStartKey: lastEvaluatedKey,
+      });
+
+      const result = await dynamoClient.send(command);
+      totalCount += result.Count ?? 0;
+      lastEvaluatedKey = result.LastEvaluatedKey;
+    } while (lastEvaluatedKey);
+
+    return totalCount;
   }
 
   /**
@@ -261,11 +297,13 @@ export class PhotoService {
     image,
     organizerId,
     eventId,
+    bib,
   }: {
     image: string;
     organizerId: string;
     eventId: string;
-  }) {
+    bib?: string;
+  }): Promise<SearchBySelfieResult> {
     if (!env.SEARCH_BY_SELFIE_FUNCTION_NAME) {
       throw new Error("SEARCH_BY_SELFIE_FUNCTION_NAME is not configured");
     }
@@ -278,6 +316,7 @@ export class PhotoService {
             image,
             orgId: organizerId,
             eventId,
+            bib,
           }),
         }),
       });
@@ -302,9 +341,20 @@ export class PhotoService {
       }
 
       const body = JSON.parse(payload.body);
+
+      // Validate and cast response body
+      const photos = (body.photos || []).map((p: SelfiePhoto) => ({
+        photoId: p.photoId,
+        url: p.url,
+        similarity: p.similarity,
+        photographer: p.photographer || null,
+        width: p.width || 0,
+        height: p.height || 0,
+      }));
+
       return {
-        photos: body.photos,
-        matches: body.matches,
+        photos: photos,
+        matches: body.matches || 0,
       };
     } catch (error) {
       console.error("Failed to invoke searchBySelfie lambda:", error);
