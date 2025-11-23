@@ -33,6 +33,8 @@ export const env = createEnv({
     // Supabase DB
     SUPABASE_URL: z.string().url(),
     SUPABASE_ANON_KEY: z.string(),
+    // Search by Selfie API
+    SEARCH_BY_SELFIE_FUNCTION_NAME: z.string(),
   },
 
   /**
@@ -66,6 +68,7 @@ export const env = createEnv({
     DYNAMO_PHOTO_BIB_INDEX_TABLE: process.env.DYNAMO_PHOTO_BIB_INDEX_TABLE,
     DYNAMO_PHOTO_SERVICE_TABLE: process.env.DYNAMO_PHOTO_SERVICE_TABLE,
     PHOTO_SEARCH_API_URL: process.env.PHOTO_SEARCH_API_URL,
+    SEARCH_BY_SELFIE_FUNCTION_NAME: process.env.SEARCH_BY_SELFIE_FUNCTION_NAME,
     BUCKET: process.env.BUCKET,
     AUTH_SECRET: process.env.AUTH_SECRET,
     AUTH_URL: process.env.AUTH_URL,

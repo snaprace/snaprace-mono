@@ -1,5 +1,16 @@
 import { QueryCommand, BatchGetCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamoClient, TABLES } from "@/lib/dynamodb";
+import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
+import { env } from "@/env";
+
+// Lambda Client initialized outside the class
+const lambdaClient = new LambdaClient({
+  region: env.AWS_REGION,
+  credentials: {
+    accessKeyId: env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+  },
+});
 
 // Types based on packages/image-rekognition/lambda/fanout-dynamodb/index.ts
 export interface PhotoItem {
@@ -95,7 +106,7 @@ export class PhotoService {
    * Get photos by Bib number, paginated.
    * Uses GSI1 (EVT#...#BIB#...) to find photo IDs, then BatchGet to fetch details.
    */
-  static async getPhotosByBib({    
+  static async getPhotosByBib({
     eventId,
     bibNumber,
     limit = 20,
@@ -144,7 +155,7 @@ export class PhotoService {
     // Handle BatchGet limit (max 100).
     // Since we control 'limit' in input, we should ensure it doesn't exceed 100 if we want single batch.
     // If input limit > 100, we should chunk, but for now assuming limit is reasonable.
-    
+
     const batchCommand = new BatchGetCommand({
       RequestItems: {
         [TABLES.PHOTO_SERVICE]: {
@@ -175,7 +186,9 @@ export class PhotoService {
       }));
 
     const nextCursor = queryResult.LastEvaluatedKey
-      ? Buffer.from(JSON.stringify(queryResult.LastEvaluatedKey)).toString("base64")
+      ? Buffer.from(JSON.stringify(queryResult.LastEvaluatedKey)).toString(
+          "base64",
+        )
       : undefined;
 
     return { items: sortedPhotos, nextCursor };
@@ -239,5 +252,63 @@ export class PhotoService {
 
     const result = await dynamoClient.send(command);
     return result.Count ?? 0;
+  }
+
+  /**
+   * Search photos by selfie (Lambda invocation)
+   */
+  static async searchBySelfie({
+    image,
+    organizerId,
+    eventId,
+  }: {
+    image: string;
+    organizerId: string;
+    eventId: string;
+  }) {
+    if (!env.SEARCH_BY_SELFIE_FUNCTION_NAME) {
+      throw new Error("SEARCH_BY_SELFIE_FUNCTION_NAME is not configured");
+    }
+
+    try {
+      const command = new InvokeCommand({
+        FunctionName: env.SEARCH_BY_SELFIE_FUNCTION_NAME,
+        Payload: JSON.stringify({
+          body: JSON.stringify({
+            image,
+            orgId: organizerId,
+            eventId,
+          }),
+        }),
+      });
+
+      const response = await lambdaClient.send(command);
+
+      if (response.FunctionError) {
+        throw new Error(`Lambda execution error: ${response.FunctionError}`);
+      }
+
+      if (!response.Payload) {
+        throw new Error("Empty payload from Lambda");
+      }
+
+      const payloadString = new TextDecoder().decode(response.Payload);
+      const payload = JSON.parse(payloadString);
+
+      if (payload.statusCode !== 200) {
+        throw new Error(
+          `Lambda returned status ${payload.statusCode}: ${payload.body}`,
+        );
+      }
+
+      const body = JSON.parse(payload.body);
+      return {
+        photos: body.photos,
+        matches: body.matches,
+      };
+    } catch (error) {
+      console.error("Failed to invoke searchBySelfie lambda:", error);
+      throw error;
+    }
   }
 }

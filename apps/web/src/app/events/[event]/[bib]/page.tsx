@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { EventInsightsPanel } from "@/app/events/[event]/_components/EventInsightsPanel";
 import { LeaderboardSection } from "@/app/events/[event]/_components/LeaderboardSection";
 import { PhotoGallery } from "@/app/events/[event]/_components/PhotoGallery";
+import { SearchSelfieSection } from "@/app/events/[event]/_components/SearchSelfieSection";
 import { TimingResultSection } from "@/app/events/[event]/_components/TimingResultSection";
 import { getEventById } from "@/server/services/events";
 
@@ -32,6 +33,7 @@ export default async function EventBibPage({
             eventId={event}
             highlightBib={bib}
           />,
+          <SearchSelfieSection key="selfie" eventId={event} bib={bib} />,
         ]}
       />
       <div>

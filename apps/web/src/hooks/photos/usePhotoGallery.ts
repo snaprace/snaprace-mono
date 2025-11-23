@@ -21,7 +21,6 @@ export function usePhotoGallery({
   organizerId,
   bib,
 }: UsePhotoGalleryProps) {
-  console.log("usePhotoGallery", eventId, organizerId, bib);
   const byEventQuery = api.photosV2.getByEvent.useInfiniteQuery(
     {
       organizerId,

@@ -1,3 +1,4 @@
+import { SearchSelfieSection } from "./_components/SearchSelfieSection";
 import { EventInsightsPanel } from "./_components/EventInsightsPanel";
 import { LeaderboardSection } from "./_components/LeaderboardSection";
 import { PhotoGallery } from "./_components/PhotoGallery";
@@ -20,7 +21,10 @@ export default async function EventPage({
   return (
     <>
       <EventInsightsPanel
-        sections={[<LeaderboardSection key="leaderboard" eventId={eventId} />]}
+        sections={[
+          <LeaderboardSection key="leaderboard" eventId={eventId} />,
+          <SearchSelfieSection key="selfie" eventId={eventId} />,
+        ]}
       />
       <div>
         <PhotoGallery eventId={eventId} organizerId={event.organizer_id} />

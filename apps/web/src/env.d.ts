@@ -25,5 +25,7 @@ declare module "@/env" {
     SUPABASE_ANON_KEY: string;
     NEXT_PUBLIC_SUPABASE_URL: string;
     NEXT_PUBLIC_SUPABASE_ANON_KEY: string;
+
+    SEARCH_BY_SELFIE_FUNCTION_NAME: string;
   };
 }

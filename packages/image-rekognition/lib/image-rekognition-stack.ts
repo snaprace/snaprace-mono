@@ -22,6 +22,7 @@ export class ImageRekognitionStack extends cdk.Stack {
   public readonly fanoutDdbFn: NodejsFunction;
   public readonly stateMachine: sfn.StateMachine;
   public readonly sfnTriggerFn: NodejsFunction;
+  public readonly searchBySelfieFn: NodejsFunction;
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -477,6 +478,32 @@ export class ImageRekognitionStack extends cdk.Stack {
         resources: ["*"],
       })
     );
+
+    // ===================================
+    // Lambda: SearchBySelfie
+    // ===================================
+    this.searchBySelfieFn = new NodejsFunction(this, "SearchBySelfieFunction", {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: "handler",
+      entry: path.join(__dirname, "../lambda/search-by-selfie/index.ts"),
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      logRetention: logs.RetentionDays.ONE_DAY,
+      environment: {
+        IMAGE_BUCKET: this.imageBucket.bucketName,
+      },
+    });
+
+    this.searchBySelfieFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["rekognition:SearchFacesByImage"],
+        resources: ["*"],
+      })
+    );
+
+    // Grant S3 read permissions (for HeadObject to get metadata)
+    this.imageBucket.grantRead(this.searchBySelfieFn);
+
     // ===================================
     // Outputs
     // ===================================
@@ -503,6 +530,11 @@ export class ImageRekognitionStack extends cdk.Stack {
     new cdk.CfnOutput(this, "PreprocessFunctionArn", {
       value: this.preprocessFn.functionArn,
       description: "Preprocess Lambda function ARN",
+    });
+
+    new cdk.CfnOutput(this, "SearchBySelfieFunctionName", {
+      value: this.searchBySelfieFn.functionName,
+      description: "SearchBySelfie Lambda function name",
     });
   }
 }

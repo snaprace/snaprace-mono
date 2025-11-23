@@ -20,7 +20,9 @@
     "AUTH_URL",
     "CRISP_WEBSITE_ID",
     "NODE_ENV",
-    "NEXT_PUBLIC_SUPABASE_URL"
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    "SEARCH_BY_SELFIE_FUNCTION_NAME"
   ],
   "tasks": {
     "build": {
