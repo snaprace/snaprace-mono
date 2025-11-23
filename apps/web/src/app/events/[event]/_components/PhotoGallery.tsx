@@ -45,7 +45,7 @@ export function PhotoGallery({ eventId, organizerId, bib }: PhotoGalleryProps) {
         setIndex(-1);
       }
     }
-  }, [searchParams, photos, index]); // Added index to dependency array to satisfy linter, logic handles loop prevention
+  }, [searchParams, photos]);
 
   // Handlers
   const handlePhotoClick = (newIndex: number) => {

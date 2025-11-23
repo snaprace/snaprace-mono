@@ -23,7 +23,7 @@ export function EventInsightsPanel({
 
   return (
     <div className="container mx-auto my-8 px-1 md:px-4">
-      <section className="border-border/60 bg-muted/30 overflow-hidden rounded-3xl border p-4 shadow-sm md:p-6">
+      <section className="border-border/60 bg-muted/30 overflow-hidden rounded-3xl border p-2 shadow-sm md:p-4">
         {title || description ? (
           <div className="mb-4 space-y-1">
             {title ? (
@@ -36,7 +36,7 @@ export function EventInsightsPanel({
             ) : null}
           </div>
         ) : null}
-        <div className="grid gap-4 md:gap-6">
+        <div className="grid gap-2 md:gap-4">
           {visibleSections.map((section, index) => (
             <div key={index}>{section}</div>
           ))}
