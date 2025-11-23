@@ -15,6 +15,7 @@ export interface PhotoItem {
   dimensions: { width: number; height: number };
   format: string;
   size: number;
+  thumbHash?: string;
   bibs: string[];
   faceIds: string[];
   createdAt: string;
@@ -78,10 +79,13 @@ export class PhotoService {
     const mappedItems = items.map((item) => ({
       orgId: item.orgId,
       eventId: item.eventId,
-      // imageUrl: `https://images.snap-race.com/${item.processedKey || item.rawKey}`,
+      imageUrl: `https://images.snap-race.com/${item.processedKey || item.rawKey}`,
       instagramHandle: item.instagramHandle,
       // We need the key for the image loader to work with the image handler
       key: item.processedKey || item.rawKey,
+      width: item.dimensions.width,
+      height: item.dimensions.height,
+      thumbHash: item.thumbHash,
     }));
 
     return { items: mappedItems, nextCursor };
@@ -165,6 +169,9 @@ export class PhotoService {
         instagramHandle: item.instagramHandle,
         // We need the key for the image loader to work with the image handler
         key: item.processedKey,
+        width: item.dimensions.width,
+        height: item.dimensions.height,
+        thumbHash: item.thumbHash,
       }));
 
     const nextCursor = queryResult.LastEvaluatedKey

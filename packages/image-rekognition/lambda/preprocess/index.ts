@@ -5,6 +5,7 @@ import {
 } from "@aws-sdk/client-s3";
 import sharp from "sharp";
 import { ulid } from "ulid";
+import * as ThumbHash from "thumbhash";
 
 const s3 = new S3Client({});
 const BUCKET_NAME = process.env.IMAGE_BUCKET!;
@@ -27,6 +28,7 @@ interface PreprocessOutput extends PreprocessInput {
   format: string;
   size: number;
   ulid: string;
+  thumbHash: string;
 }
 
 export const handler = async (
@@ -54,8 +56,24 @@ export const handler = async (
     // 3. Process image with Sharp
     const image = sharp(body).rotate(); // Auto-rotate based on EXIF
 
-    // Resize and compress
+    // 3-1. Generate ThumbHash
+    const thumbBuffer = await image
+      .clone()
+      .resize(100, 100, { fit: "inside" })
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    const thumbHashBinary = ThumbHash.rgbaToThumbHash(
+      thumbBuffer.info.width,
+      thumbBuffer.info.height,
+      thumbBuffer.data
+    );
+    const thumbHash = Buffer.from(thumbHashBinary).toString("base64");
+
+    // 3-2. Resize and compress main image
     const resized = await image
+      .clone()
       .resize({
         width: 2048,
         withoutEnlargement: true,
@@ -79,6 +97,7 @@ export const handler = async (
         Metadata: {
           "original-key": rawKey,
           ulid: id,
+          "thumb-hash": thumbHash,
           ...(instagramHandle && { "instagram-handle": instagramHandle }),
         },
       })
@@ -101,6 +120,7 @@ export const handler = async (
       format: "jpeg",
       size: resized.length,
       ulid: id,
+      thumbHash,
       instagramHandle: instagramHandle || null,
     };
 
