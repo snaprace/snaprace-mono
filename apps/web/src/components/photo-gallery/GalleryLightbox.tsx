@@ -39,6 +39,9 @@ export function GalleryLightbox({
       open={open}
       index={index}
       close={onClose}
+      carousel={{
+        padding: isMobile ? 16 : 80,
+      }}
       slides={photos.map((photo) => ({
         src: photo.src,
         width: photo.width,
@@ -63,12 +66,11 @@ export function GalleryLightbox({
                 height: "100%",
                 cursor: "pointer",
                 zIndex: 2,
-                marginTop: 60,
               }}
               onClick={onPrev}
             >
               {!isMobile && (
-                <div className="absolute top-1/2 left-4 -translate-y-1/2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                <div className="absolute top-1/2 left-[-10%] -translate-y-1/2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                   <ChevronLeftIcon
                     size={30}
                     strokeWidth={1}
@@ -89,12 +91,11 @@ export function GalleryLightbox({
                 height: "100%",
                 cursor: "pointer",
                 zIndex: 2,
-                marginTop: 60,
               }}
               onClick={onNext}
             >
               {!isMobile && (
-                <div className="absolute top-1/2 right-4 -translate-y-1/2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                <div className="absolute top-1/2 right-[-10%] -translate-y-1/2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                   <ChevronRightIcon
                     size={30}
                     strokeWidth={1}
@@ -141,8 +142,13 @@ export function GalleryLightbox({
         buttons: [
           <button
             key="custom-close"
-            className="cursor-pointer rounded-full p-2 text-gray-400 transition-colors duration-300 hover:bg-gray-100"
-            style={{ position: "fixed", top: 20, left: 10, zIndex: 1000 }}
+            className="cursor-pointer rounded-full p-2 text-gray-400 transition-colors duration-300"
+            style={{
+              position: "fixed",
+              top: 20,
+              left: isMobile ? 0 : 20,
+              zIndex: 1000,
+            }}
             onClick={onClose}
           >
             <ArrowLeftIcon size={22} strokeWidth={1.5} />
@@ -152,4 +158,3 @@ export function GalleryLightbox({
     />
   );
 }
-

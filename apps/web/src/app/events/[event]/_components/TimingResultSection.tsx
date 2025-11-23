@@ -5,6 +5,7 @@ import { AlertTriangle, Timer } from "lucide-react";
 import { api } from "@/trpc/react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDuration, formatPace } from "@/utils/time";
+import { Badge } from "@/components/ui/badge";
 
 interface TimingResultSectionProps {
   eventId: string;
@@ -58,9 +59,16 @@ export function TimingResultSection({
           </div>
           <div>
             <h2 className="text-lg font-semibold md:text-xl">{fullName}</h2>
-            <div className="text-muted-foreground text-sm">
-              Bib #{runner.bib_number}
+            <div className="mt-2 flex items-center gap-2">
+              {runner.gender && (
+                <Badge variant="outline">{runner.gender}</Badge>
+              )}
+              {runner.age && <Badge variant="outline">{runner.age} yrs</Badge>}
+              {location && <Badge variant="outline">{location}</Badge>}
             </div>
+            {/* <div className="text-muted-foreground text-sm">
+              Bib #{runner.bib_number} {location ? `(${location})` : ""}
+            </div> */}
           </div>
         </div>
       </div>
@@ -73,12 +81,6 @@ export function TimingResultSection({
         <TimingMetric label="Overall Place" value={overallPlace} />
         <TimingMetric label="Division" value={division} />
       </dl>
-
-      {location ? (
-        <div className="text-muted-foreground mt-4 flex items-center gap-2 text-sm">
-          <span>{location}</span>
-        </div>
-      ) : null}
     </article>
   );
 }
@@ -148,11 +150,12 @@ function TimingErrorCard({ message }: { message: string }) {
           <AlertTriangle className="h-5 w-5" />
         </div>
         <div className="space-y-2">
-          <h3 className="text-base font-semibold">Unable to load timing data</h3>
+          <h3 className="text-base font-semibold">
+            Unable to load timing data
+          </h3>
           <p className="text-muted-foreground text-sm">{message}</p>
         </div>
       </div>
     </article>
   );
 }
-
