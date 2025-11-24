@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import {
@@ -12,6 +12,7 @@ import NextJsImage from "./NextJsImage";
 import type { Photo } from "@/hooks/photos/usePhotoGallery";
 import { useImageDownloader } from "@/hooks/useImageDownloader";
 import { ShareDialog } from "@/components/ShareDialog";
+import { trackPhotoView, trackPhotoDownload } from "@/lib/analytics";
 
 // Extend module definition for Lightbox
 declare module "yet-another-react-lightbox" {
@@ -52,6 +53,15 @@ export function GalleryLightbox({
       // Extract ULID from key (format: <ulid>.jpg or folder/<ulid>.jpg)
       const ulid =
         currentPhoto.id.split("/").pop()?.split(".")[0] ?? currentPhoto.id;
+
+      trackPhotoDownload({
+        event_id: currentPhoto.eventId,
+        bib_number: "",
+        download_type: "single",
+        photo_count: 1,
+        device_type: isMobile ? "mobile" : "desktop",
+      });
+
       await downloadImage(
         currentPhoto.src,
         `${currentPhoto.organizerId}-${currentPhoto.eventId}-${ulid}.jpg`,
