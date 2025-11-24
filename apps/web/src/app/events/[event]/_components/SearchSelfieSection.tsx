@@ -230,12 +230,12 @@ export function SearchSelfieSection({
                     <div>
                       <p className="text-sm font-medium">
                         {uploadedFile
-                          ? (uploadedFile as File).name
+                          ? uploadedFile.name
                           : "Click to upload your selfie"}
                       </p>
                       <p className="text-muted-foreground mt-1 text-xs">
                         {uploadedFile
-                          ? `${((uploadedFile as File).size / 1024 / 1024).toFixed(1)} MB`
+                          ? `${(uploadedFile.size / 1024 / 1024).toFixed(1)} MB`
                           : "JPG, PNG, or HEIC • Max 10 MB"}
                       </p>
                     </div>

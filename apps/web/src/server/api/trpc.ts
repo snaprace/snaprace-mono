@@ -11,7 +11,7 @@ import superjson from "superjson";
 import { ZodError } from "zod";
 
 import { auth } from "@/server/auth";
-import { createServerClient, type Database } from "@repo/supabase";
+import { createServerClient } from "@repo/supabase";
 import { env } from "@/env";
 
 /**
@@ -30,8 +30,8 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
   const session = await auth();
 
   const supabase = createServerClient(
-    env.SUPABASE_URL!,
-    env.SUPABASE_ANON_KEY!,
+    env.SUPABASE_URL,
+    env.SUPABASE_ANON_KEY,
   );
 
   // Extract organization subdomain from headers (set by middleware)

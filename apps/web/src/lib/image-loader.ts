@@ -6,7 +6,11 @@ interface ImageLoaderProps {
   quality?: number;
 }
 
-export default function imageLoader({ src, width, quality }: ImageLoaderProps) {
+export default function imageLoader({
+  src,
+  width,
+  quality: _quality,
+}: ImageLoaderProps) {
   // If src is already a full URL (e.g. external), return it as is
   if (src.startsWith("http")) return src;
 
@@ -33,8 +37,10 @@ export default function imageLoader({ src, width, quality }: ImageLoaderProps) {
   const json = JSON.stringify(imageRequest);
   // Safe base64 encoding for Unicode characters
   const encoded = btoa(
-    encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, (match, p1) =>
-      String.fromCharCode(parseInt(p1, 16)),
+    encodeURIComponent(json).replace(
+      /%([0-9A-F]{2})/g,
+      (_match: string, hex: string) =>
+        String.fromCharCode(Number.parseInt(hex, 16)),
     ),
   );
   return `${IMAGE_HANDLER_URL}/${encoded}`;

@@ -5,7 +5,6 @@ import {
 } from "@aws-sdk/client-s3";
 import sharp from "sharp";
 import { ulid } from "ulid";
-import * as ThumbHash from "thumbhash";
 
 const s3 = new S3Client({});
 const BUCKET_NAME = process.env.IMAGE_BUCKET!;
@@ -57,6 +56,7 @@ export const handler = async (
     const image = sharp(body).rotate(); // Auto-rotate based on EXIF
 
     // 3-1. Generate ThumbHash
+    const { rgbaToThumbHash } = await import("thumbhash");
     const thumbBuffer = await image
       .clone()
       .resize(100, 100, { fit: "inside" })
@@ -64,7 +64,7 @@ export const handler = async (
       .raw()
       .toBuffer({ resolveWithObject: true });
 
-    const thumbHashBinary = ThumbHash.rgbaToThumbHash(
+    const thumbHashBinary = rgbaToThumbHash(
       thumbBuffer.info.width,
       thumbBuffer.info.height,
       thumbBuffer.data

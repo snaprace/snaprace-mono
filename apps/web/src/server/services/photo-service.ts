@@ -1,11 +1,22 @@
 import {
   QueryCommand,
   BatchGetCommand,
+  type BatchGetCommandOutput,
   type QueryCommandOutput,
 } from "@aws-sdk/lib-dynamodb";
 import { dynamoClient, TABLES } from "@/lib/dynamodb";
-import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
+import {
+  LambdaClient,
+  InvokeCommand,
+  type InvokeCommandOutput,
+} from "@aws-sdk/client-lambda";
 import { env } from "@/env";
+import {
+  decodeCursor,
+  isLambdaProxyResponse,
+  parseSelfieLambdaBody,
+  type SearchBySelfieResult,
+} from "@/server/utils/selfie-search";
 
 // Lambda Client initialized outside the class
 const lambdaClient = new LambdaClient({
@@ -50,20 +61,6 @@ export interface BibIndexItem {
   createdAt: string;
 }
 
-export interface SelfiePhoto {
-  photoId: string;
-  url: string;
-  similarity: number;
-  photographer: { instagramHandle: string } | null;
-  width: number;
-  height: number;
-}
-
-export interface SearchBySelfieResult {
-  photos: SelfiePhoto[];
-  matches: number;
-}
-
 export class PhotoService {
   /**
    * Get all photos for an event, paginated.
@@ -93,13 +90,11 @@ export class PhotoService {
         ":skPrefix": "PHOTO#",
       },
       Limit: limit,
-      ExclusiveStartKey: cursor
-        ? JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"))
-        : undefined,
+      ExclusiveStartKey: decodeCursor(cursor),
       ScanIndexForward: false, // Newest first
     });
 
-    const result = await dynamoClient.send(command);
+    const result: QueryCommandOutput = await dynamoClient.send(command);
     const items = (result.Items as PhotoItem[]) ?? [];
     const nextCursor = result.LastEvaluatedKey
       ? Buffer.from(JSON.stringify(result.LastEvaluatedKey)).toString("base64")
@@ -150,13 +145,12 @@ export class PhotoService {
         ":pk": gsi1pk,
       },
       Limit: limit,
-      ExclusiveStartKey: cursor
-        ? JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"))
-        : undefined,
+      ExclusiveStartKey: decodeCursor(cursor),
       ScanIndexForward: false, // Newest first
     });
 
-    const queryResult = await dynamoClient.send(queryCommand);
+    const queryResult: QueryCommandOutput =
+      await dynamoClient.send(queryCommand);
     const indexItems = (queryResult.Items as BibIndexItem[]) ?? [];
 
     if (indexItems.length === 0) {
@@ -182,7 +176,8 @@ export class PhotoService {
       },
     });
 
-    const batchResult = await dynamoClient.send(batchCommand);
+    const batchResult: BatchGetCommandOutput =
+      await dynamoClient.send(batchCommand);
     const photoItems =
       (batchResult.Responses?.[TABLES.PHOTO_SERVICE] as PhotoItem[]) ?? [];
 
@@ -243,7 +238,7 @@ export class PhotoService {
         ExclusiveStartKey: lastEvaluatedKey,
       });
 
-      const result = await dynamoClient.send(command);
+      const result: QueryCommandOutput = await dynamoClient.send(command);
       totalCount += result.Count ?? 0;
       lastEvaluatedKey = result.LastEvaluatedKey;
     } while (lastEvaluatedKey);
@@ -282,7 +277,7 @@ export class PhotoService {
         ExclusiveStartKey: lastEvaluatedKey,
       });
 
-      const result = await dynamoClient.send(command);
+      const result: QueryCommandOutput = await dynamoClient.send(command);
       totalCount += result.Count ?? 0;
       lastEvaluatedKey = result.LastEvaluatedKey;
     } while (lastEvaluatedKey);
@@ -321,7 +316,7 @@ export class PhotoService {
         }),
       });
 
-      const response = await lambdaClient.send(command);
+      const response: InvokeCommandOutput = await lambdaClient.send(command);
 
       if (response.FunctionError) {
         throw new Error(`Lambda execution error: ${response.FunctionError}`);
@@ -332,30 +327,19 @@ export class PhotoService {
       }
 
       const payloadString = new TextDecoder().decode(response.Payload);
-      const payload = JSON.parse(payloadString);
+      const payloadUnknown = JSON.parse(payloadString) as unknown;
 
-      if (payload.statusCode !== 200) {
+      if (!isLambdaProxyResponse(payloadUnknown)) {
+        throw new Error("Invalid payload returned from Lambda");
+      }
+
+      if (payloadUnknown.statusCode !== 200) {
         throw new Error(
-          `Lambda returned status ${payload.statusCode}: ${payload.body}`,
+          `Lambda returned status ${payloadUnknown.statusCode}: ${payloadUnknown.body}`,
         );
       }
 
-      const body = JSON.parse(payload.body);
-
-      // Validate and cast response body
-      const photos = (body.photos || []).map((p: SelfiePhoto) => ({
-        photoId: p.photoId,
-        url: p.url,
-        similarity: p.similarity,
-        photographer: p.photographer || null,
-        width: p.width || 0,
-        height: p.height || 0,
-      }));
-
-      return {
-        photos: photos,
-        matches: body.matches || 0,
-      };
+      return parseSelfieLambdaBody(payloadUnknown.body);
     } catch (error) {
       console.error("Failed to invoke searchBySelfie lambda:", error);
       throw error;

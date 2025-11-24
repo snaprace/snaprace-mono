@@ -76,22 +76,22 @@ export function FinishVideo({
   const [hasError, setHasError] = useState(false);
 
   // Cast to known type since Supabase types might be loosely defined for JSON columns
-  const videoInfo = event.finishline_video_info as unknown as
-    | FinishVideoInfo
-    | undefined;
+  // const videoInfo = event.finishline_video_info as unknown as
+  //   | FinishVideoInfo
+  //   | undefined;
 
-  // Calculate video start time
-  const startTime = useMemo(() => {
-    if (!videoInfo?.status || videoInfo.status !== "enabled") {
-      return 0;
-    }
-    return calculateVideoStartTime(videoInfo, timingDetail, isAllPhotos);
-  }, [videoInfo, timingDetail, isAllPhotos]);
+  // // Calculate video start time
+  // const startTime = useMemo(() => {
+  //   if (!videoInfo?.status || videoInfo.status !== "enabled") {
+  //     return 0;
+  //   }
+  //   return calculateVideoStartTime(videoInfo, timingDetail, isAllPhotos);
+  // }, [videoInfo, timingDetail, isAllPhotos]);
 
-  // Don't render if video info doesn't exist or is disabled
-  if (!videoInfo?.status || videoInfo.status !== "enabled") {
-    return null;
-  }
+  // // Don't render if video info doesn't exist or is disabled
+  // if (!videoInfo?.status || videoInfo.status !== "enabled") {
+  //   return null;
+  // }
 
   const handleError = () => {
     setHasError(true);
@@ -122,15 +122,14 @@ export function FinishVideo({
               <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
                 {hasError ? (
                   <VideoError onRetry={handleRetry} />
-                ) : (
-                  <YouTubePlayer
-                    url={videoInfo.url}
-                    startTime={startTime}
-                    thumbnail={videoInfo.thumbnail}
-                    onReady={handleReady}
-                    onError={handleError}
-                  />
-                )}
+                ) : // <YouTubePlayer
+                //   url={videoInfo.url}
+                //   startTime={startTime}
+                //   thumbnail={videoInfo.thumbnail}
+                //   onReady={handleReady}
+                //   onError={handleError}
+                // />
+                null}
               </div>
             </div>
           </AccordionContent>
