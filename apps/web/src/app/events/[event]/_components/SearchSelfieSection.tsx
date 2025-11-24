@@ -16,6 +16,7 @@ import {
   trackSelfieConsentOpen,
   trackSelfieConsentDecision,
 } from "@/lib/analytics";
+import { resizeImage } from "@/utils/photo";
 import { FacialRecognitionConsentModal } from "@/components/modals/FacialRecognitionConsentModal";
 import {
   storeFacialRecognitionConsent,
@@ -102,7 +103,7 @@ export function SearchSelfieSection({
       trackSelfieError(
         eventId,
         bib || "",
-        error instanceof Error ? error.message : String(error),
+        error instanceof Error ? error.message : "Unknown error",
       );
 
       toast.error("Failed to process selfie. Please try again.");
@@ -162,10 +163,13 @@ export function SearchSelfieSection({
     fileRef.current = file;
     setIsUploading(true);
 
-    // Convert to base64
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64String = reader.result as string;
+    try {
+      // Resize and compress image before upload
+      // Use 800px max width and 0.8 quality for optimal performance
+      const base64String = await resizeImage(file, {
+        maxWidth: 800,
+        quality: 0.8,
+      });
 
       startTimeRef.current = performance.now();
       trackSelfieStart(
@@ -182,16 +186,15 @@ export function SearchSelfieSection({
         eventId,
         bib, // Pass bib number if available
       });
-    };
-    reader.onerror = () => {
+    } catch (error) {
+      console.error("Failed to process image:", error);
       setIsUploading(false);
       setHasError(true);
-      setUploadedFile(null); // Reset file on read error
+      setUploadedFile(null);
       fileRef.current = null;
       if (inputRef.current) inputRef.current.value = "";
-      toast.error("Failed to read file.");
-    };
-    reader.readAsDataURL(file);
+      toast.error("Failed to process image. Please try again.");
+    }
   };
 
   const handleRetry = () => {

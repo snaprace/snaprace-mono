@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import {
@@ -12,7 +12,7 @@ import NextJsImage from "./NextJsImage";
 import type { Photo } from "@/hooks/photos/usePhotoGallery";
 import { useImageDownloader } from "@/hooks/useImageDownloader";
 import { ShareDialog } from "@/components/ShareDialog";
-import { trackPhotoView, trackPhotoDownload } from "@/lib/analytics";
+import { trackPhotoDownload } from "@/lib/analytics";
 
 // Extend module definition for Lightbox
 declare module "yet-another-react-lightbox" {
@@ -208,7 +208,7 @@ export function GalleryLightbox({
             </button>
             {currentPhoto && (
               <ShareDialog
-                pid={currentPhoto.pid!}
+                pid={currentPhoto.pid ?? ""}
                 photoUrl={currentPhoto.src}
                 filename={`${currentPhoto.organizerId}-${currentPhoto.eventId}-${currentPhoto.pid}.jpg`}
                 isMobile={isMobile}
