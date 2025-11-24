@@ -7,19 +7,28 @@ import { LeaderboardSection } from "@/app/events/[event]/_components/Leaderboard
 import { PhotoGallery } from "@/app/events/[event]/_components/PhotoGallery";
 import { TimingResultSection } from "@/app/events/[event]/_components/TimingResultSection";
 import type { Photo } from "@/hooks/photos/usePhotoGallery";
+import {
+  useAnalyticsTracking,
+  usePerformanceTracking,
+} from "@/hooks/useAnalyticsTracking";
 
 interface BibPageContentProps {
   eventId: string;
   organizerId: string;
+  eventName: string;
   bib: string;
 }
 
 export function BibPageContent({
   eventId,
   organizerId,
+  eventName,
   bib,
 }: BibPageContentProps) {
   const [extraPhotos, setExtraPhotos] = useState<Photo[] | null>(null);
+
+  useAnalyticsTracking();
+  usePerformanceTracking();
 
   return (
     <>
@@ -35,6 +44,7 @@ export function BibPageContent({
             key="selfie"
             eventId={eventId}
             organizerId={organizerId}
+            eventName={eventName}
             bib={bib}
             onPhotosFound={setExtraPhotos}
           />,

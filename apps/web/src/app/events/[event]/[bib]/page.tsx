@@ -23,6 +23,7 @@ export default async function EventBibPage({
     <BibPageContent
       eventId={event}
       organizerId={eventData.organizer_id}
+      eventName={eventData.name}
       bib={bib}
     />
   );

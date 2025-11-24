@@ -6,10 +6,25 @@ import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import type { Photo } from "@/hooks/photos/usePhotoGallery";
+import {
+  trackSelfieStart,
+  trackSelfieUpload,
+  trackSelfieResults,
+  trackSelfieError,
+  trackSelfieRetry,
+  trackSelfieConsentOpen,
+  trackSelfieConsentDecision,
+} from "@/lib/analytics";
+import { FacialRecognitionConsentModal } from "@/components/modals/FacialRecognitionConsentModal";
+import {
+  storeFacialRecognitionConsent,
+  hasFacialRecognitionConsent,
+} from "@/lib/consent-storage";
 
 interface SearchSelfieSectionProps {
   eventId: string;
   organizerId: string;
+  eventName: string;
   bib?: string;
   onPhotosFound: (photos: Photo[] | null) => void; // null means reset/clear
 }
@@ -17,21 +32,42 @@ interface SearchSelfieSectionProps {
 export function SearchSelfieSection({
   eventId,
   organizerId,
+  eventName,
   bib,
   onPhotosFound,
 }: SearchSelfieSectionProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const startTimeRef = useRef<number>(0);
+  const fileRef = useRef<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [matchedCount, setMatchedCount] = useState(0);
   const [showNoMatches, setShowNoMatches] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
 
   const searchSelfieMutation = api.photosV2.searchBySelfie.useMutation({
     onSuccess: (data) => {
+      const latencyMs = Math.round(performance.now() - startTimeRef.current);
       const matches = data.photos || [];
       setMatchedCount(matches.length);
       setIsUploading(false);
+
+      trackSelfieUpload({
+        event_id: eventId,
+        bib_number: bib || "",
+        success: true,
+        matched_photos: matches.length,
+        latency_ms: latencyMs,
+        file_type: fileRef.current?.type,
+        file_size_kb: fileRef.current
+          ? Math.round(fileRef.current.size / 1024)
+          : 0,
+      });
+
+      trackSelfieResults(eventId, bib || "", matches.length, {
+        latency_ms: latencyMs,
+      });
 
       if (matches.length === 0) {
         setShowNoMatches(true);
@@ -59,13 +95,47 @@ export function SearchSelfieSection({
       console.error("Selfie search error:", error);
       setIsUploading(false);
       setHasError(true);
+
+      trackSelfieUpload({
+        event_id: eventId,
+        bib_number: bib || "",
+        success: false,
+      });
+      trackSelfieError(
+        eventId,
+        bib || "",
+        error instanceof Error ? error.message : String(error),
+      );
+
       toast.error("Failed to process selfie. Please try again.");
     },
   });
 
   const handleLabelClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    inputRef.current?.click();
+
+    if (hasFacialRecognitionConsent(eventId)) {
+      inputRef.current?.click();
+    } else {
+      trackSelfieConsentOpen(eventId, bib || "");
+      setIsConsentModalOpen(true);
+    }
+  };
+
+  const handleConsentAgree = () => {
+    storeFacialRecognitionConsent(true, eventId);
+    setIsConsentModalOpen(false);
+    trackSelfieConsentDecision(eventId, bib || "", true);
+
+    // Slight delay to ensure modal is closed before file picker opens
+    setTimeout(() => {
+      inputRef.current?.click();
+    }, 100);
+  };
+
+  const handleConsentDeny = () => {
+    setIsConsentModalOpen(false);
+    trackSelfieConsentDecision(eventId, bib || "", false);
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,6 +151,7 @@ export function SearchSelfieSection({
     // Validate file size (e.g., 10MB limit)
     if (file.size > 10 * 1024 * 1024) {
       setUploadedFile(null); // Reset file state
+      fileRef.current = null;
       if (inputRef.current) {
         inputRef.current.value = ""; // Reset file input
       }
@@ -90,12 +161,22 @@ export function SearchSelfieSection({
 
     // Only set file if validation passes
     setUploadedFile(file);
+    fileRef.current = file;
     setIsUploading(true);
 
     // Convert to base64
     const reader = new FileReader();
     reader.onload = () => {
       const base64String = reader.result as string;
+
+      startTimeRef.current = performance.now();
+      trackSelfieStart(
+        eventId,
+        bib || "",
+        file.type,
+        Math.round(file.size / 1024),
+      );
+
       // Call API
       searchSelfieMutation.mutate({
         image: base64String,
@@ -108,6 +189,7 @@ export function SearchSelfieSection({
       setIsUploading(false);
       setHasError(true);
       setUploadedFile(null); // Reset file on read error
+      fileRef.current = null;
       if (inputRef.current) inputRef.current.value = "";
       toast.error("Failed to read file.");
     };
@@ -115,7 +197,9 @@ export function SearchSelfieSection({
   };
 
   const handleRetry = () => {
+    trackSelfieRetry(eventId, bib || "");
     setUploadedFile(null);
+    fileRef.current = null;
     setMatchedCount(0);
     setShowNoMatches(false);
     setHasError(false);
@@ -274,6 +358,14 @@ export function SearchSelfieSection({
           </div>
         </div>
       </div>
+
+      <FacialRecognitionConsentModal
+        isOpen={isConsentModalOpen}
+        onClose={() => setIsConsentModalOpen(false)}
+        onAgree={handleConsentAgree}
+        onDeny={handleConsentDeny}
+        eventName={eventName}
+      />
     </section>
   );
 }

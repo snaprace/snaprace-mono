@@ -6,17 +6,26 @@ import { EventInsightsPanel } from "./EventInsightsPanel";
 import { LeaderboardSection } from "./LeaderboardSection";
 import { PhotoGallery } from "./PhotoGallery";
 import type { Photo } from "@/hooks/photos/usePhotoGallery";
+import {
+  useAnalyticsTracking,
+  usePerformanceTracking,
+} from "@/hooks/useAnalyticsTracking";
 
 interface EventPageContentProps {
   eventId: string;
   organizerId: string;
+  eventName: string;
 }
 
 export function EventPageContent({
   eventId,
   organizerId,
+  eventName,
 }: EventPageContentProps) {
   const [searchedPhotos, setSearchedPhotos] = useState<Photo[] | null>(null);
+
+  useAnalyticsTracking();
+  usePerformanceTracking();
 
   return (
     <>
@@ -27,6 +36,7 @@ export function EventPageContent({
             key="selfie"
             eventId={eventId}
             organizerId={organizerId}
+            eventName={eventName}
             onPhotosFound={setSearchedPhotos}
           />,
         ]}

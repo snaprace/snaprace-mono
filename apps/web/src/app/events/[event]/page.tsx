@@ -16,6 +16,10 @@ export default async function EventPage({
   }
 
   return (
-    <EventPageContent eventId={eventId} organizerId={event.organizer_id} />
+    <EventPageContent
+      eventId={eventId}
+      organizerId={event.organizer_id}
+      eventName={event.name}
+    />
   );
 }

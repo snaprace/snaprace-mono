@@ -1,4 +1,4 @@
-import React from "react";
+import React, { type MouseEventHandler } from "react";
 import { MasonryPhotoAlbum } from "react-photo-album";
 import "react-photo-album/masonry.css";
 import { MasonryPhotoSkeleton } from "@/components/states/EventsSkeleton";
@@ -42,7 +42,17 @@ export function GalleryGrid({
         photos={photos}
         columns={columns}
         spacing={3}
-        render={{ image: MasonryImage }}
+        render={{
+          image: MasonryImage,
+          button: ({ onClick, ...rest }) => (
+            // Override button rendering to div to avoid nested buttons
+            <div
+              {...(rest as React.HTMLAttributes<HTMLDivElement>)}
+              onClick={onClick as unknown as MouseEventHandler<HTMLDivElement>}
+              className="react-photo-album--photo react-photo-album--button cursor-pointer"
+            />
+          ),
+        }}
         onClick={({ index }) => onPhotoClick(index)}
       />
 

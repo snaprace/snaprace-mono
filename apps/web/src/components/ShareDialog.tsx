@@ -128,8 +128,10 @@ export function ShareDialog({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent
-        className="max-w-sm sm:max-w-md"
+        className="z-2000 max-w-sm sm:max-w-md"
+        overlayClassName="z-2000"
         onClick={(e) => e.stopPropagation()}
+        aria-describedby={undefined}
       >
         <DialogHeader>
           <DialogTitle className="text-center font-medium text-gray-900">

@@ -153,6 +153,7 @@ export function GalleryLightbox({
         root: {
           "--yarl__color_backdrop": "#fff",
           "--yarl__button_filter": "none",
+          "--yarl__portal_zindex": 1000,
         },
       }}
       animation={{
