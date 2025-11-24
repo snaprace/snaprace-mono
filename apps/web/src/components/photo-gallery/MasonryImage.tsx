@@ -92,8 +92,8 @@ export function MasonryImage(
             variant="secondary"
             className="flex items-center gap-1 bg-black/50 text-white backdrop-blur-sm"
           >
-            <Camera className="h-3 w-3" />
-            <span className="text-xs">Selfie</span>
+            <Camera className="h-2.5 w-2.5 md:h-3 md:w-3" />
+            <span className="text-[10px] md:text-xs">Selfie</span>
           </Badge>
         </div>
       )}

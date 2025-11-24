@@ -78,7 +78,7 @@ export function MasonryPhotoSkeleton({ count = 12 }: { count?: number }) {
         className="masonry-skeleton-grid"
         style={{
           columnCount: isMobile ? 2 : 4,
-          columnGap: "3px",
+          columnGap: "4px",
         }}
       >
         {Array.from({ length: count }).map((_, index) => (
@@ -87,7 +87,7 @@ export function MasonryPhotoSkeleton({ count = 12 }: { count?: number }) {
             className="masonry-item break-inside-avoid"
             style={{
               width: "100%",
-              marginBottom: "3px",
+              marginBottom: "4px",
             }}
           >
             <Skeleton
