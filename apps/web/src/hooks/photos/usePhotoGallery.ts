@@ -1,16 +1,12 @@
 import { useMemo } from "react";
 import { api } from "@/trpc/react";
 import { getBlurDataURL } from "@/utils/thumbhash";
+import type { Photo as SharedPhoto } from "@/types/photo";
 
-export type Photo = {
+export type Photo = SharedPhoto & {
   src: string;
-  width: number;
-  height: number;
-  id: string;
   blurDataURL?: string;
   isSelfieMatch?: boolean;
-  similarity?: number;
-  eventId: string;
   organizerId: string;
 };
 
@@ -57,17 +53,14 @@ export function usePhotoGallery({
     return (
       data?.pages.flatMap((page) =>
         page.items.map((item) => ({
-          id: item.key,
-          src: item.imageUrl,
-          width: item.width,
-          height: item.height,
-          blurDataURL: getBlurDataURL(item.thumbHash),
-          eventId,
-          organizerId,
+          ...item,
+          src: item.url,
+          blurDataURL: getBlurDataURL(item.thumbHash ?? undefined),
+          organizerId: item.orgId,
         })),
       ) ?? []
     );
-  }, [data, eventId, organizerId]);
+  }, [data]);
 
   return {
     photos,

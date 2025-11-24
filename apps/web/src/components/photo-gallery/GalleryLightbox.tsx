@@ -17,7 +17,7 @@ import { trackPhotoView, trackPhotoDownload } from "@/lib/analytics";
 // Extend module definition for Lightbox
 declare module "yet-another-react-lightbox" {
   interface GenericSlide {
-    id?: string;
+    pid?: string;
     blurDataURL?: string;
     eventId?: string;
     organizerId?: string;
@@ -50,9 +50,8 @@ export function GalleryLightbox({
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (currentPhoto) {
-      // Extract ULID from key (format: <ulid>.jpg or folder/<ulid>.jpg)
-      const ulid =
-        currentPhoto.id.split("/").pop()?.split(".")[0] ?? currentPhoto.id;
+      // Extract ULID from pid
+      const ulid = currentPhoto.pid;
 
       trackPhotoDownload({
         event_id: currentPhoto.eventId,
@@ -81,7 +80,7 @@ export function GalleryLightbox({
         src: photo.src,
         width: photo.width,
         height: photo.height,
-        id: photo.id,
+        pid: photo.pid,
         blurDataURL: photo.blurDataURL,
         eventId: photo.eventId,
         organizerId: photo.organizerId,
@@ -209,8 +208,9 @@ export function GalleryLightbox({
             </button>
             {currentPhoto && (
               <ShareDialog
+                pid={currentPhoto.pid!}
                 photoUrl={currentPhoto.src}
-                filename={`${currentPhoto.organizerId}-${currentPhoto.eventId}-${currentPhoto.id.split("/").pop()?.split(".")[0] ?? currentPhoto.id}.jpg`}
+                filename={`${currentPhoto.organizerId}-${currentPhoto.eventId}-${currentPhoto.pid}.jpg`}
                 isMobile={isMobile}
                 shareOptions={{
                   eventId: currentPhoto.eventId,

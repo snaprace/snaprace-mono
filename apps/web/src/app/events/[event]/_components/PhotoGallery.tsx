@@ -48,8 +48,10 @@ export function PhotoGallery({
       // usePhotoGallery의 fetchedPhotos가 업데이트(pagination 등)되면서 발생할 수 있는
       // 혹시 모를 key 중복 에러를 방지하기 위해 간단한 중복 체크는 유지합니다.
       // 하지만 로직은 훨씬 단순화되었습니다.
-      const existingIds = new Set(fetchedPhotos.map((p) => p.id));
-      const newUniquePhotos = extraPhotos.filter((p) => !existingIds.has(p.id));
+      const existingIds = new Set(fetchedPhotos.map((p) => p.pid));
+      const newUniquePhotos = extraPhotos.filter(
+        (p) => !existingIds.has(p.pid),
+      );
 
       return [...newUniquePhotos, ...fetchedPhotos];
     }
@@ -58,19 +60,19 @@ export function PhotoGallery({
 
   // Sync URL -> State
   useEffect(() => {
-    const photoId = searchParams.get("photoId");
+    const pid = searchParams.get("pid");
 
-    if (photoId) {
-      const newIndex = photos.findIndex((p) => p.id === photoId);
+    if (pid) {
+      const newIndex = photos.findIndex((p) => p.pid === pid);
       if (newIndex >= 0 && newIndex !== index) {
         setIndex(newIndex);
         if (index === -1) {
-          const element = document.getElementById(`photo-${photoId}`);
+          const element = document.getElementById(`photo-${pid}`);
           element?.scrollIntoView({ behavior: "auto", block: "center" });
         }
       }
     } else {
-      // photoId가 없을 때 Lightbox가 열려있다면 닫기 (뒤로가기 대응)
+      // pid가 없을 때 Lightbox가 열려있다면 닫기 (뒤로가기 대응)
       if (index !== -1) {
         setIndex(-1);
       }
@@ -82,9 +84,9 @@ export function PhotoGallery({
     setIndex(newIndex);
     const photo = photos[newIndex];
     if (photo) {
-      const element = document.getElementById(`photo-${photo.id}`);
+      const element = document.getElementById(`photo-${photo.pid}`);
       element?.scrollIntoView({ behavior: "auto", block: "center" });
-      router.push(`${pathname}?photoId=${encodeURIComponent(photo.id)}`, {
+      router.push(`${pathname}?pid=${encodeURIComponent(photo.pid)}`, {
         scroll: false,
       });
     }
@@ -99,9 +101,9 @@ export function PhotoGallery({
     setIndex(currentIndex);
     const photo = photos[currentIndex];
     if (photo) {
-      const element = document.getElementById(`photo-${photo.id}`);
+      const element = document.getElementById(`photo-${photo.pid}`);
       element?.scrollIntoView({ behavior: "auto", block: "center" });
-      router.replace(`${pathname}?photoId=${encodeURIComponent(photo.id)}`, {
+      router.replace(`${pathname}?pid=${encodeURIComponent(photo.pid)}`, {
         scroll: false,
       });
     }

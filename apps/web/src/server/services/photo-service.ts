@@ -17,6 +17,7 @@ import {
   parseSelfieLambdaBody,
   type SearchBySelfieResult,
 } from "@/server/utils/selfie-search";
+import { type Photo } from "@/types/photo";
 
 // Lambda Client initialized outside the class
 const lambdaClient = new LambdaClient({
@@ -62,6 +63,11 @@ export interface BibIndexItem {
 }
 
 export class PhotoService {
+  private static extractPidFromKey(key: string): string {
+    const filename = key.split("/").pop() ?? "";
+    return filename.split(".")[0] ?? "";
+  }
+
   /**
    * Get all photos for an event, paginated.
    * Uses the main table PK (ORG#...#EVT#...) and SK (PHOTO#...).
@@ -100,17 +106,20 @@ export class PhotoService {
       ? Buffer.from(JSON.stringify(result.LastEvaluatedKey)).toString("base64")
       : undefined;
 
-    const mappedItems = items.map((item) => ({
-      orgId: item.orgId,
-      eventId: item.eventId,
-      imageUrl: `https://images.snap-race.com/${item.processedKey || item.rawKey}`,
-      instagramHandle: item.instagramHandle,
-      // We need the key for the image loader to work with the image handler
-      key: item.processedKey || item.rawKey,
-      width: item.dimensions.width,
-      height: item.dimensions.height,
-      thumbHash: item.thumbHash,
-    }));
+    const mappedItems: Photo[] = items.map((item) => {
+      const key = item.processedKey || item.rawKey;
+      return {
+        pid: PhotoService.extractPidFromKey(key),
+        s3Key: key,
+        url: `https://images.snap-race.com/${key}`,
+        width: item.dimensions.width,
+        height: item.dimensions.height,
+        eventId: item.eventId,
+        orgId: item.orgId,
+        thumbHash: item.thumbHash,
+        instagramHandle: item.instagramHandle,
+      };
+    });
 
     return { items: mappedItems, nextCursor };
   }
@@ -186,17 +195,20 @@ export class PhotoService {
     const sortedPhotos = indexItems
       .map((item) => photoMap.get(item.ulid))
       .filter((p): p is PhotoItem => !!p)
-      .map((item) => ({
-        orgId: item.orgId,
-        eventId: item.eventId,
-        imageUrl: `https://images.snap-race.com/${item.processedKey}`, // item.rawKey
-        instagramHandle: item.instagramHandle,
-        // We need the key for the image loader to work with the image handler
-        key: item.processedKey,
-        width: item.dimensions.width,
-        height: item.dimensions.height,
-        thumbHash: item.thumbHash,
-      }));
+      .map((item) => {
+        const key = item.processedKey;
+        return {
+          pid: PhotoService.extractPidFromKey(key),
+          s3Key: key,
+          url: `https://images.snap-race.com/${key}`,
+          width: item.dimensions.width,
+          height: item.dimensions.height,
+          eventId: item.eventId,
+          orgId: item.orgId,
+          thumbHash: item.thumbHash,
+          instagramHandle: item.instagramHandle,
+        } as Photo;
+      });
 
     const nextCursor = queryResult.LastEvaluatedKey
       ? Buffer.from(JSON.stringify(queryResult.LastEvaluatedKey)).toString(

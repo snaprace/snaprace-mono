@@ -24,9 +24,8 @@ export function MasonryImage(
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Extract ULID from key (format: <ulid>.jpg or folder/<ulid>.jpg)
-    const ulid =
-      customPhoto.id.split("/").pop()?.split(".")[0] ?? customPhoto.id;
+    // Extract ULID from pid
+    const ulid = customPhoto.pid;
     await downloadImage(
       customPhoto.src,
       `${customPhoto.organizerId}-${customPhoto.eventId}-${ulid}.jpg`,
@@ -35,7 +34,7 @@ export function MasonryImage(
 
   return (
     <div
-      id={`photo-${customPhoto.id}`}
+      id={`photo-${customPhoto.pid}`}
       style={{
         width: "100%",
         position: "relative",
@@ -69,8 +68,9 @@ export function MasonryImage(
         </button>
 
         <ShareDialog
+          pid={customPhoto.pid}
           photoUrl={customPhoto.src}
-          filename={`${customPhoto.organizerId}-${customPhoto.eventId}-${customPhoto.id.split("/").pop()?.split(".")[0] ?? customPhoto.id}.jpg`}
+          filename={`${customPhoto.organizerId}-${customPhoto.eventId}-${customPhoto.pid}.jpg`}
           isMobile={isMobile}
           shareOptions={{
             eventId: customPhoto.eventId,

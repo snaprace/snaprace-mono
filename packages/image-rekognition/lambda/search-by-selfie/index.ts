@@ -154,7 +154,7 @@ export const handler = async (
             Keys: keys,
             // 필요한 속성만 가져와서 데이터 전송량 감소
             ProjectionExpression:
-              "ulid, processedKey, instagramHandle, dimensions",
+              "ulid, processedKey, instagramHandle, dimensions, thumbHash",
           },
         },
       })
@@ -170,14 +170,16 @@ export const handler = async (
           item.processedKey || `${orgId}/${eventId}/processed/${ulid}.jpg`;
 
         return {
-          photoId: key, // photoId를 key 그대로 사용
+          pid: ulid,
+          s3Key: key,
           url: `${CLOUDFRONT_DOMAIN}/${key}`,
+          width: item.dimensions?.width || 0,
+          height: item.dimensions?.height || 0,
+          eventId,
+          orgId,
+          thumbHash: item.thumbHash,
+          instagramHandle: item.instagramHandle,
           similarity,
-          photographer: item.instagramHandle
-            ? { instagramHandle: item.instagramHandle }
-            : null,
-          width: item.dimensions?.width,
-          height: item.dimensions?.height,
         };
       })
       .sort((a, b) => (b.similarity || 0) - (a.similarity || 0));

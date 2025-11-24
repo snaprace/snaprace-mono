@@ -31,6 +31,7 @@ import {
 } from "@/lib/analytics";
 
 interface ShareDialogProps {
+  pid: string;
   photoUrl: string;
   filename: string;
   isMobile: boolean;
@@ -44,6 +45,7 @@ interface ShareDialogProps {
 }
 
 export function ShareDialog({
+  pid,
   photoUrl,
   filename,
   isMobile,
@@ -51,7 +53,7 @@ export function ShareDialog({
   shareOptions,
 }: ShareDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const shareableUrl = generateShareablePhotoUrl(photoUrl, shareOptions);
+  const shareableUrl = generateShareablePhotoUrl(pid, shareOptions);
 
   // Extract analytics parameters
   const eventId = shareOptions?.eventId || "";

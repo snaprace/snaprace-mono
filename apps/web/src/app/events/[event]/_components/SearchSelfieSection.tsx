@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import type { Photo } from "@/hooks/photos/usePhotoGallery";
+import { getBlurDataURL } from "@/utils/thumbhash";
 import {
   trackSelfieStart,
   trackSelfieUpload,
@@ -75,16 +76,13 @@ export function SearchSelfieSection({
         toast.info("No matching photos found.");
       } else {
         setShowNoMatches(false);
-        // Map to Photo type
+        // 백엔드에서 이미 적절하게 파싱된 Photo 객체 배열을 내려주므로 그대로 사용
         const mappedPhotos: Photo[] = matches.map((p) => ({
-          id: p.photoId,
-          src: p.url,
-          width: p.width || 0,
-          height: p.height || 0,
+          ...p,
           isSelfieMatch: true,
-          similarity: p.similarity,
-          eventId,
-          organizerId,
+          src: p.url,
+          organizerId: p.orgId,
+          blurDataURL: getBlurDataURL(p.thumbHash ?? undefined),
         }));
 
         onPhotosFound(mappedPhotos);

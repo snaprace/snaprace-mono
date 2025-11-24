@@ -60,7 +60,7 @@ export function findPhotoUrlById(
  * Supports optional organizer/event/bib query params.
  */
 export function generateShareablePhotoUrl(
-  photoUrl: string,
+  pid: string,
   optionsOrBase?:
     | string
     | {
@@ -71,8 +71,7 @@ export function generateShareablePhotoUrl(
       },
   legacyBaseUrl?: string,
 ): string {
-  const photoId = extractPhotoId(photoUrl);
-  const encodedId = encodePhotoId(photoId);
+  const encodedId = encodePhotoId(pid);
 
   // Backward-compatible parameter handling
   const options =
@@ -97,21 +96,21 @@ export function generateShareablePhotoUrl(
 
   // If eventId is provided, use the canonical /events/{eventId}/{bib}?pid={photoId} format
   if (evtId) {
-    const bibPath = bib && bib.length > 0 ? bib : "null";
+    const bibPath = bib && bib.length > 0 ? bib : "";
     const url = new URL(
-      `${base}/events/${evtId}/${bibPath}`,
+      `${base}/events/${evtId}${bibPath ? `/${bibPath}` : ""}`,
       base || "http://localhost",
     );
     url.searchParams.set("pid", encodedId);
 
     // For server-side without a real base, return path with query string
     if (!base) {
-      return `/events/${evtId}/${bibPath}?pid=${encodedId}`;
+      return `/events/${evtId}${bibPath ? `/${bibPath}` : ""}?pid=${encodedId}`;
     }
     return url.toString();
   }
 
-  // Fallback to /photo/{photoId} format for backward compatibility
+  // Fallback to /photo/{pid} format for backward compatibility
   const url = new URL(`${base}/photo/${encodedId}`, base || "http://localhost");
   const orgId = options?.organizerId ?? undefined;
   if (orgId) url.searchParams.set("organizerId", orgId);

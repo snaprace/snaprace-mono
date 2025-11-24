@@ -1,13 +1,7 @@
 import type { QueryCommandOutput } from "@aws-sdk/lib-dynamodb";
+import type { Photo } from "@/types/photo";
 
-export interface SelfiePhoto {
-  photoId: string;
-  url: string;
-  similarity: number;
-  photographer: { instagramHandle: string } | null;
-  width: number;
-  height: number;
-}
+export type SelfiePhoto = Photo;
 
 export interface SearchBySelfieResult {
   photos: SelfiePhoto[];
@@ -40,39 +34,35 @@ const normalizeSelfiePhoto = (photo: unknown): SelfiePhoto | null => {
 
   const candidate = photo as Record<string, unknown>;
 
+  // Basic validation for required Photo fields
   if (
-    typeof candidate.photoId !== "string" ||
+    typeof candidate.pid !== "string" ||
+    typeof candidate.s3Key !== "string" ||
     typeof candidate.url !== "string" ||
-    typeof candidate.similarity !== "number"
+    typeof candidate.eventId !== "string" ||
+    typeof candidate.orgId !== "string"
   ) {
     return null;
   }
 
-  const width = typeof candidate.width === "number" ? candidate.width : 0;
-  const height = typeof candidate.height === "number" ? candidate.height : 0;
-
-  const photographerValue = candidate.photographer;
-  let photographer: SelfiePhoto["photographer"] = null;
-
-  if (
-    typeof photographerValue === "object" &&
-    photographerValue !== null &&
-    typeof (photographerValue as { instagramHandle?: unknown })
-      .instagramHandle === "string"
-  ) {
-    photographer = {
-      instagramHandle: (photographerValue as { instagramHandle: string })
-        .instagramHandle,
-    };
-  }
-
   return {
-    photoId: candidate.photoId,
+    pid: candidate.pid,
+    s3Key: candidate.s3Key,
     url: candidate.url,
-    similarity: candidate.similarity,
-    photographer,
-    width,
-    height,
+    width: typeof candidate.width === "number" ? candidate.width : 0,
+    height: typeof candidate.height === "number" ? candidate.height : 0,
+    eventId: candidate.eventId,
+    orgId: candidate.orgId,
+    thumbHash:
+      typeof candidate.thumbHash === "string" ? candidate.thumbHash : undefined,
+    instagramHandle:
+      typeof candidate.instagramHandle === "string"
+        ? candidate.instagramHandle
+        : undefined,
+    similarity:
+      typeof candidate.similarity === "number"
+        ? candidate.similarity
+        : undefined,
   };
 };
 

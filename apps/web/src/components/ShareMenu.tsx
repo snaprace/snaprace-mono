@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import {
   trackSocialShareClick,
   trackShareComplete,
-  trackShareLinkCopy
+  trackShareLinkCopy,
 } from "@/lib/analytics";
 
 interface ShareMenuProps {
@@ -46,10 +46,10 @@ export function ShareMenu({
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const shareableUrl = generateShareablePhotoUrl(photoUrl, shareOptions);
-  
+
   // Extract analytics parameters
-  const eventId = shareOptions?.eventId || '';
-  const bibNumber = shareOptions?.bibNumber || '';
+  const eventId = shareOptions?.eventId || "";
+  const bibNumber = shareOptions?.bibNumber || "";
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -88,7 +88,7 @@ export function ShareMenu({
   const handleMoreShare = async () => {
     // Track "More" button click
     if (eventId) {
-      trackSocialShareClick(eventId, bibNumber, 'more');
+      trackSocialShareClick(eventId, bibNumber, "more");
     }
 
     const result = await sharePhotoWithOptions(
@@ -101,7 +101,7 @@ export function ShareMenu({
     if (result.success) {
       // Track successful share
       if (eventId) {
-        trackShareComplete(eventId, bibNumber, result.method || 'more', true);
+        trackShareComplete(eventId, bibNumber, result.method || "more", true);
       }
 
       switch (result.method) {
@@ -118,7 +118,7 @@ export function ShareMenu({
     } else if (result.method !== "cancelled") {
       // Track failed share (only if not cancelled)
       if (eventId) {
-        trackShareComplete(eventId, bibNumber, 'more', false);
+        trackShareComplete(eventId, bibNumber, "more", false);
       }
       toast.error("Failed to share");
     }
@@ -171,9 +171,9 @@ export function ShareMenu({
           <div className="mb-4 grid grid-cols-4 gap-3">
             {/* Messenger */}
             <div className="flex flex-col items-center">
-              <div 
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 cursor-pointer"
-                onClick={() => handleSocialShare('messenger')}
+              <div
+                className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-blue-600"
+                onClick={() => handleSocialShare("messenger")}
               >
                 <svg
                   className="h-6 w-6 text-white"
@@ -191,7 +191,7 @@ export function ShareMenu({
               <WhatsappShareButton
                 url={shareableUrl}
                 title="Check out this race photo!"
-                onClick={() => handleSocialShare('whatsapp')}
+                onClick={() => handleSocialShare("whatsapp")}
               >
                 <WhatsappIcon size={48} round />
                 <span className="mt-1 text-xs text-gray-600">WhatsApp</span>
@@ -202,7 +202,7 @@ export function ShareMenu({
             <div className="flex flex-col items-center">
               <FacebookShareButton
                 url={shareableUrl}
-                onClick={() => handleSocialShare('facebook')}
+                onClick={() => handleSocialShare("facebook")}
               >
                 <FacebookIcon size={48} round />
                 <span className="mt-1 text-xs text-gray-600">Facebook</span>
@@ -214,7 +214,7 @@ export function ShareMenu({
               <a
                 href={`mailto:?subject=Race Photo&body=Check out this race photo: ${shareableUrl}`}
                 className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-600"
-                onClick={() => handleSocialShare('email')}
+                onClick={() => handleSocialShare("email")}
               >
                 <svg
                   className="h-6 w-6 text-white"
@@ -241,7 +241,7 @@ export function ShareMenu({
               <TwitterShareButton
                 url={shareableUrl}
                 title="Check out this race photo!"
-                onClick={() => handleSocialShare('twitter')}
+                onClick={() => handleSocialShare("twitter")}
               >
                 <TwitterIcon size={48} round />
                 <span className="mt-1 text-xs text-gray-600">X (Twitter)</span>
@@ -250,9 +250,9 @@ export function ShareMenu({
 
             {/* Pinterest */}
             <div className="flex flex-col items-center">
-              <div 
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-red-600 cursor-pointer"
-                onClick={() => handleSocialShare('pinterest')}
+              <div
+                className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-red-600"
+                onClick={() => handleSocialShare("pinterest")}
               >
                 <svg
                   className="h-6 w-6 text-white"
@@ -270,7 +270,7 @@ export function ShareMenu({
               <ThreadsShareButton
                 url={shareableUrl}
                 title="Check out this race photo!"
-                onClick={() => handleSocialShare('threads')}
+                onClick={() => handleSocialShare("threads")}
               >
                 <ThreadsIcon size={48} round />
                 <span className="mt-1 text-xs text-gray-600">Threads</span>
