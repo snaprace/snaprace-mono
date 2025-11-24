@@ -32,6 +32,16 @@ export function MasonryImage(
     );
   };
 
+  const instagramHandle = customPhoto.instagramHandle;
+  const displayHandle = instagramHandle
+    ? instagramHandle.startsWith("@")
+      ? instagramHandle
+      : `@${instagramHandle}`
+    : null;
+  const instagramUrl = instagramHandle
+    ? `https://www.instagram.com/${instagramHandle.replace("@", "")}/`
+    : null;
+
   return (
     <div
       id={`photo-${customPhoto.pid}`}
@@ -85,6 +95,21 @@ export function MasonryImage(
           </button>
         </ShareDialog>
       </div>
+
+      {/* Instagram Handle */}
+      {displayHandle && instagramUrl && (
+        <div className="absolute bottom-3 left-3 z-20">
+          <a
+            href={instagramUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-xs font-medium text-white/90 drop-shadow-md transition-colors duration-200 ease-in-out hover:text-white"
+          >
+            {displayHandle}
+          </a>
+        </div>
+      )}
 
       {customPhoto.isSelfieMatch && (
         <div className="absolute top-2 left-2 z-10">

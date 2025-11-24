@@ -18,25 +18,28 @@ export type Database = {
         Row: {
           created_at: string
           event_id: string
+          instagram_handle: string
           note: string | null
+          photo_link: string
           photographer_id: string
-          role: string | null
           sort_order: number | null
         }
         Insert: {
           created_at?: string
           event_id: string
+          instagram_handle: string
           note?: string | null
+          photo_link: string
           photographer_id: string
-          role?: string | null
           sort_order?: number | null
         }
         Update: {
           created_at?: string
           event_id?: string
+          instagram_handle?: string
           note?: string | null
+          photo_link?: string
           photographer_id?: string
-          role?: string | null
           sort_order?: number | null
         }
         Relationships: [
@@ -207,42 +210,24 @@ export type Database = {
       photographers: {
         Row: {
           active: boolean
-          bio: string | null
           created_at: string
-          display_name: string | null
-          email: string | null
           instagram_handle: string | null
           name: string
           photographer_id: string
-          profile_image_url: string | null
-          social_links: Json | null
-          website_url: string | null
         }
         Insert: {
           active?: boolean
-          bio?: string | null
           created_at?: string
-          display_name?: string | null
-          email?: string | null
           instagram_handle?: string | null
           name: string
           photographer_id: string
-          profile_image_url?: string | null
-          social_links?: Json | null
-          website_url?: string | null
         }
         Update: {
           active?: boolean
-          bio?: string | null
           created_at?: string
-          display_name?: string | null
-          email?: string | null
           instagram_handle?: string | null
           name?: string
           photographer_id?: string
-          profile_image_url?: string | null
-          social_links?: Json | null
-          website_url?: string | null
         }
         Relationships: []
       }

@@ -55,7 +55,7 @@ export const handler = async (
         new SearchFacesByImageCommand({
           CollectionId: collectionId,
           Image: { Bytes: imageBuffer },
-          FaceMatchThreshold: 80,
+          FaceMatchThreshold: 85,
           MaxFaces: 50,
         })
       )
