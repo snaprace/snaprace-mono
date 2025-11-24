@@ -1,19 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@repo/supabase";
 import { Input } from "@/components/ui/input";
 import { SearchModal } from "./SearchModal";
-import { api } from "@/trpc/react";
 import { useEventStats } from "@/hooks/events/useEventStats";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function EventHeader({ event }: { event: Tables<"events"> }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [searchBib, setSearchBib] = useState("");
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
@@ -29,16 +29,24 @@ export function EventHeader({ event }: { event: Tables<"events"> }) {
     event.organizer_id,
   );
 
+  const handleBack = () => {
+    if (pathname.includes(`/events/${event.event_id}/${searchBib.trim()}`)) {
+      router.push(`/events/${event.event_id}`);
+    } else {
+      router.push("/events");
+    }
+  };
+
   return (
     <header className="bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-30 flex h-16 items-center border-b backdrop-blur md:h-18">
       <div className="container mx-auto flex items-center justify-between px-1 md:px-4">
         <Button
           variant="ghost"
           className="flex items-center gap-2"
-          onClick={() => router.push("/events")}
+          onClick={handleBack}
         >
           <ArrowLeft className="h-4 w-4" />
-          <span className="hidden md:inline">Back to Events</span>
+          <span className="hidden md:inline">Back</span>
         </Button>
 
         <div className="flex-1 text-center">

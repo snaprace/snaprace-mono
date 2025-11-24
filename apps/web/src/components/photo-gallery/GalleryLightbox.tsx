@@ -1,15 +1,25 @@
 import React from "react";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
-import { ArrowLeftIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import {
+  ArrowDownToLine,
+  ArrowLeftIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  Forward,
+} from "lucide-react";
 import NextJsImage from "./NextJsImage";
 import type { Photo } from "@/hooks/photos/usePhotoGallery";
+import { useImageDownloader } from "@/hooks/useImageDownloader";
+import { ShareDialog } from "@/components/ShareDialog";
 
 // Extend module definition for Lightbox
 declare module "yet-another-react-lightbox" {
   interface GenericSlide {
     id?: string;
     blurDataURL?: string;
+    eventId?: string;
+    organizerId?: string;
   }
 }
 
@@ -34,6 +44,21 @@ export function GalleryLightbox({
   onView,
   isMobile,
 }: GalleryLightboxProps) {
+  const { downloadImage } = useImageDownloader({ isMobile });
+  const currentPhoto = photos[index];
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (currentPhoto) {
+      // Extract ULID from key (format: <ulid>.jpg or folder/<ulid>.jpg)
+      const ulid =
+        currentPhoto.id.split("/").pop()?.split(".")[0] ?? currentPhoto.id;
+      await downloadImage(
+        currentPhoto.src,
+        `${currentPhoto.organizerId}-${currentPhoto.eventId}-${ulid}.jpg`,
+      );
+    }
+  };
+
   return (
     <Lightbox
       open={open}
@@ -48,6 +73,8 @@ export function GalleryLightbox({
         height: photo.height,
         id: photo.id,
         blurDataURL: photo.blurDataURL,
+        eventId: photo.eventId,
+        organizerId: photo.organizerId,
       }))}
       render={{
         slide: NextJsImage,
@@ -153,6 +180,41 @@ export function GalleryLightbox({
           >
             <ArrowLeftIcon size={22} strokeWidth={1.5} />
           </button>,
+          <div
+            key="actions"
+            className="flex gap-2"
+            style={{
+              position: "fixed",
+              top: 20,
+              right: isMobile ? 16 : 40,
+              zIndex: 1000,
+            }}
+          >
+            <button
+              className="flex h-10 w-10 cursor-pointer items-center justify-center text-gray-400"
+              onClick={handleDownload}
+            >
+              <ArrowDownToLine size={24} strokeWidth={1.5} />
+            </button>
+            {currentPhoto && (
+              <ShareDialog
+                photoUrl={currentPhoto.src}
+                filename={`${currentPhoto.organizerId}-${currentPhoto.eventId}-${currentPhoto.id.split("/").pop()?.split(".")[0] ?? currentPhoto.id}.jpg`}
+                isMobile={isMobile}
+                shareOptions={{
+                  eventId: currentPhoto.eventId,
+                  organizerId: currentPhoto.organizerId,
+                }}
+              >
+                <button
+                  className="flex h-10 w-10 cursor-pointer items-center justify-center text-gray-400"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Forward size={24} strokeWidth={1.5} />
+                </button>
+              </ShareDialog>
+            )}
+          </div>,
         ],
       }}
     />

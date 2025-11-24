@@ -5,7 +5,6 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { usePhotoGallery, type Photo } from "@/hooks/photos/usePhotoGallery";
 import { useIsMobile } from "@/hooks/useMobile";
 import { GalleryGrid, GalleryLightbox } from "@/components/photo-gallery";
-import { toast } from "sonner";
 
 interface PhotoGalleryProps {
   eventId: string;

@@ -10,6 +10,8 @@ export type Photo = {
   blurDataURL?: string;
   isSelfieMatch?: boolean;
   similarity?: number;
+  eventId: string;
+  organizerId: string;
 };
 
 interface UsePhotoGalleryProps {
@@ -60,10 +62,12 @@ export function usePhotoGallery({
           width: item.width,
           height: item.height,
           blurDataURL: getBlurDataURL(item.thumbHash),
+          eventId,
+          organizerId,
         })),
       ) ?? []
     );
-  }, [data]);
+  }, [data, eventId, organizerId]);
 
   return {
     photos,

@@ -7,7 +7,7 @@ export function EventCardSkeleton() {
   return (
     <div className="text-center">
       {/* Event Image Skeleton */}
-      <Skeleton className="relative mb-4 aspect-[4/3] w-full rounded-none" />
+      <Skeleton className="relative mb-4 aspect-4/3 w-full rounded-none" />
 
       {/* Event Info Skeleton */}
       <div className="space-y-2">
@@ -56,7 +56,7 @@ export function PhotoGridSkeleton({ count = 8 }: { count?: number }) {
 
       {/* Main Photo Display Skeleton */}
       <div className="mx-auto max-w-4xl">
-        <Skeleton className="relative mb-6 aspect-[4/3]" />
+        <Skeleton className="relative mb-6 aspect-4/3" />
 
         {/* Photo Thumbnails Skeleton */}
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
@@ -75,19 +75,19 @@ export function MasonryPhotoSkeleton({ count = 12 }: { count?: number }) {
   return (
     <div className="mx-auto mt-4">
       <div
-        className="masonry-skeleton-grid gap-2"
+        className="masonry-skeleton-grid"
         style={{
           columnCount: isMobile ? 2 : 4,
-          columnGap: "8px",
+          columnGap: "3px",
         }}
       >
         {Array.from({ length: count }).map((_, index) => (
           <div
             key={index}
-            className="masonry-item mb-2 break-inside-avoid"
+            className="masonry-item break-inside-avoid"
             style={{
-              display: "inline-block",
               width: "100%",
+              marginBottom: "3px",
             }}
           >
             <Skeleton

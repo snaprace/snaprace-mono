@@ -47,6 +47,8 @@ export function SearchSelfieSection({
           height: p.height || 0,
           isSelfieMatch: true,
           similarity: p.similarity,
+          eventId,
+          organizerId,
         }));
 
         onPhotosFound(mappedPhotos);

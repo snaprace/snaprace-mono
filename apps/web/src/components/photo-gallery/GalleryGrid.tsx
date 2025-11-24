@@ -41,7 +41,7 @@ export function GalleryGrid({
       <MasonryPhotoAlbum
         photos={photos}
         columns={columns}
-        spacing={2}
+        spacing={3}
         render={{ image: MasonryImage }}
         onClick={({ index }) => onPhotoClick(index)}
       />
@@ -55,4 +55,3 @@ export function GalleryGrid({
     </div>
   );
 }
-
