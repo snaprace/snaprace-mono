@@ -5,11 +5,26 @@ import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
+import { trackEvent } from "@/lib/analytics";
 
 export function JingleBellBanner() {
   const handleCopy = () => {
+    trackEvent("jingle_bell_promo_copy", {
+      event_category: "engagement",
+      event_label: "JINGLE2025",
+      promo_code: "JINGLE2025",
+    });
     void navigator.clipboard.writeText("JINGLE2025").then(() => {
       toast.success("Promo code copied to clipboard!");
+    });
+  };
+
+  const handleRegisterClick = () => {
+    trackEvent("jingle_bell_register_click", {
+      event_category: "conversion",
+      event_label: "hoboken_jingle_bell_5k",
+      destination_url:
+        "https://runsignup.com/Race/NJ/Hoboken/HobokenJingleBell5K",
     });
   };
 
@@ -95,6 +110,7 @@ export function JingleBellBanner() {
           <Link
             href="https://runsignup.com/Race/NJ/Hoboken/HobokenJingleBell5K"
             target="_blank"
+            onClick={handleRegisterClick}
             className="group relative inline-flex items-center gap-2 rounded-full bg-yellow-400 px-6 py-3 font-bold text-black shadow-lg shadow-yellow-900/30 transition-all hover:-translate-y-0.5 hover:bg-yellow-500 hover:shadow-yellow-500/40 focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-yellow-900 focus:outline-none"
           >
             <motion.div
