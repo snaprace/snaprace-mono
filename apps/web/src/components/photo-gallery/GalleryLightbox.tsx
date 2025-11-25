@@ -204,7 +204,7 @@ export function GalleryLightbox({
               className="flex h-10 w-10 cursor-pointer items-center justify-center text-gray-400"
               onClick={handleDownload}
             >
-              <ArrowDownToLine size={24} strokeWidth={1.5} />
+              <ArrowDownToLine size={18} strokeWidth={1.5} />
             </button>
             {currentPhoto && (
               <ShareDialog
@@ -221,7 +221,7 @@ export function GalleryLightbox({
                   className="flex h-10 w-10 cursor-pointer items-center justify-center text-gray-400"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <Forward size={24} strokeWidth={1.5} />
+                  <Forward size={18} strokeWidth={1.5} />
                 </button>
               </ShareDialog>
             )}

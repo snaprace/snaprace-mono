@@ -343,6 +343,16 @@ export class ImageRekognitionStack extends cdk.Stack {
         confidence: 0,
       }),
     });
+    // Rekognition 처리량 초과 에러에 대한 강화된 재시도 설정
+    detectTextTask.addRetry({
+      maxAttempts: 3,
+      backoffRate: 2.5,
+      interval: cdk.Duration.seconds(3),
+      maxDelay: cdk.Duration.seconds(60),
+      jitterStrategy: sfn.JitterType.FULL, // 랜덤 지터로 동시 재시도 분산
+      errors: ["ProvisionedThroughputExceededException", "ThrottlingException"],
+    });
+    // 기타 에러에 대한 일반 재시도
     detectTextTask.addRetry({
       maxAttempts: 2,
       backoffRate: 2.0,
@@ -357,8 +367,18 @@ export class ImageRekognitionStack extends cdk.Stack {
         faceCount: 0,
       }),
     });
+    // Rekognition 처리량 초과 에러에 대한 강화된 재시도 설정
     indexFacesTask.addRetry({
-      maxAttempts: 2,
+      maxAttempts: 3,
+      backoffRate: 2.5,
+      interval: cdk.Duration.seconds(3),
+      maxDelay: cdk.Duration.seconds(60),
+      jitterStrategy: sfn.JitterType.FULL, // 랜덤 지터로 동시 재시도 분산
+      errors: ["ProvisionedThroughputExceededException", "ThrottlingException"],
+    });
+    // 기타 에러에 대한 일반 재시도
+    indexFacesTask.addRetry({
+      maxAttempts: 3,
       backoffRate: 2.0,
       interval: cdk.Duration.seconds(1),
     });
@@ -428,6 +448,10 @@ export class ImageRekognitionStack extends cdk.Stack {
     // ===================================
     // Lambda: SfnTrigger
     // ===================================
+    // Rekognition API 기본 한도: DetectText 5 TPS, IndexFaces 5-25 TPS
+    // Step Functions에서 병렬 호출하므로 병목은 DetectText 5 TPS
+    // 이미지 1장 처리 ~3-5초 가정 → 동시 10개면 초당 ~2-3개 완료
+    // 안전 마진 포함하여 maxConcurrency: 10 설정 (피크 시 재시도로 커버)
     this.sfnTriggerFn = new NodejsFunction(this, "SfnTriggerFunction", {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: "handler",
@@ -439,10 +463,19 @@ export class ImageRekognitionStack extends cdk.Stack {
         STATE_MACHINE_ARN: this.stateMachine.stateMachineArn,
         IMAGE_BUCKET: this.imageBucket.bucketName,
       },
+      // reservedConcurrentExecutions 제거: SQS maxConcurrency로 제어
+      // reserved는 계정 전체 동시성 풀에서 차감되므로 비효율적
     });
 
     // SQS -> SfnTrigger Lambda 이벤트 소스
-    this.sfnTriggerFn.addEventSource(new SqsEventSource(imageUploadQueue));
+    // 속도 vs 안정성 최적화 설정
+    this.sfnTriggerFn.addEventSource(
+      new SqsEventSource(imageUploadQueue, {
+        batchSize: 1, // 1개씩 처리 (Step Functions 실행 정밀 제어)
+        maxBatchingWindow: cdk.Duration.seconds(1), // 빠른 시작을 위해 1초로 단축
+        maxConcurrency: 10, // 동시 10개 Step Functions (Rekognition 5 TPS 고려, 재시도 버퍼 포함)
+      })
+    );
 
     // 권한: Step Functions 실행 + 필요한 S3 메타데이터/태그 접근
     this.stateMachine.grantStartExecution(this.sfnTriggerFn);
@@ -502,7 +535,6 @@ export class ImageRekognitionStack extends cdk.Stack {
       })
     );
 
-    
     // Grant DynamoDB read permissions
     this.photoServiceTable.grantReadData(this.searchBySelfieFn);
 

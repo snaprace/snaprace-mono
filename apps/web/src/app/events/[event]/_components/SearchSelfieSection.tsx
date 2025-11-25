@@ -22,6 +22,7 @@ import {
   storeFacialRecognitionConsent,
   hasFacialRecognitionConsent,
 } from "@/lib/consent-storage";
+import { Info } from "lucide-react";
 
 interface SearchSelfieSectionProps {
   eventId: string;
@@ -334,7 +335,7 @@ export function SearchSelfieSection({
             {showNoMatches || hasError ? (
               <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800 dark:border-yellow-800/80 dark:bg-yellow-900/20 dark:text-yellow-200">
                 <div className="flex items-start gap-2">
-                  <span className="mt-0.5 text-lg">!</span>
+                  <Info size={16} className="my-auto" />
                   <div className="space-y-1">
                     <p className="font-medium">
                       {hasError ? "Processing Error" : "No matches found"}
