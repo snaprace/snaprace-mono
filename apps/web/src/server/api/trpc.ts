@@ -11,6 +11,8 @@ import superjson from "superjson";
 import { ZodError } from "zod";
 
 import { auth } from "@/server/auth";
+import { createServerClient } from "@repo/supabase";
+import { env } from "@/env";
 
 /**
  * 1. CONTEXT
@@ -27,6 +29,11 @@ import { auth } from "@/server/auth";
 export const createTRPCContext = async (opts: { headers: Headers }) => {
   const session = await auth();
 
+  const supabase = createServerClient(
+    env.SUPABASE_URL,
+    env.SUPABASE_ANON_KEY,
+  );
+
   // Extract organization subdomain from headers (set by middleware)
   const subdomain = opts.headers.get("x-organization") || null;
 
@@ -40,26 +47,14 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
   // If subdomain exists, fetch organization ID for automatic filtering
   if (subdomain) {
     try {
-      // Import dynamically to avoid circular dependency
-      const { dynamoClient } = await import("@/lib/dynamodb");
-      const { QueryCommand } = await import("@aws-sdk/lib-dynamodb");
-      const { env } = await import("@/env");
+      const { data } = await supabase
+        .from("organizers")
+        .select("organizer_id")
+        .eq("subdomain", subdomain)
+        .single();
 
-      const command = new QueryCommand({
-        TableName: env.DYNAMO_ORGANIZATIONS_TABLE,
-        IndexName: "subdomain-index",
-        KeyConditionExpression: "subdomain = :subdomain",
-        ExpressionAttributeValues: {
-          ":subdomain": subdomain,
-        },
-        Limit: 1,
-      });
-
-      const result = await dynamoClient.send(command);
-      const item = result.Items?.[0];
-
-      if (item?.organization_id) {
-        organizationContext.organizationId = item.organization_id as string;
+      if (data?.organizer_id) {
+        organizationContext.organizationId = data.organizer_id;
       }
     } catch (error) {
       console.error("Failed to fetch organization in tRPC context:", error);
@@ -68,6 +63,7 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
 
   return {
     session,
+    supabase,
     ...organizationContext,
     ...opts,
   };
@@ -168,3 +164,5 @@ export const protectedProcedure = t.procedure
       },
     });
   });
+
+export type Context = Awaited<ReturnType<typeof createTRPCContext>>;

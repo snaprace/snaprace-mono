@@ -1,0 +1,19 @@
+{
+  "name": "@repo/scripts",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "import-runners": "tsx event-runners/import-runners.ts"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "yargs": "^17.7.0",
+    "dotenv": "^16.3.0",
+    "@supabase/supabase-js": "^2.38.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0",
+    "@types/node": "^20.0.0",
+    "@types/yargs": "^17.0.0"
+  }
+}

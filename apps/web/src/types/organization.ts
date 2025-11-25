@@ -1,73 +1,50 @@
 import { z } from "zod";
+import type { Database } from "@repo/supabase";
 
-// Branding schema
-const BrandingSchema = z.object({
-  primary_color: z
-    .string()
-    .regex(/^#[0-9A-F]{6}$/i)
-    .optional(),
-  secondary_color: z
-    .string()
-    .regex(/^#[0-9A-F]{6}$/i)
-    .optional(),
-  logo_url: z.string().optional(),
+// Use the generated type from Supabase
+export type Organization = Database["public"]["Tables"]["organizers"]["Row"];
+
+// Define Zod schema for runtime validation if needed (optional, but good for API inputs)
+// Since we are using the DB type directly, we might not need a full Zod schema for the output 
+// unless we want to validate the JSON fields structure.
+
+// Branding Meta Schema
+const BrandingMetaSchema = z.object({
+  branding: z.object({
+    primaryColor: z.string().optional(),
+    secondaryColor: z.string().optional(),
+    logoUrl: z.string().optional(),
+  }).optional(),
+  content: z.object({
+    welcomeMessage: z.string().optional(),
+  }).optional(),
+  info: z.object({
+    email: z.string().optional(),
+    phone: z.string().optional(),
+    websiteUrl: z.string().optional(),
+    address: z.string().optional(),
+  }).optional(),
+  social: z.object({
+    facebook: z.string().optional(),
+    instagram: z.string().optional(),
+    twitter: z.string().optional(),
+    linkedin: z.string().optional(),
+    youtube: z.string().optional(),
+  }).optional(),
+  partners: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    siteUrl: z.string().optional(),
+    order: z.number().optional(),
+    imageUrl: z.string().optional(),
+  })).optional(),
 });
 
-// Content schema
-const ContentSchema = z.object({
-  welcome_message: z.string().max(500).optional(),
-});
-
-// Contact schema
-const ContactSchema = z.object({
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
-  website_url: z.string().optional(),
-  address: z.string().optional(),
-});
-
-// Social schema
-const SocialSchema = z.object({
-  facebook: z.string().optional(),
-  instagram: z.string().optional(),
-  twitter: z.string().optional(),
-  linkedin: z.string().optional(),
-  youtube: z.string().optional(),
-});
-
-// Partner schema
-const PartnerSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  website_url: z.string().optional(),
-  display_order: z.number().default(0),
-});
-
-// Features schema
-const FeaturesSchema = z.object({
-  enable_facial_recognition: z.boolean().default(false),
-  enable_bulk_download: z.boolean().default(true),
-});
-
-// Organization schema - 새로운 구조
 export const OrganizationSchema = z.object({
-  // Core fields
-  organization_id: z.string(),
-  subdomain: z.string(),
+  organizer_id: z.string(),
   name: z.string(),
-
-  // Grouped fields
-  branding: BrandingSchema.default({}),
-  content: ContentSchema.default({}),
-  contact: ContactSchema.default({}),
-  social: SocialSchema.default({}),
-  partners: z.array(PartnerSchema).default([]),
-  features: FeaturesSchema.default({}),
-
-  // Metadata
-  status: z.enum(["active", "inactive", "trial"]).default("active"),
-  created_at: z.string().datetime().optional(),
-  updated_at: z.string().datetime().optional(),
+  subdomain: z.string(),
+  active: z.boolean(),
+  branding_meta: BrandingMetaSchema.nullable(),
+  created_at: z.string().nullable(),
 });
-
-export type Organization = z.infer<typeof OrganizationSchema>;

@@ -31,6 +31,7 @@ import {
 } from "@/lib/analytics";
 
 interface ShareDialogProps {
+  pid: string;
   photoUrl: string;
   filename: string;
   isMobile: boolean;
@@ -44,6 +45,7 @@ interface ShareDialogProps {
 }
 
 export function ShareDialog({
+  pid,
   photoUrl,
   filename,
   isMobile,
@@ -51,7 +53,7 @@ export function ShareDialog({
   shareOptions,
 }: ShareDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const shareableUrl = generateShareablePhotoUrl(photoUrl, shareOptions);
+  const shareableUrl = generateShareablePhotoUrl(pid, shareOptions);
 
   // Extract analytics parameters
   const eventId = shareOptions?.eventId || "";
@@ -128,8 +130,10 @@ export function ShareDialog({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent
-        className="max-w-sm sm:max-w-md"
+        className="z-2000 max-w-sm sm:max-w-md"
+        overlayClassName="z-2000"
         onClick={(e) => e.stopPropagation()}
+        aria-describedby={undefined}
       >
         <DialogHeader>
           <DialogTitle className="text-center font-medium text-gray-900">

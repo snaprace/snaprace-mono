@@ -16,6 +16,16 @@ import { getRowNumber } from "@/utils/video";
 import { YouTubePlayer } from "./YouTubePlayer";
 import { VideoError } from "./VideoError";
 
+// TODO: Define strict type for finishline_video_info in Supabase schema
+interface FinishVideoInfo {
+  url: string;
+  status: string;
+  thumbnail?: string;
+  rewindSeconds: number;
+  firstParticipantGunTime: number;
+  firstParticipantVideoTime: number;
+}
+
 interface FinishVideoProps {
   event: Event;
   timingDetail: BibDetailResponse | null;
@@ -30,7 +40,7 @@ interface FinishVideoProps {
  * @returns 비디오 시작 시간 (초)
  */
 function calculateVideoStartTime(
-  videoInfo: NonNullable<Event["finishline_video_info"]>,
+  videoInfo: FinishVideoInfo,
   timingDetail: BibDetailResponse | null,
   isAllPhotos: boolean,
 ): number {
@@ -65,20 +75,23 @@ export function FinishVideo({
 }: FinishVideoProps) {
   const [hasError, setHasError] = useState(false);
 
-  const videoInfo = event.finishline_video_info;
+  // Cast to known type since Supabase types might be loosely defined for JSON columns
+  // const videoInfo = event.finishline_video_info as unknown as
+  //   | FinishVideoInfo
+  //   | undefined;
 
-  // Calculate video start time
-  const startTime = useMemo(() => {
-    if (!videoInfo?.status || videoInfo.status !== "enabled") {
-      return 0;
-    }
-    return calculateVideoStartTime(videoInfo, timingDetail, isAllPhotos);
-  }, [videoInfo, timingDetail, isAllPhotos]);
+  // // Calculate video start time
+  // const startTime = useMemo(() => {
+  //   if (!videoInfo?.status || videoInfo.status !== "enabled") {
+  //     return 0;
+  //   }
+  //   return calculateVideoStartTime(videoInfo, timingDetail, isAllPhotos);
+  // }, [videoInfo, timingDetail, isAllPhotos]);
 
-  // Don't render if video info doesn't exist or is disabled
-  if (!videoInfo?.status || videoInfo.status !== "enabled") {
-    return null;
-  }
+  // // Don't render if video info doesn't exist or is disabled
+  // if (!videoInfo?.status || videoInfo.status !== "enabled") {
+  //   return null;
+  // }
 
   const handleError = () => {
     setHasError(true);
@@ -109,15 +122,14 @@ export function FinishVideo({
               <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
                 {hasError ? (
                   <VideoError onRetry={handleRetry} />
-                ) : (
-                  <YouTubePlayer
-                    url={videoInfo.url}
-                    startTime={startTime}
-                    thumbnail={videoInfo.thumbnail}
-                    onReady={handleReady}
-                    onError={handleError}
-                  />
-                )}
+                ) : // <YouTubePlayer
+                //   url={videoInfo.url}
+                //   startTime={startTime}
+                //   thumbnail={videoInfo.thumbnail}
+                //   onReady={handleReady}
+                //   onError={handleError}
+                // />
+                null}
               </div>
             </div>
           </AccordionContent>

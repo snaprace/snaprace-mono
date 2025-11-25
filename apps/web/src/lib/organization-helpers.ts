@@ -1,12 +1,48 @@
 import type { Organization } from "@/types/organization";
 import { getOrganizationAssets } from "@/utils/organization-assets";
 
+// Helper interface to match the structure of branding_meta
+interface BrandingMeta {
+  branding?: {
+    primaryColor?: string;
+    secondaryColor?: string;
+    logoUrl?: string;
+  };
+  content?: {
+    welcomeMessage?: string;
+  };
+  info?: {
+    email?: string;
+    phone?: string;
+    websiteUrl?: string;
+    address?: string;
+  };
+  social?: {
+    facebook?: string;
+    instagram?: string;
+    twitter?: string;
+    linkedin?: string;
+    youtube?: string;
+  };
+  partners?: Array<{
+    id: string;
+    name: string;
+    siteUrl?: string;
+    order?: number;
+    imageUrl?: string;
+  }>;
+}
+
 export class OrganizationHelper {
-  constructor(private org: Organization | null) {}
+  private meta: BrandingMeta;
+
+  constructor(private org: Organization | null) {
+    this.meta = (org?.branding_meta as BrandingMeta) || {};
+  }
 
   // Basic information
   get id() {
-    return this.org?.organization_id;
+    return this.org?.organizer_id;
   }
 
   get name() {
@@ -18,22 +54,22 @@ export class OrganizationHelper {
   }
 
   get isActive() {
-    return this.org?.status === "active";
+    return this.org?.active === true;
   }
 
   // Branding
   get primaryColor() {
-    return this.org?.branding?.primary_color;
+    return this.meta.branding?.primaryColor;
   }
 
   get secondaryColor() {
-    return this.org?.branding?.secondary_color;
+    return this.meta.branding?.secondaryColor;
   }
 
   get logoUrl() {
     // Use provided logo_url or fall back to convention
-    if (this.org?.branding?.logo_url) {
-      return this.org.branding.logo_url;
+    if (this.meta.branding?.logoUrl) {
+      return this.meta.branding.logoUrl;
     }
 
     // Fallback to local path convention
@@ -55,7 +91,7 @@ export class OrganizationHelper {
   // Content
   get welcomeMessage() {
     return (
-      this.org?.content?.welcome_message ||
+      this.meta.content?.welcomeMessage ||
       "Enter your bib number to discover all your photos."
     );
   }
@@ -66,12 +102,18 @@ export class OrganizationHelper {
 
   // Partners
   get partners() {
-    const partners = this.org?.partners || [];
+    const partners = this.meta.partners || [];
 
-    // Sort by display_order
+    // Sort by display_order (order)
     return [...partners].sort(
-      (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0),
-    );
+      (a, b) => (a.order ?? 0) - (b.order ?? 0),
+    ).map(p => ({
+      id: p.id,
+      name: p.name,
+      website_url: p.siteUrl,
+      display_order: p.order,
+      // Map other fields if necessary for frontend
+    }));
   }
 
   getPartnerImageUrl(partner: { name: string }): string {
@@ -80,8 +122,13 @@ export class OrganizationHelper {
   }
 
   // Features
-  isFeatureEnabled(feature: keyof Organization["features"]): boolean {
-    return this.org?.features?.[feature] ?? false;
+  isFeatureEnabled(feature: string): boolean {
+    // Currently features are not in the DB schema explicitly, 
+    // assuming defaults or if added to branding_meta later.
+    // For now, hardcode based on previous defaults:
+    if (feature === "enable_facial_recognition") return false;
+    if (feature === "enable_bulk_download") return true;
+    return false;
   }
 
   get enableFacialRecognition() {
@@ -95,28 +142,28 @@ export class OrganizationHelper {
   // Contact
   get contactEmail() {
     if (this.subdomain) {
-      return this.org?.contact?.email;
+      return this.meta.info?.email;
     }
     return "snaprace.info@gmail.com";
   }
 
   get contactPhone() {
-    return this.org?.contact?.phone;
+    return this.meta.info?.phone;
   }
 
   get websiteUrl() {
-    return this.org?.contact?.website_url;
+    return this.meta.info?.websiteUrl;
   }
 
   get address() {
-    return this.org?.contact?.address;
+    return this.meta.info?.address;
   }
 
   // Social Media
   getSocialUrl(
     platform: "facebook" | "instagram" | "twitter" | "linkedin" | "youtube",
   ): string | undefined {
-    return this.org?.social?.[platform];
+    return this.meta.social?.[platform];
   }
 
   get socialLinks() {
@@ -135,7 +182,7 @@ export class OrganizationHelper {
 
   // Metadata
   get status() {
-    return this.org?.status || "active";
+    return this.org?.active ? "active" : "inactive";
   }
 
   get createdAt() {
@@ -143,7 +190,8 @@ export class OrganizationHelper {
   }
 
   get updatedAt() {
-    return this.org?.updated_at;
+    // updated_at is not in the current schema, return null or created_at
+    return this.org?.created_at;
   }
 
   // Utility methods

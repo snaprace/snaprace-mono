@@ -1,5 +1,4 @@
-import { dynamoClient } from "@/lib/dynamodb";
-import { QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { createServerClient } from "@repo/supabase";
 import { env } from "@/env";
 import type { Organization } from "@/server/api/routers/organizations";
 
@@ -8,25 +7,24 @@ export async function getOrganizationBySubdomain(
 ): Promise<Organization | null> {
   if (!subdomain) return null;
 
+  const supabase = createServerClient(
+    env.SUPABASE_URL,
+    env.SUPABASE_ANON_KEY
+  );
+
   try {
-    const command = new QueryCommand({
-      TableName: env.DYNAMO_ORGANIZATIONS_TABLE,
-      IndexName: "subdomain-index",
-      KeyConditionExpression: "subdomain = :subdomain",
-      ExpressionAttributeValues: {
-        ":subdomain": subdomain,
-      },
-      Limit: 1,
-    });
+    const { data, error } = await supabase
+      .from("organizers")
+      .select("*")
+      .eq("subdomain", subdomain)
+      .single();
 
-    const result = await dynamoClient.send(command);
-    const item = result.Items?.[0];
-
-    if (!item) {
+    if (error || !data) {
+      // console.error("Error fetching organization by subdomain:", error);
       return null;
     }
 
-    return item as Organization;
+    return data;
   } catch (error) {
     console.error("Error fetching organization by subdomain:", error);
     return null;

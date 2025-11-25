@@ -1,0 +1,72 @@
+import { useMemo } from "react";
+import { api } from "@/trpc/react";
+import { getBlurDataURL } from "@/utils/thumbhash";
+import type { Photo as SharedPhoto } from "@/types/photo";
+
+export type Photo = SharedPhoto & {
+  src: string;
+  blurDataURL?: string;
+  isSelfieMatch?: boolean;
+  organizerId: string;
+};
+
+interface UsePhotoGalleryProps {
+  eventId: string;
+  organizerId: string;
+  bib?: string;
+}
+
+export function usePhotoGallery({
+  eventId,
+  organizerId,
+  bib,
+}: UsePhotoGalleryProps) {
+  const byEventQuery = api.photosV2.getByEvent.useInfiniteQuery(
+    {
+      organizerId,
+      eventId,
+      limit: 100,
+    },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+      enabled: !bib,
+    },
+  );
+
+  const byBibQuery = api.photosV2.getByBib.useInfiniteQuery(
+    {
+      organizerId,
+      eventId,
+      bibNumber: bib ?? "",
+      limit: 100,
+    },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+      enabled: !!bib,
+    },
+  );
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+    bib ? byBibQuery : byEventQuery;
+
+  const photos = useMemo(() => {
+    return (
+      data?.pages.flatMap((page) =>
+        page.items.map((item) => ({
+          ...item,
+          src: item.url,
+          blurDataURL: getBlurDataURL(item.thumbHash ?? undefined),
+          organizerId: item.orgId,
+        })),
+      ) ?? []
+    );
+  }, [data]);
+
+  return {
+    photos,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+  };
+}

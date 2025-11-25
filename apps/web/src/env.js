@@ -22,6 +22,7 @@ export const env = createEnv({
     DYNAMO_RUNNERS_TABLE: z.string().optional(), // 스크립트 전용, 빌드 시 불필요
     DYNAMO_EVENT_PHOTOS_TABLE: z.string().optional(), // V2 Photo Processing
     DYNAMO_PHOTO_BIB_INDEX_TABLE: z.string().optional(), // V2 Photo Processing
+    DYNAMO_PHOTO_SERVICE_TABLE: z.string().optional(), // New Photo Service Table
     PHOTO_SEARCH_API_URL: z.string().optional(), // Photo Search API Gateway URL
     BUCKET: z.string(),
     // Auth.js (NextAuth) configuration
@@ -29,6 +30,11 @@ export const env = createEnv({
     AUTH_URL: z.string().url().optional(),
     // Crisp
     CRISP_WEBSITE_ID: z.string(),
+    // Supabase DB
+    SUPABASE_URL: z.string().url(),
+    SUPABASE_ANON_KEY: z.string(),
+    // Search by Selfie API
+    SEARCH_BY_SELFIE_FUNCTION_NAME: z.string(),
   },
 
   /**
@@ -60,7 +66,9 @@ export const env = createEnv({
     DYNAMO_RUNNERS_TABLE: process.env.DYNAMO_RUNNERS_TABLE,
     DYNAMO_EVENT_PHOTOS_TABLE: process.env.DYNAMO_EVENT_PHOTOS_TABLE,
     DYNAMO_PHOTO_BIB_INDEX_TABLE: process.env.DYNAMO_PHOTO_BIB_INDEX_TABLE,
+    DYNAMO_PHOTO_SERVICE_TABLE: process.env.DYNAMO_PHOTO_SERVICE_TABLE,
     PHOTO_SEARCH_API_URL: process.env.PHOTO_SEARCH_API_URL,
+    SEARCH_BY_SELFIE_FUNCTION_NAME: process.env.SEARCH_BY_SELFIE_FUNCTION_NAME,
     BUCKET: process.env.BUCKET,
     AUTH_SECRET: process.env.AUTH_SECRET,
     AUTH_URL: process.env.AUTH_URL,
@@ -69,6 +77,9 @@ export const env = createEnv({
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    // Supabase DB
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

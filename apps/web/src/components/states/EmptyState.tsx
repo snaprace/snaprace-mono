@@ -15,7 +15,7 @@ interface EmptyStateProps {
 
 export function EmptyState({ icon, title, message, action }: EmptyStateProps) {
   return (
-    <div className="py-16 text-center">
+    <div className="flex h-full flex-col items-center justify-center py-16 text-center">
       {icon && (
         <div className="mb-6 flex justify-center">
           <div className="bg-muted rounded-full p-4">{icon}</div>

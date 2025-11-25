@@ -12,6 +12,7 @@ declare module "@/env" {
     DYNAMO_TIMING_RESULTS_TABLE: string;
     DYNAMO_EVENT_PHOTOS_TABLE?: string;
     DYNAMO_PHOTO_BIB_INDEX_TABLE?: string;
+    DYNAMO_PHOTO_SERVICE_TABLE?: string;
     PHOTO_SEARCH_API_URL?: string;
     BUCKET: string;
     AUTH_SECRET: string;
@@ -19,5 +20,12 @@ declare module "@/env" {
     CRISP_WEBSITE_ID: string;
     GOOGLE_ANALYTICS_ID?: string;
     NEXT_PUBLIC_SITE_URL: string;
+    // Supabase DB
+    SUPABASE_URL: string;
+    SUPABASE_ANON_KEY: string;
+    NEXT_PUBLIC_SUPABASE_URL: string;
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: string;
+
+    SEARCH_BY_SELFIE_FUNCTION_NAME: string;
   };
 }

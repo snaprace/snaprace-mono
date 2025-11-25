@@ -4,6 +4,20 @@ export const ERROR_MESSAGES = {
   INTERNAL: "An unexpected error occurred.",
   BAD_REQUEST: "The request could not be processed.",
   NOT_FOUND: "The requested resource was not found.",
+  ORGANIZATION: {
+    NOT_FOUND: "Organization not found.",
+    FETCH_FAILED: "Failed to fetch organization data.",
+  },
+  EVENT: {
+    NOT_FOUND: "Event not found.",
+    FETCH_FAILED: "Failed to fetch event data.",
+    LIST_FAILED: "Failed to fetch events list.",
+  },
+  RESULTS: {
+    NOT_FOUND: "Results not found.",
+    FETCH_FAILED: "Failed to fetch race results.",
+    BIB_NOT_FOUND: "No timing results were found for the provided bib number.",
+  },
 };
 
 export const trpcError = {

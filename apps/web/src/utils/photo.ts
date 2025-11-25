@@ -60,7 +60,7 @@ export function findPhotoUrlById(
  * Supports optional organizer/event/bib query params.
  */
 export function generateShareablePhotoUrl(
-  photoUrl: string,
+  pid: string,
   optionsOrBase?:
     | string
     | {
@@ -71,8 +71,7 @@ export function generateShareablePhotoUrl(
       },
   legacyBaseUrl?: string,
 ): string {
-  const photoId = extractPhotoId(photoUrl);
-  const encodedId = encodePhotoId(photoId);
+  const encodedId = encodePhotoId(pid);
 
   // Backward-compatible parameter handling
   const options =
@@ -97,21 +96,21 @@ export function generateShareablePhotoUrl(
 
   // If eventId is provided, use the canonical /events/{eventId}/{bib}?pid={photoId} format
   if (evtId) {
-    const bibPath = bib && bib.length > 0 ? bib : "null";
+    const bibPath = bib && bib.length > 0 ? bib : "";
     const url = new URL(
-      `${base}/events/${evtId}/${bibPath}`,
+      `${base}/events/${evtId}${bibPath ? `/${bibPath}` : ""}`,
       base || "http://localhost",
     );
     url.searchParams.set("pid", encodedId);
 
     // For server-side without a real base, return path with query string
     if (!base) {
-      return `/events/${evtId}/${bibPath}?pid=${encodedId}`;
+      return `/events/${evtId}${bibPath ? `/${bibPath}` : ""}?pid=${encodedId}`;
     }
     return url.toString();
   }
 
-  // Fallback to /photo/{photoId} format for backward compatibility
+  // Fallback to /photo/{pid} format for backward compatibility
   const url = new URL(`${base}/photo/${encodedId}`, base || "http://localhost");
   const orgId = options?.organizerId ?? undefined;
   if (orgId) url.searchParams.set("organizerId", orgId);
@@ -477,4 +476,55 @@ export async function downloadPhotoEnhanced(
 
   // Desktop: use existing download logic
   return await downloadPhoto(photoUrl, filename);
+}
+
+/**
+ * Resize image for optimal upload performance
+ * Uses Canvas API to resize image in the browser before uploading
+ */
+export function resizeImage(
+  file: File,
+  options: { maxWidth: number; quality: number } = {
+    maxWidth: 1024,
+    quality: 0.8,
+  },
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        // Calculate new dimensions maintaining aspect ratio
+        if (width > options.maxWidth) {
+          height = (height * options.maxWidth) / width;
+          width = options.maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+          reject(new Error("Failed to get canvas context"));
+          return;
+        }
+
+        // Draw image on canvas
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert to base64 string with compression
+        // Always use jpeg for consistent compression, regardless of input type
+        const base64String = canvas.toDataURL("image/jpeg", options.quality);
+        resolve(base64String);
+      };
+      img.onerror = () => reject(new Error("Failed to load image"));
+    };
+    reader.onerror = () => reject(new Error("Failed to read file"));
+  });
 }

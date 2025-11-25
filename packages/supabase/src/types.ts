@@ -18,25 +18,28 @@ export type Database = {
         Row: {
           created_at: string
           event_id: string
+          instagram_handle: string
           note: string | null
+          photo_link: string
           photographer_id: string
-          role: string | null
           sort_order: number | null
         }
         Insert: {
           created_at?: string
           event_id: string
+          instagram_handle: string
           note?: string | null
+          photo_link: string
           photographer_id: string
-          role?: string | null
           sort_order?: number | null
         }
         Update: {
           created_at?: string
           event_id?: string
+          instagram_handle?: string
           note?: string | null
+          photo_link?: string
           photographer_id?: string
-          role?: string | null
           sort_order?: number | null
         }
         Relationships: [
@@ -59,36 +62,69 @@ export type Database = {
       event_runners: {
         Row: {
           age: number | null
-          bib_number: string
+          age_group: string | null
+          avg_pace_seconds: number | null
+          bib_number: number
+          chip_time_seconds: number | null
+          city: string | null
+          division_place: string | null
+          event_distance_km: number | null
+          event_distance_mi: number | null
           event_id: string
-          finish_time: string | null
+          event_slug: string | null
+          first_name: string | null
           gender: string | null
-          name: string | null
+          gun_time_seconds: number | null
+          last_name: string | null
+          overall_place: number | null
           source: string | null
-          team: string | null
-          timing_result: Json | null
+          source_payload: Json | null
+          start_time_seconds: number | null
+          state: string | null
         }
         Insert: {
           age?: number | null
-          bib_number: string
+          age_group?: string | null
+          avg_pace_seconds?: number | null
+          bib_number: number
+          chip_time_seconds?: number | null
+          city?: string | null
+          division_place?: string | null
+          event_distance_km?: number | null
+          event_distance_mi?: number | null
           event_id: string
-          finish_time?: string | null
+          event_slug?: string | null
+          first_name?: string | null
           gender?: string | null
-          name?: string | null
+          gun_time_seconds?: number | null
+          last_name?: string | null
+          overall_place?: number | null
           source?: string | null
-          team?: string | null
-          timing_result?: Json | null
+          source_payload?: Json | null
+          start_time_seconds?: number | null
+          state?: string | null
         }
         Update: {
           age?: number | null
-          bib_number?: string
+          age_group?: string | null
+          avg_pace_seconds?: number | null
+          bib_number?: number
+          chip_time_seconds?: number | null
+          city?: string | null
+          division_place?: string | null
+          event_distance_km?: number | null
+          event_distance_mi?: number | null
           event_id?: string
-          finish_time?: string | null
+          event_slug?: string | null
+          first_name?: string | null
           gender?: string | null
-          name?: string | null
+          gun_time_seconds?: number | null
+          last_name?: string | null
+          overall_place?: number | null
           source?: string | null
-          team?: string | null
-          timing_result?: Json | null
+          source_payload?: Json | null
+          start_time_seconds?: number | null
+          state?: string | null
         }
         Relationships: [
           {
@@ -110,8 +146,7 @@ export type Database = {
           name: string
           organizer_id: string
           participant_count: number | null
-          photos_meta: Json | null
-          results_integration: Json | null
+          partners: Json | null
           thumbnail_image: string | null
         }
         Insert: {
@@ -123,8 +158,7 @@ export type Database = {
           name: string
           organizer_id: string
           participant_count?: number | null
-          photos_meta?: Json | null
-          results_integration?: Json | null
+          partners?: Json | null
           thumbnail_image?: string | null
         }
         Update: {
@@ -136,8 +170,7 @@ export type Database = {
           name?: string
           organizer_id?: string
           participant_count?: number | null
-          photos_meta?: Json | null
-          results_integration?: Json | null
+          partners?: Json | null
           thumbnail_image?: string | null
         }
         Relationships: [
@@ -152,70 +185,52 @@ export type Database = {
       }
       organizers: {
         Row: {
-          active: boolean | null
+          active: boolean
           branding_meta: Json | null
           created_at: string | null
           name: string
           organizer_id: string
-          subdomain: string
+          subdomain: string | null
         }
         Insert: {
-          active?: boolean | null
+          active: boolean
           branding_meta?: Json | null
           created_at?: string | null
           name: string
           organizer_id: string
-          subdomain: string
+          subdomain?: string | null
         }
         Update: {
-          active?: boolean | null
+          active?: boolean
           branding_meta?: Json | null
           created_at?: string | null
           name?: string
           organizer_id?: string
-          subdomain?: string
+          subdomain?: string | null
         }
         Relationships: []
       }
       photographers: {
         Row: {
           active: boolean
-          bio: string | null
           created_at: string
-          display_name: string | null
-          email: string | null
           instagram_handle: string | null
           name: string
           photographer_id: string
-          profile_image_url: string | null
-          social_links: Json | null
-          website_url: string | null
         }
         Insert: {
           active?: boolean
-          bio?: string | null
           created_at?: string
-          display_name?: string | null
-          email?: string | null
           instagram_handle?: string | null
           name: string
           photographer_id: string
-          profile_image_url?: string | null
-          social_links?: Json | null
-          website_url?: string | null
         }
         Update: {
           active?: boolean
-          bio?: string | null
           created_at?: string
-          display_name?: string | null
-          email?: string | null
           instagram_handle?: string | null
           name?: string
           photographer_id?: string
-          profile_image_url?: string | null
-          social_links?: Json | null
-          website_url?: string | null
         }
         Relationships: []
       }
@@ -227,7 +242,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      event_type: "RESULTS_AND_PHOTOS" | "PHOTOS_ONLY"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -354,6 +369,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      event_type: ["RESULTS_AND_PHOTOS", "PHOTOS_ONLY"],
+    },
   },
 } as const

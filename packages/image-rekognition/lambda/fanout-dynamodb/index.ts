@@ -26,6 +26,7 @@ export interface FanoutInput {
   format: string;
   size: number;
   ulid: string;
+  thumbHash: string;
   instagramHandle?: string | null;
   detectTextResult?: DetectTextResult;
   indexFacesResult?: IndexFacesResult;
@@ -45,6 +46,7 @@ interface PhotoItem {
   dimensions: { width: number; height: number };
   format: string;
   size: number;
+  thumbHash: string;
   bibs: string[];
   bibCount: number;
   faceIds: string[];
@@ -111,6 +113,7 @@ export const handler = async (event: FanoutInput): Promise<{ ok: true }> => {
     format,
     size,
     ulid,
+    thumbHash,
     instagramHandle,
     detectTextResult,
     indexFacesResult,
@@ -139,6 +142,7 @@ export const handler = async (event: FanoutInput): Promise<{ ok: true }> => {
     dimensions,
     format,
     size,
+    thumbHash,
 
     bibs,
     bibCount: bibs.length,
