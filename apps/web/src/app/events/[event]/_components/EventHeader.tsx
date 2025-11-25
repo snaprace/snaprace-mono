@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function EventHeader({ event }: { event: Tables<"events"> }) {
   const router = useRouter();
-  const pathname = usePathname();
+  const params = useParams();
+  const bib = params?.bib;
   const [searchBib, setSearchBib] = useState("");
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
@@ -30,7 +31,7 @@ export function EventHeader({ event }: { event: Tables<"events"> }) {
   );
 
   const handleBack = () => {
-    if (pathname.includes(`/events/${event.event_id}/${searchBib.trim()}`)) {
+    if (bib) {
       router.push(`/events/${event.event_id}`);
     } else {
       router.push("/events");

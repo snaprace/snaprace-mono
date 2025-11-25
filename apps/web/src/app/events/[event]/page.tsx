@@ -1,7 +1,7 @@
 import { getEventById } from "@/server/services/events";
 import { notFound } from "next/navigation";
 import { EventPageContent } from "./_components/EventPageContent";
-import { PartnerBanner, type Partner } from "./_components/PartnerBanner";
+import { PartnerBanner } from "./_components/PartnerBanner";
 
 export default async function EventPage({
   params,
@@ -16,14 +16,11 @@ export default async function EventPage({
     notFound();
   }
 
-  const partners =
-    event.partners && Array.isArray(event.partners)
-      ? (event.partners as unknown as Partner[])
-      : [];
+  const partners = event.partners;
 
   return (
     <>
-      {partners.length > 0 && <PartnerBanner partners={partners} />}
+      {partners && <PartnerBanner partners={partners} />}
       <EventPageContent event={event} organizerId={event.organizer_id} />
     </>
   );

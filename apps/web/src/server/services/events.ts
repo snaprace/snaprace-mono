@@ -3,14 +3,29 @@ import { ERROR_MESSAGES, trpcError } from "@/server/api/error-utils";
 import { createServerClient, type Database, type Tables } from "@repo/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cache } from "react";
+import z from "zod";
 
-type EventRow = Tables<"events">;
 type DatabaseClient = SupabaseClient<Database>;
+
+export const PartnerSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  order: z.number(),
+  siteUrl: z.string(),
+  imageUrl: z.string(),
+});
+
+export const PartnersSchema = z.array(PartnerSchema);
+export type Partners = z.infer<typeof PartnersSchema>;
+
+export type Event = Omit<Tables<"events">, "partners"> & {
+  partners: Partners | null;
+};
 
 export async function listEvents(options: {
   supabase: DatabaseClient;
   organizationId?: string | null;
-}): Promise<EventRow[]> {
+}): Promise<Event[]> {
   const { supabase, organizationId } = options;
 
   let query = supabase
@@ -29,11 +44,11 @@ export async function listEvents(options: {
     throw trpcError.internal(ERROR_MESSAGES.EVENT.LIST_FAILED);
   }
 
-  return data ?? [];
+  return (data ?? []) as Event[];
 }
 
 export const getEventById = cache(
-  async (options: { eventId: string }): Promise<EventRow | null> => {
+  async (options: { eventId: string }): Promise<Event | null> => {
     const supabase = createServerClient(
       env.SUPABASE_URL,
       env.SUPABASE_ANON_KEY,
@@ -55,6 +70,6 @@ export const getEventById = cache(
       return null;
     }
 
-    return data;
+    return data as Event;
   },
 );

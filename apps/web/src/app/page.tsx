@@ -27,10 +27,6 @@ export default function HomePage() {
 
   const events = useMemo(() => eventsQuery.data ?? [], [eventsQuery.data]);
 
-  const faceSearchOnly =
-    events.find((event) => event.event_id === selectedEventId)?.display_mode ===
-    "PHOTOS_ONLY";
-
   useEffect(() => {
     if (events.length > 0 && !selectedEventId) {
       setSelectedEventId(events[0]?.event_id ?? "");
@@ -131,28 +127,15 @@ export default function HomePage() {
                 Find My Photos
               </Button>
 
-              {faceSearchOnly && (
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="bg-primary/10 hover:bg-primary/20 text-primary border-primary/30 h-14 w-full border text-lg font-medium"
-                  onClick={() => router.push(`/events/${selectedEventId}`)}
-                >
-                  <Images className="mr-2 h-5 w-5" />
-                  Go to All Photos
-                </Button>
-              )}
-
-              {!faceSearchOnly && (
-                <Button
-                  size="lg"
-                  className="bg-primary/10 hover:bg-primary/20 text-primary border-primary/30 h-14 w-full border text-lg font-medium"
-                  onClick={() => router.push(`/events/${selectedEventId}`)}
-                >
-                  <Calendar className="mr-2 h-5 w-5" />
-                  Go to Event
-                </Button>
-              )}
+              <Button
+                type="submit"
+                size="lg"
+                className="bg-primary/10 hover:bg-primary/20 text-primary border-primary/30 h-14 w-full border text-lg font-medium"
+                onClick={() => router.push(`/events/${selectedEventId}`)}
+              >
+                <Images className="mr-2 h-5 w-5" />
+                Go to All Photos
+              </Button>
             </form>
           </div>
         </div>

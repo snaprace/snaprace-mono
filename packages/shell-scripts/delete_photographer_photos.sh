@@ -53,7 +53,7 @@ while true; do
       --index-name "GSI2" \
       --key-condition-expression "GSI2PK = :gsi2pk" \
       --expression-attribute-values "{\":gsi2pk\": {\"S\": \"$GSI2PK\"}}" \
-      --projection-expression "PK, SK, ulid, eventId" \
+      --projection-expression "PK, SK, ulid, eventId, bibs" \
       --output json)
   else
     RESULT=$(aws dynamodb query \
@@ -62,7 +62,7 @@ while true; do
       --index-name "GSI2" \
       --key-condition-expression "GSI2PK = :gsi2pk" \
       --expression-attribute-values "{\":gsi2pk\": {\"S\": \"$GSI2PK\"}}" \
-      --projection-expression "PK, SK, ulid, eventId" \
+      --projection-expression "PK, SK, ulid, eventId, bibs" \
       --exclusive-start-key "$LAST_KEY" \
       --output json)
   fi
@@ -94,11 +94,12 @@ if [ "$PHOTO_COUNT" -eq 0 ]; then
   exit 0
 fi
 
-# Step 2: 각 PHOTO에 대해 관련 BIB_INDEX 항목도 찾기
+# Step 2: bibs 배열을 사용하여 BIB_INDEX 항목 키 직접 구성 (추가 DB 쿼리 없음)
 echo ""
-echo "Finding related BIB_INDEX items..."
+echo "Building delete list from bibs array..."
 
 ALL_ITEMS_TO_DELETE=()
+BIB_INDEX_COUNT=0
 
 for photo in "${ALL_PHOTOS[@]}"; do
   PK=$(echo "$photo" | jq -r '.PK.S')
@@ -108,29 +109,21 @@ for photo in "${ALL_PHOTOS[@]}"; do
   # PHOTO 항목 추가
   ALL_ITEMS_TO_DELETE+=("{\"PK\": {\"S\": \"$PK\"}, \"SK\": {\"S\": \"$SK\"}}")
   
-  # 해당 ULID를 포함하는 BIB_INDEX 항목 조회 (SK begins_with BIB# and contains PHOTO#ulid)
-  BIB_RESULT=$(aws dynamodb query \
-    --table-name "$TABLE_NAME" \
-    --region "$REGION" \
-    --key-condition-expression "PK = :pk AND begins_with(SK, :sk_prefix)" \
-    --expression-attribute-values "{\":pk\": {\"S\": \"$PK\"}, \":sk_prefix\": {\"S\": \"BIB#\"}}" \
-    --projection-expression "PK, SK" \
-    --output json)
+  # bibs 배열에서 각 bib 값을 읽어 BIB_INDEX 키 직접 구성
+  BIBS=$(echo "$photo" | jq -r '.bibs.L[]?.S // empty' 2>/dev/null)
   
-  # ULID가 포함된 BIB_INDEX만 필터링
-  BIB_ITEMS=$(echo "$BIB_RESULT" | jq -c ".Items[] | select(.SK.S | contains(\"PHOTO#$ULID\"))")
-  
-  while IFS= read -r bib_item; do
-    if [ -n "$bib_item" ]; then
-      BIB_PK=$(echo "$bib_item" | jq -r '.PK.S')
-      BIB_SK=$(echo "$bib_item" | jq -r '.SK.S')
-      ALL_ITEMS_TO_DELETE+=("{\"PK\": {\"S\": \"$BIB_PK\"}, \"SK\": {\"S\": \"$BIB_SK\"}}")
+  while IFS= read -r bib; do
+    if [ -n "$bib" ]; then
+      # BIB_INDEX SK 패턴: BIB#<bib>#PHOTO#<ulid>
+      BIB_SK="BIB#${bib}#PHOTO#${ULID}"
+      ALL_ITEMS_TO_DELETE+=("{\"PK\": {\"S\": \"$PK\"}, \"SK\": {\"S\": \"$BIB_SK\"}}")
+      BIB_INDEX_COUNT=$((BIB_INDEX_COUNT + 1))
     fi
-  done <<< "$BIB_ITEMS"
+  done <<< "$BIBS"
 done
 
 TOTAL_ITEMS=${#ALL_ITEMS_TO_DELETE[@]}
-echo "Total items to delete: $TOTAL_ITEMS (including $PHOTO_COUNT photos and related BIB_INDEX items)"
+echo "Total items to delete: $TOTAL_ITEMS ($PHOTO_COUNT photos + $BIB_INDEX_COUNT BIB_INDEX items)"
 echo ""
 
 # 확인 프롬프트

@@ -33,7 +33,7 @@ export function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
             {org.subdomain ? (
-              <div className="relative h-10 w-32">
+              <div className="relative h-[55px] w-32">
                 <Image
                   src={assets.logo}
                   alt={org.name}

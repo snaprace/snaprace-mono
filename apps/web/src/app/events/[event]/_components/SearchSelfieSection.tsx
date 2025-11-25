@@ -78,7 +78,6 @@ export function SearchSelfieSection({
         toast.info("No matching photos found.");
       } else {
         setShowNoMatches(false);
-        // 백엔드에서 이미 적절하게 파싱된 Photo 객체 배열을 내려주므로 그대로 사용
         const mappedPhotos: Photo[] = matches.map((p) => ({
           ...p,
           isSelfieMatch: true,
