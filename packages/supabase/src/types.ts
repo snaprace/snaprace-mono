@@ -146,6 +146,7 @@ export type Database = {
           name: string
           organizer_id: string
           participant_count: number | null
+          partners: Json | null
           thumbnail_image: string | null
         }
         Insert: {
@@ -157,6 +158,7 @@ export type Database = {
           name: string
           organizer_id: string
           participant_count?: number | null
+          partners?: Json | null
           thumbnail_image?: string | null
         }
         Update: {
@@ -168,6 +170,7 @@ export type Database = {
           name?: string
           organizer_id?: string
           participant_count?: number | null
+          partners?: Json | null
           thumbnail_image?: string | null
         }
         Relationships: [
@@ -187,7 +190,7 @@ export type Database = {
           created_at: string | null
           name: string
           organizer_id: string
-          subdomain: string
+          subdomain: string | null
         }
         Insert: {
           active: boolean
@@ -195,7 +198,7 @@ export type Database = {
           created_at?: string | null
           name: string
           organizer_id: string
-          subdomain: string
+          subdomain?: string | null
         }
         Update: {
           active?: boolean
@@ -203,7 +206,7 @@ export type Database = {
           created_at?: string | null
           name?: string
           organizer_id?: string
-          subdomain?: string
+          subdomain?: string | null
         }
         Relationships: []
       }

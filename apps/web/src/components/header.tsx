@@ -26,7 +26,7 @@ export function Header() {
 
   return (
     <header
-      className={`${isPhotoPage ? "" : "sticky top-0 z-50"} bg-background/80 h-[64px] w-full border-b backdrop-blur-sm`}
+      className={`${isPhotoPage ? "sticky top-0 z-50" : ""} bg-background/80 h-[64px] w-full border-b backdrop-blur-sm`}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
