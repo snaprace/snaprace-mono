@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
@@ -48,6 +48,22 @@ export function SearchSelfieSection({
   const [showNoMatches, setShowNoMatches] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Clean up object URLs to avoid memory leaks
+  useEffect(() => {
+    if (!uploadedFile) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(uploadedFile);
+    setPreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [uploadedFile]);
 
   const searchSelfieMutation = api.photosV2.searchBySelfie.useMutation({
     onSuccess: (data) => {
@@ -297,10 +313,10 @@ export function SearchSelfieSection({
 
                   <div className="flex flex-col items-center gap-3 text-center">
                     <div className="relative h-20 w-20">
-                      {uploadedFile ? (
+                      {previewUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={URL.createObjectURL(uploadedFile)}
+                          src={previewUrl}
                           alt="Preview"
                           className="h-full w-full rounded-full object-cover"
                         />

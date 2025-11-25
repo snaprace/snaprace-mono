@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import { PlayCircle } from "lucide-react";
 
-import type { Event } from "@/server/api/routers/events";
 import type { BibDetailResponse } from "@/server/services/timing-service";
 import {
   Accordion,
