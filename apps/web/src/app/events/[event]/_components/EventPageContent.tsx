@@ -10,17 +10,16 @@ import {
   useAnalyticsTracking,
   usePerformanceTracking,
 } from "@/hooks/useAnalyticsTracking";
+import type { Tables } from "@repo/supabase";
 
 interface EventPageContentProps {
-  eventId: string;
+  event: Tables<"events">;
   organizerId: string;
-  eventName: string;
 }
 
 export function EventPageContent({
-  eventId,
+  event,
   organizerId,
-  eventName,
 }: EventPageContentProps) {
   const [searchedPhotos, setSearchedPhotos] = useState<Photo[] | null>(null);
 
@@ -31,19 +30,19 @@ export function EventPageContent({
     <>
       <EventInsightsPanel
         sections={[
-          <LeaderboardSection key="leaderboard" eventId={eventId} />,
+          <LeaderboardSection key="leaderboard" eventId={event.event_id} />,
           <SearchSelfieSection
             key="selfie"
-            eventId={eventId}
+            eventId={event.event_id}
             organizerId={organizerId}
-            eventName={eventName}
+            eventName={event.name}
             onPhotosFound={setSearchedPhotos}
           />,
         ]}
       />
       <div>
         <PhotoGallery
-          eventId={eventId}
+          eventId={event.event_id}
           organizerId={organizerId}
           overridePhotos={searchedPhotos || undefined}
         />
@@ -51,4 +50,3 @@ export function EventPageContent({
     </>
   );
 }
-

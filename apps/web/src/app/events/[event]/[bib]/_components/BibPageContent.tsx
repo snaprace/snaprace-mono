@@ -11,21 +11,17 @@ import {
   useAnalyticsTracking,
   usePerformanceTracking,
 } from "@/hooks/useAnalyticsTracking";
+import type { Tables } from "@repo/supabase";
+import { PartnerBanner, type Partner } from "../../_components/PartnerBanner";
 
 interface BibPageContentProps {
-  eventId: string;
-  organizerId: string;
-  eventName: string;
+  event: Tables<"events">;
   bib: string;
 }
 
-export function BibPageContent({
-  eventId,
-  organizerId,
-  eventName,
-  bib,
-}: BibPageContentProps) {
+export function BibPageContent({ event, bib }: BibPageContentProps) {
   const [extraPhotos, setExtraPhotos] = useState<Photo[] | null>(null);
+  const { event_id, organizer_id, name } = event;
 
   useAnalyticsTracking();
   usePerformanceTracking();
@@ -34,17 +30,17 @@ export function BibPageContent({
     <>
       <EventInsightsPanel
         sections={[
-          <TimingResultSection key="timing" eventId={eventId} bib={bib} />,
+          <TimingResultSection key="timing" eventId={event_id} bib={bib} />,
           <LeaderboardSection
             key="leaderboard"
-            eventId={eventId}
+            eventId={event_id}
             highlightBib={bib}
           />,
           <SearchSelfieSection
             key="selfie"
-            eventId={eventId}
-            organizerId={organizerId}
-            eventName={eventName}
+            eventId={event_id}
+            organizerId={organizer_id}
+            eventName={name}
             bib={bib}
             onPhotosFound={setExtraPhotos}
           />,
@@ -52,13 +48,17 @@ export function BibPageContent({
       />
       <div>
         <PhotoGallery
-          eventId={eventId}
-          organizerId={organizerId}
+          eventId={event_id}
+          organizerId={organizer_id}
           bib={bib}
           extraPhotos={extraPhotos || undefined}
         />
+        {event.partners &&
+          Array.isArray(event.partners) &&
+          event.partners.length > 0 && (
+            <PartnerBanner partners={event.partners as unknown as Partner[]} />
+          )}
       </div>
     </>
   );
 }
-

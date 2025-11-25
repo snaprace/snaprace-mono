@@ -7,24 +7,18 @@ export default async function EventBibPage({
 }: {
   params: Promise<{ event: string; bib: string }>;
 }) {
-  const { event, bib } = await params;
+  const eventId = (await params).event;
+  const bib = (await params).bib;
 
   if (bib === "null") {
-    redirect(`/events/${event}`);
+    redirect(`/events/${eventId}`);
   }
 
-  const eventData = await getEventById({ eventId: event });
+  const event = await getEventById({ eventId });
 
-  if (!eventData) {
+  if (!event) {
     notFound();
   }
 
-  return (
-    <BibPageContent
-      eventId={event}
-      organizerId={eventData.organizer_id}
-      eventName={eventData.name}
-      bib={bib}
-    />
-  );
+  return <BibPageContent event={event} bib={bib} />;
 }
