@@ -22,7 +22,7 @@ export function EventInsightsPanel({
   if (visibleSections.length === 0) return null;
 
   return (
-    <div className="container mx-auto my-8 px-1 md:px-4">
+    <div className="container mx-auto my-4 px-1 md:my-8 md:px-4">
       <section className="border-border/60 bg-muted/30 overflow-hidden rounded-3xl border p-2 shadow-sm md:p-4">
         {title || description ? (
           <div className="mb-4 space-y-1">

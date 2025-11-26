@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { PhotoService } from "@/server/services/photo-service";
 import { trpcError } from "../error-utils";
+import { PhotographerService } from "@/server/services/photographer-service";
 
 export const photosV2Router = createTRPCRouter({
   searchBySelfie: publicProcedure
@@ -34,6 +35,7 @@ export const photosV2Router = createTRPCRouter({
         eventId: z.string(),
         limit: z.number().min(1).max(100).default(20),
         cursor: z.string().optional(),
+        instagramHandle: z.string().optional(),
       }),
     )
     .query(async ({ input }) => {
@@ -42,6 +44,7 @@ export const photosV2Router = createTRPCRouter({
         eventId: input.eventId,
         limit: input.limit,
         cursor: input.cursor,
+        instagramHandle: input.instagramHandle,
       });
     }),
 
@@ -89,6 +92,19 @@ export const photosV2Router = createTRPCRouter({
       return PhotoService.getPhotoCountByBib({
         eventId: input.eventId,
         bibNumber: input.bibNumber,
+      });
+    }),
+
+  getPhotographersByEvent: publicProcedure
+    .input(
+      z.object({
+        eventId: z.string(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      return PhotographerService.getPhotographersByEvent({
+        supabase: ctx.supabase,
+        eventId: input.eventId,
       });
     }),
 });

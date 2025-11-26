@@ -14,18 +14,21 @@ interface UsePhotoGalleryProps {
   eventId: string;
   organizerId: string;
   bib?: string;
+  instagramHandle?: string | null;
 }
 
 export function usePhotoGallery({
   eventId,
   organizerId,
   bib,
+  instagramHandle,
 }: UsePhotoGalleryProps) {
   const byEventQuery = api.photosV2.getByEvent.useInfiniteQuery(
     {
       organizerId,
       eventId,
       limit: 50,
+      instagramHandle: instagramHandle ?? undefined,
     },
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor,

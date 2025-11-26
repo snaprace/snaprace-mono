@@ -1,0 +1,38 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@repo/supabase";
+
+type DatabaseClient = SupabaseClient<Database>;
+
+export class PhotographerService {
+  static async getPhotographersByEvent({
+    supabase,
+    eventId,
+  }: {
+    supabase: DatabaseClient;
+    eventId: string;
+  }) {
+    const { data, error } = await supabase
+      .from("event_photographers")
+      .select(
+        `
+        instagram_handle,
+        note,
+        photographers (
+          name,
+          instagram_handle
+        )
+      `,
+      )
+      .eq("event_id", eventId)
+      .order("sort_order", { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    return data.map((item) => ({
+      instagramHandle: item.instagram_handle,
+      name: item.photographers?.name,
+    }));
+  }
+}

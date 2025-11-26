@@ -151,28 +151,48 @@ export class PhotoService {
     eventId,
     limit = 20,
     cursor,
+    instagramHandle,
   }: {
     organizerId: string;
     eventId: string;
     limit?: number;
     cursor?: string;
+    instagramHandle?: string;
   }) {
     if (!TABLES.PHOTO_SERVICE) {
       throw new Error("DYNAMO_PHOTO_SERVICE_TABLE is not configured");
     }
 
-    const pk = `ORG#${organizerId}#EVT#${eventId}`;
-    const command = new QueryCommand({
-      TableName: TABLES.PHOTO_SERVICE,
-      KeyConditionExpression: "PK = :pk AND begins_with(SK, :skPrefix)",
-      ExpressionAttributeValues: {
-        ":pk": pk,
-        ":skPrefix": "PHOTO#",
-      },
-      Limit: limit,
-      ExclusiveStartKey: decodeCursor(cursor),
-      ScanIndexForward: false, // Newest first
-    });
+    let command: QueryCommand;
+
+    if (instagramHandle) {
+      command = new QueryCommand({
+        TableName: TABLES.PHOTO_SERVICE,
+        IndexName: "GSI2",
+        KeyConditionExpression:
+          "GSI2PK = :pk AND begins_with(GSI2SK, :skPrefix)",
+        ExpressionAttributeValues: {
+          ":pk": `PHOTOGRAPHER#${instagramHandle}`,
+          ":skPrefix": `EVT#${eventId}`,
+        },
+        Limit: limit,
+        ExclusiveStartKey: decodeCursor(cursor),
+        ScanIndexForward: false, // Newest first
+      });
+    } else {
+      const pk = `ORG#${organizerId}#EVT#${eventId}`;
+      command = new QueryCommand({
+        TableName: TABLES.PHOTO_SERVICE,
+        KeyConditionExpression: "PK = :pk AND begins_with(SK, :skPrefix)",
+        ExpressionAttributeValues: {
+          ":pk": pk,
+          ":skPrefix": "PHOTO#",
+        },
+        Limit: limit,
+        ExclusiveStartKey: decodeCursor(cursor),
+        ScanIndexForward: false, // Newest first
+      });
+    }
 
     const result: QueryCommandOutput = await dynamoClient.send(command);
     const items = (result.Items as PhotoItem[]) ?? [];

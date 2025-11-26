@@ -5,6 +5,14 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { usePhotoGallery, type Photo } from "@/hooks/photos/usePhotoGallery";
 import { useIsMobile } from "@/hooks/useMobile";
 import { GalleryGrid, GalleryLightbox } from "@/components/photo-gallery";
+import { useEventPhotographers } from "@/hooks/photographers/useEventPhotographers";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface PhotoGalleryProps {
   eventId: string;
@@ -26,6 +34,11 @@ export function PhotoGallery({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [index, setIndex] = useState(-1);
+  const [selectedPhotographer, setSelectedPhotographer] = useState<
+    string | null
+  >(null);
+
+  const { photographers } = useEventPhotographers(eventId);
 
   const {
     photos: fetchedPhotos,
@@ -37,6 +50,7 @@ export function PhotoGallery({
     eventId,
     organizerId,
     bib,
+    instagramHandle: selectedPhotographer,
   });
 
   const photos = useMemo(() => {
@@ -109,6 +123,38 @@ export function PhotoGallery({
 
   return (
     <>
+      {!bib && photographers && photographers.length > 0 && (
+        <div className="mb-4 flex items-center justify-end gap-2 px-4 md:mb-6">
+          {/* <Instagram size={24} strokeWidth={1.4} color="gray" /> */}
+          <Select
+            value={selectedPhotographer ?? "all"}
+            onValueChange={(value) =>
+              setSelectedPhotographer(value === "all" ? null : value)
+            }
+          >
+            <SelectTrigger
+              size="sm"
+              className="w-[180px] text-sm backdrop-blur-sm md:w-[200px]"
+            >
+              <div className="flex items-center gap-2 truncate">
+                <SelectValue placeholder="All Photographers" />
+              </div>
+            </SelectTrigger>
+            <SelectContent align="end">
+              <SelectItem value="all">All Photographers</SelectItem>
+              {photographers.map((p) => (
+                <SelectItem
+                  key={p.instagramHandle}
+                  value={p.instagramHandle ?? ""}
+                >
+                  {p.instagramHandle || p.name || "Unknown"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       <GalleryGrid
         photos={photos}
         isLoading={isLoading && !overridePhotos} // Don't show loading if we have override photos
