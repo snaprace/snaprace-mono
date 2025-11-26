@@ -1,7 +1,7 @@
 import { galleriesRouter } from "@/server/api/routers/galleries";
 import { eventsRouter } from "@/server/api/routers/events";
 import { photosRouter } from "@/server/api/routers/photos";
-import { organizationsRouter } from "@/server/api/routers/organizations";
+import { organizersRouter } from "@/server/api/routers/organizers";
 import { resultsRouter } from "@/server/api/routers/results";
 import { resultsV2Router } from "@/server/api/routers/results-v2";
 import { photosV2Router } from "@/server/api/routers/photos-v2";
@@ -16,7 +16,7 @@ export const appRouter = createTRPCRouter({
   galleries: galleriesRouter,
   events: eventsRouter,
   photos: photosRouter,
-  organizations: organizationsRouter,
+  organizers: organizersRouter,
   results: resultsRouter,
   resultsV2: resultsV2Router,
   photosV2: photosV2Router,

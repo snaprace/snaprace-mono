@@ -5,10 +5,12 @@ import { api } from "@/trpc/react";
 import { EventsGridSkeleton } from "@/components/states/EventsSkeleton";
 import { ErrorState } from "@/components/states/ErrorState";
 import { NoEventsState } from "@/components/states/EmptyState";
-import { useOrganization } from "@/contexts/OrganizationContext";
+import { useOrganizer } from "@/contexts/OrganizerContext";
+import { getOrganizerName } from "@/lib/organizer-helpers";
 
 export default function EventsPage() {
-  const { organization } = useOrganization();
+  const { organizer } = useOrganizer();
+  const name = getOrganizerName(organizer);
 
   const eventsQuery = api.events.getAll.useQuery();
 
@@ -17,7 +19,7 @@ export default function EventsPage() {
       {/* Header */}
       <div className="mb-12 text-center">
         <h1 className="text-foreground mb-4 text-3xl font-bold">
-          {organization ? `${organization.name} Events` : "Events"}
+          {organizer ? `${name} Events` : "Events"}
         </h1>
       </div>
 

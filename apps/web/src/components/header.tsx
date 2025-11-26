@@ -7,14 +7,20 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { usePathname } from "next/navigation";
-import { useOrganizationHelper } from "@/hooks/useOrganizationHelper";
+import { useOrganizer } from "@/contexts/OrganizerContext";
+import {
+  getOrganizerName,
+  getOrganizerSubdomain,
+} from "@/lib/organizer-helpers";
 import { getOrganizationAssets } from "@/utils/organization-assets";
 
 export function Header() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const pathname = usePathname();
-  const org = useOrganizationHelper();
-  const assets = getOrganizationAssets(org.subdomain);
+  const { organizer } = useOrganizer();
+  const subdomain = getOrganizerSubdomain(organizer);
+  const name = getOrganizerName(organizer);
+  const assets = getOrganizationAssets(subdomain);
 
   // Disable sticky on photo detail pages: /events/[event]/[bib]
   const isPhotoPage = /^\/events\/[^/]+\/[^/]+$/.test(pathname);
@@ -32,11 +38,11 @@ export function Header() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            {org.subdomain ? (
+            {subdomain ? (
               <div className="relative h-[55px] w-32">
                 <Image
                   src={assets.logo}
-                  alt={org.name}
+                  alt={name}
                   fill
                   className="object-contain"
                   priority
@@ -76,38 +82,8 @@ export function Header() {
             })}
           </nav>
 
-          {/* Desktop Search - Disabled */}
-          {/* <div className="hidden items-center space-x-2 md:flex">
-            <form onSubmit={handleSearch} className="relative">
-              <Input
-                type="text"
-                placeholder="Enter bib number..."
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                className="w-48 pr-10"
-              />
-              <Button
-                type="submit"
-                size="sm"
-                className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 transform p-0"
-              >
-                <Search className="h-3 w-3" />
-              </Button>
-            </form>
-          </div> */}
-
           {/* Mobile Controls */}
           <div className="flex items-center space-x-2 md:hidden">
-            {/* Mobile Search Toggle - Disabled */}
-            {/* <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-              aria-label="Toggle search"
-            >
-              <Search className="h-4 w-4" />
-            </Button> */}
-
             {/* Mobile Menu */}
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
               <SheetTrigger asChild>
@@ -125,11 +101,11 @@ export function Header() {
                     className="flex items-center space-x-2"
                     onClick={() => setIsSheetOpen(false)}
                   >
-                    {org.subdomain ? (
+                    {subdomain ? (
                       <div className="relative h-10 w-32">
                         <Image
                           src={assets.logo}
-                          alt={org.name}
+                          alt={name}
                           fill
                           className="object-contain"
                         />
@@ -168,23 +144,6 @@ export function Header() {
                       );
                     })}
                   </nav>
-
-                  {/* Mobile Search in Menu - Disabled */}
-                  {/* <div className="border-t pt-4">
-                    <form onSubmit={handleSearch} className="space-y-2">
-                      <Input
-                        type="text"
-                        placeholder="Enter bib number..."
-                        value={searchValue}
-                        onChange={(e) => setSearchValue(e.target.value)}
-                        className="w-full"
-                      />
-                      <Button type="submit" className="w-full">
-                        <Search className="mr-2 h-4 w-4" />
-                        Find My Photos
-                      </Button>
-                    </form>
-                  </div> */}
                 </div>
               </SheetContent>
             </Sheet>

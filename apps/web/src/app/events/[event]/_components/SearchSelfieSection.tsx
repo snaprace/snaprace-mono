@@ -50,7 +50,6 @@ export function SearchSelfieSection({
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Clean up object URLs to avoid memory leaks
   useEffect(() => {
     if (!uploadedFile) {
       setPreviewUrl(null);
@@ -314,10 +313,11 @@ export function SearchSelfieSection({
                   <div className="flex flex-col items-center gap-3 text-center">
                     <div className="relative h-20 w-20">
                       {previewUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
                           src={previewUrl}
                           alt="Preview"
+                          width={80}
+                          height={80}
                           className="h-full w-full rounded-full object-cover"
                         />
                       ) : (

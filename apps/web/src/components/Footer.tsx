@@ -2,10 +2,22 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useOrganizationHelper } from "@/hooks/useOrganizationHelper";
+import { useOrganizer } from "@/contexts/OrganizerContext";
+import {
+  getOrganizerName,
+  getOrganizerSubdomain,
+  getContactEmail,
+  getPartners,
+} from "@/lib/organizer-helpers";
+import { getOrganizationAssets } from "@/utils/organization-assets";
 
 export function Footer() {
-  const org = useOrganizationHelper();
+  const { organizer } = useOrganizer();
+  const name = getOrganizerName(organizer);
+  const subdomain = getOrganizerSubdomain(organizer);
+  const contactEmail = getContactEmail(organizer);
+  const partners = getPartners(organizer);
+  const assets = getOrganizationAssets(subdomain);
 
   return (
     <section className="bg-muted/10 mt-auto border-t">
@@ -20,34 +32,36 @@ export function Footer() {
             </Link>
             <span className="hidden sm:inline">•</span>
             <span>
-              © {new Date().getFullYear()} {org.name}. All rights reserved.
+              © {new Date().getFullYear()} {name}. All rights reserved.
             </span>
-            {org.contactEmail && (
+            {contactEmail && (
               <>
                 <span className="hidden sm:inline">•</span>
                 <a
-                  href={`mailto:${org.contactEmail}`}
+                  href={`mailto:${contactEmail}`}
                   className="hover:text-foreground transition-colors"
                 >
-                  {org.contactEmail}
+                  {contactEmail}
                 </a>
               </>
             )}
           </div>
 
-          {org.partners.length > 0 && (
+          {partners.length > 0 && (
             <div className="flex max-w-full items-center justify-center gap-3 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {org.partners.map((partner) => (
+              {partners.map((partner) => (
                 <Link
                   key={partner.id}
-                  href={partner.website_url || "#"}
+                  href={partner.siteUrl || "#"}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group flex-shrink-0"
                 >
                   <div className="relative flex h-8 w-fit max-w-[120px] items-center justify-center">
                     <Image
-                      src={org.getPartnerImageUrl(partner)}
+                      src={
+                        partner.imageUrl || assets.getPartnerImage(partner.name)
+                      }
                       alt={partner.name}
                       width={120}
                       height={32}

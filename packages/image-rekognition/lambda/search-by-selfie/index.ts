@@ -166,8 +166,7 @@ export const handler = async (
       .map((item) => {
         const ulid = item.ulid;
         const similarity = uniqueMatches.get(ulid);
-        const key =
-          item.processedKey || `${orgId}/${eventId}/processed/${ulid}.jpg`;
+        const key = item.processedKey;
 
         return {
           pid: ulid,

@@ -49,9 +49,9 @@
   --sidebar-foreground: oklch(0.1884 0.0128 248.5103);
   --sidebar-primary: oklch(0.6723 0.1606 244.9955);
 
-  /* Organization custom colors - will be overridden by JavaScript when org is loaded */
-  --organization-primary: var(--primary);
-  --organization-secondary: var(--secondary);
+  /* Organizer custom colors - will be overridden by JavaScript when organizer is loaded */
+  --organizer-primary: var(--primary);
+  --organizer-secondary: var(--secondary);
   --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0.9392 0.0166 250.8453);
   --sidebar-accent-foreground: oklch(0.6723 0.1606 244.9955);

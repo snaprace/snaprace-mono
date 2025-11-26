@@ -2,28 +2,25 @@
 
 import { type ReactNode } from "react";
 import { TRPCReactProvider } from "@/trpc/react";
-import { OrganizationProvider } from "@/contexts/OrganizationContext";
-import type { Organization } from "@/server/api/routers/organizations";
+import { OrganizerProvider } from "@/contexts/OrganizerContext";
+import type { Organizer } from "@/server/services/organizers";
 
 interface LayoutProvidersProps {
   children: ReactNode;
   subdomain: string | null;
-  initialOrganization?: Organization | null;
+  initialOrganizer?: Organizer | null;
 }
 
 export function LayoutProviders({
   children,
   subdomain,
-  initialOrganization
+  initialOrganizer,
 }: LayoutProvidersProps) {
   return (
     <TRPCReactProvider>
-      <OrganizationProvider
-        subdomain={subdomain}
-        initialOrganization={initialOrganization}
-      >
+      <OrganizerProvider subdomain={subdomain} initialOrganizer={initialOrganizer}>
         {children}
-      </OrganizationProvider>
+      </OrganizerProvider>
     </TRPCReactProvider>
   );
 }

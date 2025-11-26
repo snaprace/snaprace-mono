@@ -5,12 +5,12 @@ import { Raleway } from "next/font/google";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { headers } from "next/headers";
 
-import { OrganizationLoader } from "./organization-loader";
-import { OrganizationStyles } from "@/components/OrganizationStyles";
+import { OrganizerLoader } from "./organizer-loader";
+import { OrganizerStyles } from "@/components/OrganizerStyles";
 import { Header } from "@/components/header";
 import { Toaster } from "@/components/ui/sonner";
 import ClarityInit from "@/components/analytics/ClarityInit";
-import { getOrganizationBySubdomain } from "@/lib/server-organization";
+import { getOrganizerBySubdomainServer } from "@/server/services/organizers-server";
 import Script from "next/script";
 import { env } from "@/env";
 
@@ -45,20 +45,6 @@ export const metadata: Metadata = {
   },
 };
 
-// const poppins = Poppins({
-//   subsets: ["latin"],
-//   weight: ["300", "400", "500", "600", "700"],
-//   variable: "--font-poppins",
-//   display: "swap",
-// });
-
-// const montserrat = Montserrat({
-//   subsets: ["latin"],
-//   weight: ["400", "500", "600", "700", "800"],
-//   variable: "--font-montserrat",
-//   display: "swap",
-// });
-
 const raleway = Raleway({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
@@ -69,33 +55,33 @@ const raleway = Raleway({
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  // Get organization data on server for immediate style application
+  // Get organizer data on server for immediate style application
   const headersList = await headers();
   const subdomain = headersList.get("x-organization");
   const CRISP_WEBSITE_ID = process.env.CRISP_WEBSITE_ID!;
 
-  let organization = null;
+  let organizer = null;
   if (subdomain) {
     try {
-      organization = await getOrganizationBySubdomain(subdomain);
+      organizer = await getOrganizerBySubdomainServer(subdomain);
     } catch (error) {
-      console.error("Failed to fetch organization for styles:", error);
+      console.error("Failed to fetch organizer for styles:", error);
     }
   }
 
   return (
     <html lang="en" className={`${raleway.variable}`}>
       <head>
-        <OrganizationStyles organization={organization} />
+        <OrganizerStyles organizer={organizer} />
       </head>
       <body className="bg-background m-0 min-h-screen antialiased">
-        <OrganizationLoader>
+        <OrganizerLoader>
           <div className="relative flex min-h-screen flex-col">
             <Header />
             <main className="flex-1">{children}</main>
           </div>
           <Toaster />
-        </OrganizationLoader>
+        </OrganizerLoader>
         {process.env.NODE_ENV === "production" &&
           process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
             <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
