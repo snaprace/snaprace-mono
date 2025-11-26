@@ -18,6 +18,7 @@ import {
   type SearchBySelfieResult,
 } from "@/server/utils/selfie-search";
 import { type Photo } from "@/types/photo";
+import { unstable_cache } from "next/cache";
 
 // Lambda Client initialized outside the class
 const lambdaClient = new LambdaClient({
@@ -61,6 +62,79 @@ export interface BibIndexItem {
   bib: string;
   createdAt: string;
 }
+
+// Cached counting functions
+const getCachedPhotoCountByEvent = unstable_cache(
+  async (organizerId: string, eventId: string) => {
+    if (!TABLES.PHOTO_SERVICE) {
+      throw new Error("DYNAMO_PHOTO_SERVICE_TABLE is not configured");
+    }
+
+    const pk = `ORG#${organizerId}#EVT#${eventId}`;
+    let totalCount = 0;
+    let lastEvaluatedKey: QueryCommandOutput["LastEvaluatedKey"] | undefined;
+
+    do {
+      const command = new QueryCommand({
+        TableName: TABLES.PHOTO_SERVICE,
+        KeyConditionExpression: "PK = :pk AND begins_with(SK, :skPrefix)",
+        ExpressionAttributeValues: {
+          ":pk": pk,
+          ":skPrefix": "PHOTO#",
+        },
+        Select: "COUNT",
+        ExclusiveStartKey: lastEvaluatedKey,
+      });
+
+      const result: QueryCommandOutput = await dynamoClient.send(command);
+      totalCount += result.Count ?? 0;
+      lastEvaluatedKey = result.LastEvaluatedKey;
+    } while (lastEvaluatedKey);
+
+    return totalCount;
+  },
+  ["photo-count-by-event"],
+  {
+    revalidate: 1800, // Cache for 1 hour
+    tags: ["photo-count"],
+  },
+);
+
+const getCachedPhotoCountByBib = unstable_cache(
+  async (eventId: string, bibNumber: string) => {
+    if (!TABLES.PHOTO_SERVICE) {
+      throw new Error("DYNAMO_PHOTO_SERVICE_TABLE is not configured");
+    }
+
+    const gsi1pk = `EVT#${eventId}#BIB#${bibNumber}`;
+    let totalCount = 0;
+    let lastEvaluatedKey: QueryCommandOutput["LastEvaluatedKey"] | undefined;
+
+    do {
+      const command = new QueryCommand({
+        TableName: TABLES.PHOTO_SERVICE,
+        IndexName: "GSI1",
+        KeyConditionExpression: "GSI1PK = :pk",
+        ExpressionAttributeValues: {
+          ":pk": gsi1pk,
+        },
+        Select: "COUNT",
+        ExclusiveStartKey: lastEvaluatedKey,
+      });
+
+      const result: QueryCommandOutput = await dynamoClient.send(command);
+      totalCount += result.Count ?? 0;
+      lastEvaluatedKey = result.LastEvaluatedKey;
+    } while (lastEvaluatedKey);
+
+    return totalCount;
+  },
+  ["photo-count-by-bib"],
+  {
+    revalidate: 1800, // Cache for 1 hour
+    tags: ["photo-count"],
+  },
+);
 
 export class PhotoService {
   private static extractPidFromKey(key: string): string {
@@ -221,7 +295,7 @@ export class PhotoService {
 
   /**
    * Get photo count for an event.
-   * Uses Query with Select: "COUNT"
+   * Uses cached query with Select: "COUNT"
    */
   static async getPhotoCountByEvent({
     organizerId,
@@ -230,37 +304,12 @@ export class PhotoService {
     organizerId: string;
     eventId: string;
   }) {
-    if (!TABLES.PHOTO_SERVICE) {
-      throw new Error("DYNAMO_PHOTO_SERVICE_TABLE is not configured");
-    }
-
-    const pk = `ORG#${organizerId}#EVT#${eventId}`;
-    let totalCount = 0;
-    let lastEvaluatedKey: QueryCommandOutput["LastEvaluatedKey"] | undefined;
-
-    do {
-      const command = new QueryCommand({
-        TableName: TABLES.PHOTO_SERVICE,
-        KeyConditionExpression: "PK = :pk AND begins_with(SK, :skPrefix)",
-        ExpressionAttributeValues: {
-          ":pk": pk,
-          ":skPrefix": "PHOTO#",
-        },
-        Select: "COUNT",
-        ExclusiveStartKey: lastEvaluatedKey,
-      });
-
-      const result: QueryCommandOutput = await dynamoClient.send(command);
-      totalCount += result.Count ?? 0;
-      lastEvaluatedKey = result.LastEvaluatedKey;
-    } while (lastEvaluatedKey);
-
-    return totalCount;
+    return getCachedPhotoCountByEvent(organizerId, eventId);
   }
 
   /**
    * Get photo count by Bib number.
-   * Uses Query with Select: "COUNT" on GSI1
+   * Uses cached query with Select: "COUNT" on GSI1
    */
   static async getPhotoCountByBib({
     eventId,
@@ -269,32 +318,7 @@ export class PhotoService {
     eventId: string;
     bibNumber: string;
   }) {
-    if (!TABLES.PHOTO_SERVICE) {
-      throw new Error("DYNAMO_PHOTO_SERVICE_TABLE is not configured");
-    }
-
-    const gsi1pk = `EVT#${eventId}#BIB#${bibNumber}`;
-    let totalCount = 0;
-    let lastEvaluatedKey: QueryCommandOutput["LastEvaluatedKey"] | undefined;
-
-    do {
-      const command = new QueryCommand({
-        TableName: TABLES.PHOTO_SERVICE,
-        IndexName: "GSI1",
-        KeyConditionExpression: "GSI1PK = :pk",
-        ExpressionAttributeValues: {
-          ":pk": gsi1pk,
-        },
-        Select: "COUNT",
-        ExclusiveStartKey: lastEvaluatedKey,
-      });
-
-      const result: QueryCommandOutput = await dynamoClient.send(command);
-      totalCount += result.Count ?? 0;
-      lastEvaluatedKey = result.LastEvaluatedKey;
-    } while (lastEvaluatedKey);
-
-    return totalCount;
+    return getCachedPhotoCountByBib(eventId, bibNumber);
   }
 
   /**

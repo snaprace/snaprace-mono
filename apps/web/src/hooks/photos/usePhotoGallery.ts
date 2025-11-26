@@ -25,7 +25,7 @@ export function usePhotoGallery({
     {
       organizerId,
       eventId,
-      limit: 100,
+      limit: 50,
     },
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor,
@@ -38,7 +38,7 @@ export function usePhotoGallery({
       organizerId,
       eventId,
       bibNumber: bib ?? "",
-      limit: 100,
+      limit: 50,
     },
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor,
