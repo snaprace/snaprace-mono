@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 
 interface EventInsightsPanelProps {
   sections?: Array<ReactNode | null | false | undefined>;
@@ -38,7 +38,7 @@ export function EventInsightsPanel({
         ) : null}
         <div className="grid gap-2 md:gap-4">
           {visibleSections.map((section, index) => (
-            <div key={index}>{section}</div>
+            <Fragment key={index}>{section}</Fragment>
           ))}
         </div>
       </section>

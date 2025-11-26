@@ -44,10 +44,6 @@ export function PhotoGallery({
       return overridePhotos;
     }
     if (extraPhotos && extraPhotos.length > 0) {
-      // 서버에서 이미 중복을 제거하고 내려주지만,
-      // usePhotoGallery의 fetchedPhotos가 업데이트(pagination 등)되면서 발생할 수 있는
-      // 혹시 모를 key 중복 에러를 방지하기 위해 간단한 중복 체크는 유지합니다.
-      // 하지만 로직은 훨씬 단순화되었습니다.
       const existingIds = new Set(fetchedPhotos.map((p) => p.pid));
       const newUniquePhotos = extraPhotos.filter(
         (p) => !existingIds.has(p.pid),
@@ -72,7 +68,6 @@ export function PhotoGallery({
         }
       }
     } else {
-      // pid가 없을 때 Lightbox가 열려있다면 닫기 (뒤로가기 대응)
       if (index !== -1) {
         setIndex(-1);
       }
