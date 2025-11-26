@@ -13,9 +13,9 @@ export function PrivacyPolicy() {
     <div className="container mx-auto max-w-4xl px-4 py-8">
       <div className="space-y-8">
         {/* Header */}
-        <div className="text-center space-y-4">
+        <div className="space-y-4 text-center">
           <h1 className="text-4xl font-bold tracking-tight">Privacy Policy</h1>
-          <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
+          <div className="text-muted-foreground flex flex-wrap justify-center gap-4 text-sm">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               <span>Effective Date: {effectiveDate}</span>
@@ -37,13 +37,17 @@ export function PrivacyPolicy() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p>
-              This Privacy Policy explains how we (&quot;SnapRace,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) collect, use, and share
-              information in connection with our photo identification and gallery services (the &quot;Service&quot;).
-              Our mission is to help you, the participant, find your race photos quickly and easily.
+              This Privacy Policy explains how we (&quot;SnapRace,&quot;
+              &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) collect, use,
+              and share information in connection with our photo identification
+              and gallery services (the &quot;Service&quot;). Our mission is to
+              help you, the participant, find your race photos quickly and
+              easily.
             </p>
             <p>
-              This policy applies to the participants of events (&quot;Events&quot;) organized by our clients,
-              the race organizers (&quot;Organizers&quot;).
+              This policy applies to the participants of events
+              (&quot;Events&quot;) organized by our clients, the race organizers
+              (&quot;Organizers&quot;).
             </p>
           </CardContent>
         </Card>
@@ -58,23 +62,18 @@ export function PrivacyPolicy() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold mb-3">Information from Race Organizers:</h3>
-              <ul className="space-y-2 list-disc list-inside ml-4">
-                <li><strong>Event Photos:</strong> We receive official event photos taken by or on behalf of the Organizer.</li>
-                <li><strong>Participant Data:</strong> We may receive limited data about you from the Organizer, such as your name and assigned bib number for the event.</li>
-              </ul>
-            </div>
-
-            <Separator />
-
-            <div>
-              <h3 className="text-lg font-semibold mb-3">Information from Your Photos:</h3>
-              <ul className="space-y-2 list-disc list-inside ml-4">
-                <li><strong>Bib Numbers:</strong> Our technology automatically scans event photos to detect and read bib numbers.</li>
+              <h3 className="mb-3 text-lg font-semibold">
+                Information from Race Organizers:
+              </h3>
+              <ul className="ml-4 list-inside list-disc space-y-2">
                 <li>
-                  <strong>Biometric Information (Facial Geometry):</strong> When we process photos, our technology
-                  detects faces and creates a unique numeric representation of each face (a &quot;face vector&quot; or &quot;embedding&quot;).
-                  Please see our detailed Biometric Information Policy in Section 4 below.
+                  <strong>Event Photos:</strong> We receive official event
+                  photos taken by or on behalf of the Organizer.
+                </li>
+                <li>
+                  <strong>Participant Data:</strong> We may receive limited data
+                  about you from the Organizer, such as your name and assigned
+                  bib number for the event.
                 </li>
               </ul>
             </div>
@@ -82,11 +81,36 @@ export function PrivacyPolicy() {
             <Separator />
 
             <div>
-              <h3 className="text-lg font-semibold mb-3">Information You Provide Directly:</h3>
-              <ul className="space-y-2 list-disc list-inside ml-4">
+              <h3 className="mb-3 text-lg font-semibold">
+                Information from Your Photos:
+              </h3>
+              <ul className="ml-4 list-inside list-disc space-y-2">
                 <li>
-                  <strong>Selfies and Bib Numbers:</strong> If you use our selfie search feature, you provide us
-                  with a photo of yourself (a &quot;selfie&quot;) and your bib number for a specific event.
+                  <strong>Bib Numbers:</strong> Our technology automatically
+                  scans event photos to detect and read bib numbers.
+                </li>
+                <li>
+                  <strong>Biometric Information (Facial Geometry):</strong> When
+                  we process photos, our technology detects faces and creates a
+                  unique numeric representation of each face (a &quot;face
+                  vector&quot; or &quot;embedding&quot;). Please see our
+                  detailed Biometric Information Policy in Section 4 below.
+                </li>
+              </ul>
+            </div>
+
+            <Separator />
+
+            <div>
+              <h3 className="mb-3 text-lg font-semibold">
+                Information You Provide Directly:
+              </h3>
+              <ul className="ml-4 list-inside list-disc space-y-2">
+                <li>
+                  <strong>Selfies and Bib Numbers:</strong> If you use our
+                  selfie search feature, you provide us with a photo of yourself
+                  (a &quot;selfie&quot;) and your bib number for a specific
+                  event.
                 </li>
               </ul>
             </div>
@@ -103,13 +127,27 @@ export function PrivacyPolicy() {
           </CardHeader>
           <CardContent>
             <p className="mb-4">
-              We use the information we collect for one primary purpose: to provide and improve our Service. This includes:
+              We use the information we collect for one primary purpose: to
+              provide and improve our Service. This includes:
             </p>
-            <ul className="space-y-2 list-disc list-inside ml-4">
-              <li><strong>Generating Your Photo Gallery:</strong> To automatically identify and group all of your photos from an event into a personal gallery.</li>
-              <li><strong>Linking Photos:</strong> To associate photos with you via bib number detection and/or facial recognition.</li>
-              <li><strong>Enabling Selfie Search:</strong> To allow you to find your photos by providing a selfie and bib number.</li>
-              <li><strong>Improving Our Service:</strong> To enhance the accuracy of our photo identification technology.</li>
+            <ul className="ml-4 list-inside list-disc space-y-2">
+              <li>
+                <strong>Generating Your Photo Gallery:</strong> To automatically
+                identify and group all of your photos from an event into a
+                personal gallery.
+              </li>
+              <li>
+                <strong>Linking Photos:</strong> To associate photos with you
+                via bib number detection and/or facial recognition.
+              </li>
+              <li>
+                <strong>Enabling Selfie Search:</strong> To allow you to find
+                your photos by providing a selfie and bib number.
+              </li>
+              <li>
+                <strong>Improving Our Service:</strong> To enhance the accuracy
+                of our photo identification technology.
+              </li>
             </ul>
           </CardContent>
         </Card>
@@ -120,49 +158,65 @@ export function PrivacyPolicy() {
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-orange-600" />
               4. Biometric Information Policy
-              <Badge variant="outline" className="ml-2 text-orange-600 border-orange-600">Important</Badge>
+              <Badge
+                variant="outline"
+                className="ml-2 border-orange-600 text-orange-600"
+              >
+                Important
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="font-semibold text-orange-800">
-              Your trust is our priority. We are committed to handling your biometric information responsibly and transparently.
+              Your trust is our priority. We are committed to handling your
+              biometric information responsibly and transparently.
             </p>
 
             <div className="grid gap-4">
               <div>
                 <h4 className="font-semibold">What We Collect:</h4>
                 <p>
-                  We collect a numeric representation of your facial geometry from event photos and any selfies you provide.
-                  We do not collect or store scans of your eyes, fingerprints, or voice.
+                  We collect a numeric representation of your facial geometry
+                  from event photos and any selfies you provide. We do not store
+                  your actual facial data. We do not collect or store scans of
+                  your eyes, fingerprints, or voice.
                 </p>
               </div>
 
               <div>
                 <h4 className="font-semibold">Purpose of Collection:</h4>
                 <p>
-                  This facial geometry data is used exclusively to identify and group your race photos for a specific event.
-                  It is the key to finding photos where your bib number is not visible.
+                  This facial geometry data is used exclusively to identify and
+                  group your race photos for a specific event. It is the key to
+                  finding photos where your bib number is not visible.
                 </p>
               </div>
 
               <div>
                 <h4 className="font-semibold">Consent:</h4>
                 <p>
-                  Your consent to the collection and use of this biometric information is obtained by the Race Organizer
-                  through the event registration waiver you agree to when you sign up for the race.
+                  Your consent to the collection and use of this biometric
+                  information is obtained by the Race Organizer through the
+                  event registration waiver you agree to when you sign up for
+                  the race.
                 </p>
               </div>
 
               <div>
                 <h4 className="font-semibold">Prohibition on Profiting:</h4>
-                <p>We will never sell, lease, trade, or otherwise profit from your biometric information.</p>
+                <p>
+                  We will never sell, lease, trade, or otherwise profit from
+                  your biometric information.
+                </p>
               </div>
 
               <div>
                 <h4 className="font-semibold">Data Retention & Destruction:</h4>
                 <p>
-                  We will permanently destroy your biometric information from our systems upon the earlier of:
-                  (a) your request to delete your data, or (b) no more than three (3) years after our last interaction with you.
+                  We will permanently destroy your biometric information from
+                  our systems upon the earlier of: (a) your request to delete
+                  your data, or (b) no more than three (3) years after our last
+                  interaction with you.
                 </p>
               </div>
             </div>
@@ -176,17 +230,26 @@ export function PrivacyPolicy() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p>
-              We do not share your personal information with third parties except in the limited circumstances described below:
+              We do not share your personal information with third parties
+              except in the limited circumstances described below:
             </p>
-            <ul className="space-y-2 list-disc list-inside ml-4">
-              <li><strong>With Race Organizers:</strong> We provide the final, organized photo galleries to the Organizer of the event you participated in.</li>
+            <ul className="ml-4 list-inside list-disc space-y-2">
               <li>
-                <strong>With Service Providers:</strong> We use trusted third-party vendors to provide the underlying technology for our service,
-                such as cloud hosting and facial recognition APIs (e.g., Amazon Web Services). These vendors are contractually obligated to protect your data.
+                <strong>With Race Organizers:</strong> We provide the final,
+                organized photo galleries to the Organizer of the event you
+                participated in.
               </li>
               <li>
-                <strong>For Legal Reasons:</strong> We may share information if required by law or to protect the rights, property,
-                or safety of SnapRace, our users, or the public.
+                <strong>With Service Providers:</strong> We use trusted
+                third-party vendors to provide the underlying technology for our
+                service, such as cloud hosting and facial recognition APIs
+                (e.g., Amazon Web Services). These vendors are contractually
+                obligated to protect your data.
+              </li>
+              <li>
+                <strong>For Legal Reasons:</strong> We may share information if
+                required by law or to protect the rights, property, or safety of
+                SnapRace, our users, or the public.
               </li>
             </ul>
           </CardContent>
@@ -199,8 +262,10 @@ export function PrivacyPolicy() {
           </CardHeader>
           <CardContent>
             <p>
-              We implement reasonable and appropriate technical and organizational security measures to protect your information
-              from unauthorized access, use, or disclosure. This includes data encryption at rest and in transit and strict access controls.
+              We implement reasonable and appropriate technical and
+              organizational security measures to protect your information from
+              unauthorized access, use, or disclosure. This includes data
+              encryption at rest and in transit and strict access controls.
             </p>
           </CardContent>
         </Card>
@@ -212,15 +277,24 @@ export function PrivacyPolicy() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p>You have control over your information.</p>
-            <ul className="space-y-2 list-disc list-inside ml-4">
-              <li><strong>Accessing Your Photos:</strong> You can access your photos through the gallery provided by your Race Organizer.</li>
+            <ul className="ml-4 list-inside list-disc space-y-2">
               <li>
-                <strong>Deleting Your Data (Opt-Out):</strong> You have the right to request the deletion of your photos and any
-                associated biometric information from our systems at any time. To do so, please contact us at{" "}
-                <a href="mailto:snaprace.info@gmail.com" className="text-blue-600 hover:underline">
+                <strong>Accessing Your Photos:</strong> You can access your
+                photos through the gallery provided by your Race Organizer.
+              </li>
+              <li>
+                <strong>Deleting Your Data (Opt-Out):</strong> You have the
+                right to request the deletion of your photos and any associated
+                biometric information from our systems at any time. To do so,
+                please contact us at{" "}
+                <a
+                  href="mailto:snaprace.info@gmail.com"
+                  className="text-blue-600 hover:underline"
+                >
                   snaprace.info@gmail.com
                 </a>{" "}
-                with the event name, your name, and your bib number. We will process your request in a timely manner.
+                with the event name, your name, and your bib number. We will
+                process your request in a timely manner.
               </li>
             </ul>
           </CardContent>
@@ -233,8 +307,10 @@ export function PrivacyPolicy() {
           </CardHeader>
           <CardContent>
             <p>
-              Our Service is not directed to children under the age of 16, and we do not knowingly collect personal information from them.
-              If we become aware that we have collected information from a child without parental consent, we will take steps to delete it.
+              Our Service is not directed to children under the age of 16, and
+              we do not knowingly collect personal information from them. If we
+              become aware that we have collected information from a child
+              without parental consent, we will take steps to delete it.
             </p>
           </CardContent>
         </Card>
@@ -246,8 +322,9 @@ export function PrivacyPolicy() {
           </CardHeader>
           <CardContent>
             <p>
-              We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new policy
-              on this page and updating the &quot;Last Updated&quot; date.
+              We may update this Privacy Policy from time to time. We will
+              notify you of any changes by posting the new policy on this page
+              and updating the &quot;Last Updated&quot; date.
             </p>
           </CardContent>
         </Card>
@@ -262,10 +339,11 @@ export function PrivacyPolicy() {
           </CardHeader>
           <CardContent>
             <p>
-              If you have any questions about this Privacy Policy, please contact us at{" "}
+              If you have any questions about this Privacy Policy, please
+              contact us at{" "}
               <a
                 href="mailto:snaprace.info@gmail.com"
-                className="text-blue-600 hover:underline font-semibold"
+                className="font-semibold text-blue-600 hover:underline"
               >
                 snaprace.info@gmail.com
               </a>
