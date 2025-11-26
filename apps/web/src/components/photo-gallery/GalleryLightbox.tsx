@@ -183,16 +183,16 @@ export function GalleryLightbox({
             style={{
               position: "fixed",
               top: 20,
-              left: isMobile ? 0 : 20,
+              left: isMobile ? 5 : 20,
               zIndex: 1000,
             }}
             onClick={onClose}
           >
-            <ArrowLeftIcon size={22} strokeWidth={1.5} />
+            <ArrowLeftIcon size={18} strokeWidth={1.5} />
           </button>,
           <div
             key="actions"
-            className="flex gap-2"
+            className="flex gap-2 md:mt-2"
             style={{
               position: "fixed",
               top: 20,
@@ -201,7 +201,7 @@ export function GalleryLightbox({
             }}
           >
             <button
-              className="flex h-10 w-10 cursor-pointer items-center justify-center text-gray-400"
+              className="flex h-8 w-8 cursor-pointer items-center justify-center text-gray-400"
               onClick={handleDownload}
             >
               <ArrowDownToLine size={18} strokeWidth={1.5} />
@@ -218,7 +218,7 @@ export function GalleryLightbox({
                 }}
               >
                 <button
-                  className="flex h-10 w-10 cursor-pointer items-center justify-center text-gray-400"
+                  className="flex h-8 w-8 cursor-pointer items-center justify-center text-gray-400"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Forward size={18} strokeWidth={1.5} />

@@ -1,7 +1,11 @@
 import { useParams } from "next/navigation";
 import { api } from "@/trpc/react";
 
-export function useEventStats(eventId: string, organizerId: string) {
+export function useEventStats(
+  eventId: string,
+  organizerId: string,
+  displayMode: string,
+) {
   const params = useParams();
   const currentBib = params?.bib as string | undefined;
 
@@ -17,14 +21,15 @@ export function useEventStats(eventId: string, organizerId: string) {
 
   const runnerQuery = api.resultsV2.getRunnerByBib.useQuery(
     { eventId, bib: currentBib ?? "" },
-    { enabled: !!currentBib },
+    { enabled: !!currentBib && displayMode === "RESULTS_AND_PHOTOS" },
   );
 
   if (currentBib) {
     return {
       label: `Bib #${currentBib}`,
-      runnerName:
-        runnerQuery.data?.first_name + " " + runnerQuery.data?.last_name,
+      runnerName: runnerQuery.data
+        ? `${runnerQuery.data.first_name} ${runnerQuery.data.last_name}`
+        : undefined,
       count: bibCountQuery.data,
       isLoading: bibCountQuery.isLoading || runnerQuery.isLoading,
     };

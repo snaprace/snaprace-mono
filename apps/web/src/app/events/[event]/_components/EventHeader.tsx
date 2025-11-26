@@ -28,6 +28,7 @@ export function EventHeader({ event }: { event: Tables<"events"> }) {
   const { label, count, isLoading, runnerName } = useEventStats(
     event.event_id,
     event.organizer_id,
+    event.display_mode,
   );
 
   const handleBack = () => {

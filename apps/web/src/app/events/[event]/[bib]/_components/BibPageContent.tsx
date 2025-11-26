@@ -30,12 +30,16 @@ export function BibPageContent({ event, bib }: BibPageContentProps) {
     <>
       <EventInsightsPanel
         sections={[
-          <TimingResultSection key="timing" eventId={event_id} bib={bib} />,
-          <LeaderboardSection
-            key="leaderboard"
-            eventId={event_id}
-            highlightBib={bib}
-          />,
+          event.display_mode === "RESULTS_AND_PHOTOS" && (
+            <TimingResultSection key="timing" eventId={event_id} bib={bib} />
+          ),
+          event.display_mode === "RESULTS_AND_PHOTOS" && (
+            <LeaderboardSection
+              key="leaderboard"
+              eventId={event_id}
+              highlightBib={bib}
+            />
+          ),
           <SearchSelfieSection
             key="selfie"
             eventId={event_id}
