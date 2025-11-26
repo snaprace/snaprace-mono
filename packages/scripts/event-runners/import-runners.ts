@@ -68,6 +68,12 @@ const parseTimeToSeconds = (value?: string | null) => {
   return null;
 };
 
+const parseNumber = (value: any): number | null => {
+  if (value === "" || value === null || value === undefined) return null;
+  const num = Number(value);
+  return Number.isNaN(num) ? null : num;
+};
+
 const extractDistanceKm = (contest?: string | null) => {
   if (!contest) return null;
   const match = contest.match(/([\d.]+)\s*K/i);
@@ -248,8 +254,8 @@ async function main() {
 
       return {
         event_id,
-        bib_number: item.Bib ?? 0,
-        age: item.Age ?? null,
+        bib_number: parseNumber(item.Bib) ?? 0,
+        age: parseNumber(item.Age),
         gender: item.Gender ?? null,
         first_name: nameParts.firstName,
         last_name: nameParts.lastName,
