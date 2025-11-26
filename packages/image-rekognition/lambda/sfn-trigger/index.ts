@@ -99,10 +99,13 @@ export const handler = async (event: SqsEvent): Promise<void> => {
       rawKey: key,
       instagramHandle: instagramHandle ?? null,
     };
+    const filename = parts.slice(3).join("-");
+    const safeFilename = filename.replace(/[^a-zA-Z0-9-_]/g, "-");
 
     await sfn.send(
       new StartExecutionCommand({
         stateMachineArn: STATE_MACHINE_ARN,
+        name: safeFilename,
         input: JSON.stringify(input),
       })
     );

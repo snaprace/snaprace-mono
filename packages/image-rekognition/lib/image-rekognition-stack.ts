@@ -282,7 +282,16 @@ export class ImageRekognitionStack extends cdk.Stack {
     });
 
     // S3 ObjectCreated -> SQS 알림
-    [".jpg", ".jpeg", ".png", ".heic"].forEach((suffix) => {
+    [
+      ".jpg",
+      ".jpeg",
+      ".png",
+      ".heic",
+      ".JPG",
+      ".JPEG",
+      ".PNG",
+      ".HEIC",
+    ].forEach((suffix) => {
       this.imageBucket.addEventNotification(
         s3.EventType.OBJECT_CREATED,
         new s3n.SqsDestination(imageUploadQueue),

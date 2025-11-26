@@ -124,7 +124,7 @@ export function PhotoGallery({
   return (
     <>
       {!bib && photographers && photographers.length > 0 && (
-        <div className="mb-4 flex items-center justify-end gap-2 px-4 md:mb-6">
+        <div className="mb-4 flex items-center justify-end gap-2 px-1 md:mb-6 md:px-4">
           {/* <Instagram size={24} strokeWidth={1.4} color="gray" /> */}
           <Select
             value={selectedPhotographer ?? "all"}
