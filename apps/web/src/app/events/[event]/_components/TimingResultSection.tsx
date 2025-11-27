@@ -16,7 +16,7 @@ export function TimingResultSection({
   eventId,
   bib,
 }: TimingResultSectionProps) {
-  const query = api.resultsV2.getRunnerByBib.useQuery(
+  const query = api.results.getRunnerByBib.useQuery(
     { eventId, bib },
     { enabled: Boolean(bib) },
   );

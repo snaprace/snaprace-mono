@@ -1,10 +1,7 @@
-import { galleriesRouter } from "@/server/api/routers/galleries";
 import { eventsRouter } from "@/server/api/routers/events";
 import { photosRouter } from "@/server/api/routers/photos";
 import { organizersRouter } from "@/server/api/routers/organizers";
 import { resultsRouter } from "@/server/api/routers/results";
-import { resultsV2Router } from "@/server/api/routers/results-v2";
-import { photosV2Router } from "@/server/api/routers/photos-v2";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 
 /**
@@ -13,13 +10,10 @@ import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
  * All routers added in /api/routers should be manually added here.
  */
 export const appRouter = createTRPCRouter({
-  galleries: galleriesRouter,
   events: eventsRouter,
   photos: photosRouter,
   organizers: organizersRouter,
   results: resultsRouter,
-  resultsV2: resultsV2Router,
-  photosV2: photosV2Router,
 });
 
 // export type definition of API

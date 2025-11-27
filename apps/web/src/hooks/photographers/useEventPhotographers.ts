@@ -2,7 +2,7 @@ import { api } from "@/trpc/react";
 
 export function useEventPhotographers(eventId: string) {
   const { data: photographers, isLoading } =
-    api.photosV2.getPhotographersByEvent.useQuery(
+    api.photos.getPhotographersByEvent.useQuery(
       { eventId },
       {
         enabled: !!eventId,

@@ -36,7 +36,7 @@ export function LeaderboardFilters({
           placeholder="Search by name or bib..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="border-secondary/20 h-9 border bg-white pl-8 text-xs md:h-10 md:pl-10 md:text-sm"
+          className="h-9 border border-gray-200 bg-white pl-8 text-xs md:h-10 md:pl-10 md:text-sm"
         />
       </div>
 
@@ -49,7 +49,7 @@ export function LeaderboardFilters({
             onFiltersChange({ ...filters, division: value })
           }
         >
-          <SelectTrigger className="border-secondary/20 h-9 w-[110px] border bg-white text-xs md:h-10 md:w-[140px] md:text-sm">
+          <SelectTrigger className="h-9 w-[110px] border border-gray-200 bg-white text-xs md:h-10 md:w-[140px] md:text-sm">
             <SelectValue placeholder="All Divisions" />
           </SelectTrigger>
           <SelectContent>
@@ -74,7 +74,7 @@ export function LeaderboardFilters({
             })
           }
         >
-          <SelectTrigger className="border-secondary/20 h-9 w-[90px] border bg-white text-xs md:h-10 md:w-[120px] md:text-sm">
+          <SelectTrigger className="h-9 w-[90px] border border-gray-200 bg-white text-xs md:h-10 md:w-[120px] md:text-sm">
             <SelectValue placeholder="All Genders" />
           </SelectTrigger>
           <SelectContent>

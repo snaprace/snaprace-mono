@@ -64,7 +64,7 @@ export function SearchSelfieSection({
     };
   }, [uploadedFile]);
 
-  const searchSelfieMutation = api.photosV2.searchBySelfie.useMutation({
+  const searchSelfieMutation = api.photos.searchBySelfie.useMutation({
     onSuccess: (data) => {
       const latencyMs = Math.round(performance.now() - startTimeRef.current);
       const matches = data.photos || [];

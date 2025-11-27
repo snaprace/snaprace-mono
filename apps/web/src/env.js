@@ -14,7 +14,6 @@ export const env = createEnv({
     AWS_ACCESS_KEY_ID: z.string(),
     AWS_SECRET_ACCESS_KEY: z.string(),
     DYNAMO_PHOTO_SERVICE_TABLE: z.string().optional(), // New Photo Service Table
-    BUCKET: z.string(),
     // Auth.js (NextAuth) configuration
     AUTH_SECRET: z.string(),
     AUTH_URL: z.string().url().optional(),
@@ -36,6 +35,8 @@ export const env = createEnv({
     NEXT_PUBLIC_SITE_URL: z.string().url(),
     NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string(),
+    NEXT_PUBLIC_IMAGE_HANDLER_URL: z.string().url(),
+    NEXT_PUBLIC_IMAGE_BUCKET: z.string(),
   },
 
   /**
@@ -49,7 +50,6 @@ export const env = createEnv({
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
     DYNAMO_PHOTO_SERVICE_TABLE: process.env.DYNAMO_PHOTO_SERVICE_TABLE,
     SEARCH_BY_SELFIE_FUNCTION_NAME: process.env.SEARCH_BY_SELFIE_FUNCTION_NAME,
-    BUCKET: process.env.BUCKET,
     AUTH_SECRET: process.env.AUTH_SECRET,
     AUTH_URL: process.env.AUTH_URL,
     // Crisp
@@ -60,6 +60,9 @@ export const env = createEnv({
     // Supabase DB
     SUPABASE_URL: process.env.SUPABASE_URL,
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
+    // Image Handler
+    NEXT_PUBLIC_IMAGE_HANDLER_URL: process.env.NEXT_PUBLIC_IMAGE_HANDLER_URL,
+    NEXT_PUBLIC_IMAGE_BUCKET: process.env.NEXT_PUBLIC_IMAGE_BUCKET,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

@@ -30,7 +30,9 @@ export function EventPageContent({
     <>
       <EventInsightsPanel
         sections={[
-          <LeaderboardSection key="leaderboard" eventId={event.event_id} />,
+          event.display_mode === "RESULTS_AND_PHOTOS" && (
+            <LeaderboardSection key="leaderboard" eventId={event.event_id} />
+          ),
           <SearchSelfieSection
             key="selfie"
             eventId={event.event_id}

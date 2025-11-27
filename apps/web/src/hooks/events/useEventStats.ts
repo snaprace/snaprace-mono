@@ -9,17 +9,17 @@ export function useEventStats(
   const params = useParams();
   const currentBib = params?.bib as string | undefined;
 
-  const eventCountQuery = api.photosV2.getPhotoCountByEvent.useQuery(
+  const eventCountQuery = api.photos.getPhotoCountByEvent.useQuery(
     { organizerId, eventId },
     { enabled: !currentBib },
   );
 
-  const bibCountQuery = api.photosV2.getPhotoCountByBib.useQuery(
+  const bibCountQuery = api.photos.getPhotoCountByBib.useQuery(
     { eventId, bibNumber: currentBib ?? "" },
     { enabled: !!currentBib },
   );
 
-  const runnerQuery = api.resultsV2.getRunnerByBib.useQuery(
+  const runnerQuery = api.results.getRunnerByBib.useQuery(
     { eventId, bib: currentBib ?? "" },
     { enabled: !!currentBib && displayMode === "RESULTS_AND_PHOTOS" },
   );

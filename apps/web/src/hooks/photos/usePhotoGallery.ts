@@ -23,7 +23,7 @@ export function usePhotoGallery({
   bib,
   instagramHandle,
 }: UsePhotoGalleryProps) {
-  const byEventQuery = api.photosV2.getByEvent.useInfiniteQuery(
+  const byEventQuery = api.photos.getByEvent.useInfiniteQuery(
     {
       organizerId,
       eventId,
@@ -36,7 +36,7 @@ export function usePhotoGallery({
     },
   );
 
-  const byBibQuery = api.photosV2.getByBib.useInfiniteQuery(
+  const byBibQuery = api.photos.getByBib.useInfiniteQuery(
     {
       organizerId,
       eventId,

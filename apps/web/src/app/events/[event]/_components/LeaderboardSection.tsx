@@ -33,7 +33,7 @@ export function LeaderboardSection({
 }: LeaderboardSectionProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const resultsQuery = api.resultsV2.getEventResults.useQuery(
+  const resultsQuery = api.results.getEventResults.useQuery(
     { eventId },
     { enabled: Boolean(eventId) },
   );
