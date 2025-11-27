@@ -3,17 +3,22 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "import-runners": "tsx event-runners/import-runners.ts"
+    "import-runners": "tsx event-runners/import-runners.ts",
+    "cleanup-photographer": "tsx cleanup-photographer.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.940.0",
+    "@aws-sdk/client-rekognition": "^3.932.0",
+    "@aws-sdk/client-s3": "^3.940.0",
+    "@aws-sdk/lib-dynamodb": "^3.940.0",
+    "@supabase/supabase-js": "^2.38.0",
     "axios": "^1.6.0",
-    "yargs": "^17.7.0",
     "dotenv": "^16.3.0",
-    "@supabase/supabase-js": "^2.38.0"
+    "yargs": "^17.7.0"
   },
   "devDependencies": {
-    "tsx": "^4.0.0",
-    "@types/node": "^20.0.0",
-    "@types/yargs": "^17.0.0"
+    "@types/node": "^20.19.24",
+    "@types/yargs": "^17.0.0",
+    "tsx": "^4.0.0"
   }
 }
