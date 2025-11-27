@@ -146,8 +146,7 @@ export function PhotoGallery({
                   key={p.instagramHandle}
                   value={p.instagramHandle ?? ""}
                 >
-                  {p.name || p.instagramHandle || "Unknown"} (
-                  {p.imageCount ?? 0})
+                  {p.instagramHandle} ({p.imageCount ?? 0})
                 </SelectItem>
               ))}
             </SelectContent>
