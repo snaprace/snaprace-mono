@@ -13,17 +13,7 @@ export const env = createEnv({
     AWS_REGION: z.string(),
     AWS_ACCESS_KEY_ID: z.string(),
     AWS_SECRET_ACCESS_KEY: z.string(),
-    DYNAMO_GALLERIES_TABLE: z.string(),
-    DYNAMO_EVENTS_TABLE: z.string(),
-    DYNAMO_PHOTOS_TABLE: z.string(),
-    DYNAMO_FEEDBACKS_TABLE: z.string(),
-    DYNAMO_ORGANIZATIONS_TABLE: z.string(),
-    DYNAMO_TIMING_RESULTS_TABLE: z.string(),
-    DYNAMO_RUNNERS_TABLE: z.string().optional(), // 스크립트 전용, 빌드 시 불필요
-    DYNAMO_EVENT_PHOTOS_TABLE: z.string().optional(), // V2 Photo Processing
-    DYNAMO_PHOTO_BIB_INDEX_TABLE: z.string().optional(), // V2 Photo Processing
     DYNAMO_PHOTO_SERVICE_TABLE: z.string().optional(), // New Photo Service Table
-    PHOTO_SEARCH_API_URL: z.string().optional(), // Photo Search API Gateway URL
     BUCKET: z.string(),
     // Auth.js (NextAuth) configuration
     AUTH_SECRET: z.string(),
@@ -57,17 +47,7 @@ export const env = createEnv({
     AWS_REGION: process.env.AWS_REGION,
     AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
-    DYNAMO_GALLERIES_TABLE: process.env.DYNAMO_GALLERIES_TABLE,
-    DYNAMO_EVENTS_TABLE: process.env.DYNAMO_EVENTS_TABLE,
-    DYNAMO_PHOTOS_TABLE: process.env.DYNAMO_PHOTOS_TABLE,
-    DYNAMO_FEEDBACKS_TABLE: process.env.DYNAMO_FEEDBACKS_TABLE,
-    DYNAMO_ORGANIZATIONS_TABLE: process.env.DYNAMO_ORGANIZATIONS_TABLE,
-    DYNAMO_TIMING_RESULTS_TABLE: process.env.DYNAMO_TIMING_RESULTS_TABLE,
-    DYNAMO_RUNNERS_TABLE: process.env.DYNAMO_RUNNERS_TABLE,
-    DYNAMO_EVENT_PHOTOS_TABLE: process.env.DYNAMO_EVENT_PHOTOS_TABLE,
-    DYNAMO_PHOTO_BIB_INDEX_TABLE: process.env.DYNAMO_PHOTO_BIB_INDEX_TABLE,
     DYNAMO_PHOTO_SERVICE_TABLE: process.env.DYNAMO_PHOTO_SERVICE_TABLE,
-    PHOTO_SEARCH_API_URL: process.env.PHOTO_SEARCH_API_URL,
     SEARCH_BY_SELFIE_FUNCTION_NAME: process.env.SEARCH_BY_SELFIE_FUNCTION_NAME,
     BUCKET: process.env.BUCKET,
     AUTH_SECRET: process.env.AUTH_SECRET,

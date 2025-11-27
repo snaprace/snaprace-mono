@@ -9,5 +9,4 @@ export const s3 = new S3Client({
 
 export const ddb = dynamoClient;
 
-export const DYNAMO_TIMING_RESULTS_TABLE = TABLES.TIMING_RESULTS;
 export const BUCKET = env.BUCKET;

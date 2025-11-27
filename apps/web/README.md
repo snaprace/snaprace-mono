@@ -8,7 +8,7 @@ SnapRace helps race organizers deliver a branded photo discovery experience wher
 - **Selfie matching** – Participants can upload a selfie; an AWS Lambda endpoint enriches results with additional matches after collecting facial-recognition consent.
 - **Multi-tenant branding** – Middleware detects subdomains, loads organization colors, logos, and partner assets, and scopes tRPC queries by organization.
 - **Photo actions** – Bulk selection, download routing through Next.js, and share dialogs make it easy to save or publish images.
-- **Feedback & analytics** – DynamoDB-backed feedback API, Microsoft Clarity tagging, Google Analytics, and a Crisp chat widget capture insights and support.
+- **Feedback & analytics** – Microsoft Clarity tagging, Google Analytics, and a Crisp chat widget capture insights and support.
 
 ## Tech Stack
 
@@ -19,7 +19,7 @@ SnapRace helps race organizers deliver a branded photo discovery experience wher
 
 ## Directory Layout
 
-- `src/app` – App Router routes, API handlers (`api/download-image`, `api/feedback`), and layout providers.
+- `src/app` – App Router routes, API handlers (`api/download-image`), and layout providers.
 - `src/components` – Reusable UI, analytics hooks, gallery widgets, and modals.
 - `src/contexts`, `src/hooks` – Client state management (organization, photo selection, selfie upload, analytics tracking).
 - `src/server` – tRPC routers, NextAuth configuration, and server-only utilities.

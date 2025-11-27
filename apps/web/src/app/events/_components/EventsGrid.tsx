@@ -1,10 +1,10 @@
 "use client";
 
 import EventCard from "./EventCard";
-import { type EventEntity } from "@/types/trpc";
+import { type Event } from "@/server/services/events";
 
 interface EventsGridProps {
-  events: EventEntity[];
+  events: Event[];
 }
 
 export default function EventsGrid({ events }: EventsGridProps) {

@@ -1,14 +1,6 @@
 import type { MetadataRoute } from "next";
-import { ScanCommand } from "@aws-sdk/lib-dynamodb";
-import { dynamoClient, TABLES } from "@/lib/dynamodb";
 import { env } from "@/env";
-
-interface Event {
-  event_id: string;
-  event_name: string;
-  event_date: string;
-  organization_id: string;
-}
+import { createServerClient } from "@repo/supabase";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = env.NEXT_PUBLIC_SITE_URL;
@@ -37,17 +29,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Dynamic event pages
   try {
-    const command = new ScanCommand({
-      TableName: TABLES.EVENTS,
-    });
-    const result = await dynamoClient.send(command);
-    const events = (result.Items ?? []) as Event[];
+    const supabase = createServerClient(
+      env.SUPABASE_URL,
+      env.SUPABASE_ANON_KEY,
+    );
 
-    const eventPages: MetadataRoute.Sitemap = events.map((event) => ({
+    const { data: events } = await supabase
+      .from("events")
+      .select("event_id, event_date")
+      .order("event_date", { ascending: false });
+
+    const eventPages: MetadataRoute.Sitemap = (events ?? []).map((event) => ({
       url: `${baseUrl}/events/${event.event_id}/null`,
-      lastModified: event.event_date
-        ? new Date(event.event_date)
-        : new Date(),
+      lastModified: event.event_date ? new Date(event.event_date) : new Date(),
       changeFrequency: "weekly",
       priority: 0.8,
     }));
@@ -58,4 +52,3 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return staticPages;
   }
 }
-
