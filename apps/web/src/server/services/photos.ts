@@ -136,6 +136,43 @@ const getCachedPhotoCountByBib = unstable_cache(
   },
 );
 
+const getCachedPhotoCountByPhotographer = unstable_cache(
+  async (eventId: string, instagramHandle: string) => {
+    if (!TABLES.PHOTO_SERVICE) {
+      throw new Error("DYNAMO_PHOTO_SERVICE_TABLE is not configured");
+    }
+
+    let totalCount = 0;
+    let lastEvaluatedKey: QueryCommandOutput["LastEvaluatedKey"] | undefined;
+
+    do {
+      const command = new QueryCommand({
+        TableName: TABLES.PHOTO_SERVICE,
+        IndexName: "GSI2",
+        KeyConditionExpression:
+          "GSI2PK = :pk AND begins_with(GSI2SK, :skPrefix)",
+        ExpressionAttributeValues: {
+          ":pk": `PHOTOGRAPHER#${instagramHandle}`,
+          ":skPrefix": `EVT#${eventId}`,
+        },
+        Select: "COUNT",
+        ExclusiveStartKey: lastEvaluatedKey,
+      });
+
+      const result: QueryCommandOutput = await dynamoClient.send(command);
+      totalCount += result.Count ?? 0;
+      lastEvaluatedKey = result.LastEvaluatedKey;
+    } while (lastEvaluatedKey);
+
+    return totalCount;
+  },
+  ["photo-count-by-photographer"],
+  {
+    revalidate: 1800, // Cache for 1 hour
+    tags: ["photo-count"],
+  },
+);
+
 export class PhotoService {
   private static extractPidFromKey(key: string): string {
     const filename = key.split("/").pop() ?? "";
@@ -338,6 +375,20 @@ export class PhotoService {
     bibNumber: string;
   }) {
     return getCachedPhotoCountByBib(eventId, bibNumber);
+  }
+
+  /**
+   * Get photo count by Photographer.
+   * Uses cached query with Select: "COUNT" on GSI2
+   */
+  static async getPhotoCountByPhotographer({
+    eventId,
+    instagramHandle,
+  }: {
+    eventId: string;
+    instagramHandle: string;
+  }) {
+    return getCachedPhotoCountByPhotographer(eventId, instagramHandle);
   }
 
   /**

@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
-import { PhotoService } from "@/server/services/photo-service";
+import { PhotoService } from "@/server/services/photos";
 import { trpcError } from "../error-utils";
-import { PhotographerService } from "@/server/services/photographer-service";
+import { PhotographerService } from "@/server/services/photographers";
 
 export const photosRouter = createTRPCRouter({
   searchBySelfie: publicProcedure

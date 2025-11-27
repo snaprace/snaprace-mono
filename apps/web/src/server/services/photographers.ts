@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@repo/supabase";
+import { PhotoService } from "@/server/services/photos";
 
 type DatabaseClient = SupabaseClient<Database>;
 
@@ -30,9 +31,24 @@ export class PhotographerService {
       throw error;
     }
 
-    return data.map((item) => ({
-      instagramHandle: item.instagram_handle,
-      name: item.photographers?.name,
-    }));
+    const photographersWithCounts = await Promise.all(
+      data.map(async (item) => {
+        let imageCount = 0;
+        if (item.instagram_handle) {
+          imageCount = await PhotoService.getPhotoCountByPhotographer({
+            eventId,
+            instagramHandle: item.instagram_handle,
+          });
+        }
+
+        return {
+          instagramHandle: item.instagram_handle,
+          name: item.photographers?.name,
+          imageCount,
+        };
+      }),
+    );
+
+    return photographersWithCounts;
   }
 }

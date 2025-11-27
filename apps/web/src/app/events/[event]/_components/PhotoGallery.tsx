@@ -125,7 +125,6 @@ export function PhotoGallery({
     <>
       {!bib && photographers && photographers.length > 0 && (
         <div className="mb-4 flex items-center justify-end gap-2 px-1 md:mb-6 md:px-4">
-          {/* <Instagram size={24} strokeWidth={1.4} color="gray" /> */}
           <Select
             value={selectedPhotographer ?? "all"}
             onValueChange={(value) =>
@@ -147,7 +146,8 @@ export function PhotoGallery({
                   key={p.instagramHandle}
                   value={p.instagramHandle ?? ""}
                 >
-                  {p.instagramHandle || p.name || "Unknown"}
+                  {p.name || p.instagramHandle || "Unknown"} (
+                  {p.imageCount ?? 0})
                 </SelectItem>
               ))}
             </SelectContent>
