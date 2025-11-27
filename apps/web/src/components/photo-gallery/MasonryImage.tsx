@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { RenderImageContext, RenderImageProps } from "react-photo-album";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Photo } from "@/hooks/photos/usePhotoGallery";
+import { getOriginalPhotoUrl } from "@/utils/photo";
 import { Badge } from "@/components/ui/badge";
 import { ArrowDownToLine, Camera, Forward } from "lucide-react";
 import { useIsMobile } from "@/hooks/useMobile";
@@ -10,7 +11,7 @@ import { ShareDialog } from "@/components/ShareDialog";
 
 export function MasonryImage(
   { alt = "", title, className, onClick }: RenderImageProps,
-  { photo, width, height }: RenderImageContext,
+  { photo: customPhoto, width, height }: RenderImageContext<Photo>,
 ) {
   const sizes = `
       (max-width: 480px) 240px,
@@ -18,16 +19,18 @@ export function MasonryImage(
       (max-width: 1280px) 640px,
       1024px
     `;
-  const customPhoto = photo as Photo;
+
   const isMobile = useIsMobile();
   const { downloadImage } = useImageDownloader({ isMobile });
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Extract ULID from pid
     const ulid = customPhoto.pid;
+
+    const downloadUrl = getOriginalPhotoUrl(customPhoto.src);
+
     await downloadImage(
-      customPhoto.src,
+      downloadUrl,
       `${customPhoto.organizerId}-${customPhoto.eventId}-${ulid}.jpg`,
     );
   };
@@ -57,6 +60,7 @@ export function MasonryImage(
       <Image
         fill
         src={customPhoto.src}
+        // src={`https://images.snap-race.com/${customPhoto.src}`}
         alt={alt}
         title={title}
         sizes={sizes}
@@ -79,7 +83,7 @@ export function MasonryImage(
 
         <ShareDialog
           pid={customPhoto.pid}
-          photoUrl={customPhoto.src}
+          photoUrl={getOriginalPhotoUrl(customPhoto.src)}
           filename={`${customPhoto.organizerId}-${customPhoto.eventId}-${customPhoto.pid}.jpg`}
           isMobile={isMobile}
           shareOptions={{

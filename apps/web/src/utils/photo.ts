@@ -2,7 +2,19 @@
  * Photo-related utility functions
  */
 
+import { env } from "@/env";
 import { toast } from "sonner";
+
+/**
+ * Get original photo URL from S3 Key
+ */
+export function getOriginalPhotoUrl(key: string): string {
+  if (key.startsWith("http") || key.startsWith("/")) return key;
+  const cdnUrl =
+    env.NEXT_PUBLIC_IMAGE_CDN_URL || "https://images.snap-race.com";
+  const baseUrl = cdnUrl.endsWith("/") ? cdnUrl.slice(0, -1) : cdnUrl;
+  return `${baseUrl}/${key}`;
+}
 
 /**
  * Extract photo ID from CloudFront URL

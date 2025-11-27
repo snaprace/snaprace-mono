@@ -28,6 +28,7 @@ export const isLambdaProxyResponse = (
 };
 
 const normalizeSelfiePhoto = (photo: unknown): SelfiePhoto | null => {
+  console.log("photo", photo);
   if (typeof photo !== "object" || photo === null) {
     return null;
   }
@@ -37,18 +38,25 @@ const normalizeSelfiePhoto = (photo: unknown): SelfiePhoto | null => {
   // Basic validation for required Photo fields
   if (
     typeof candidate.pid !== "string" ||
-    typeof candidate.s3Key !== "string" ||
-    typeof candidate.url !== "string" ||
+    (typeof candidate.s3Key !== "string" &&
+      typeof candidate.src !== "string") ||
     typeof candidate.eventId !== "string" ||
     typeof candidate.orgId !== "string"
   ) {
     return null;
   }
 
+  // Map s3Key or existing src/url to the new 'src' field
+  // Lambda might return s3Key, url, or src depending on version
+  const src =
+    (candidate.src as string) ||
+    (candidate.s3Key as string) ||
+    (candidate.url as string) ||
+    "";
+
   return {
     pid: candidate.pid,
-    s3Key: candidate.s3Key,
-    url: candidate.url,
+    src,
     width: typeof candidate.width === "number" ? candidate.width : 0,
     height: typeof candidate.height === "number" ? candidate.height : 0,
     eventId: candidate.eventId,

@@ -6,13 +6,12 @@ interface ImageLoaderProps {
   quality?: number;
 }
 
-export default function imageLoader({
-  src,
-  width,
-  quality: _quality,
-}: ImageLoaderProps) {
+export default function imageLoader({ src, width, quality }: ImageLoaderProps) {
   // If src is already a full URL (e.g. external), return it as is
-  if (src.startsWith("http")) return src;
+  if (src.startsWith("http") || src.startsWith("https")) return src;
+
+  // Local static images (starting with /) should return as is
+  if (src.startsWith("/")) return src;
 
   const IMAGE_HANDLER_URL = process.env.NEXT_PUBLIC_IMAGE_HANDLER_URL;
   const BUCKET_NAME = process.env.NEXT_PUBLIC_IMAGE_BUCKET;
@@ -28,9 +27,12 @@ export default function imageLoader({
     edits: {
       resize: {
         width: width,
-        fit: "cover",
+        fit: "inside",
       },
       toFormat: "webp",
+      webp: {
+        quality: quality || 75,
+      },
     },
   };
 

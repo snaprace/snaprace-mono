@@ -96,7 +96,6 @@ export function SearchSelfieSection({
         const mappedPhotos: Photo[] = matches.map((p) => ({
           ...p,
           isSelfieMatch: true,
-          src: p.url,
           organizerId: p.orgId,
           blurDataURL: getBlurDataURL(p.thumbHash ?? undefined),
         }));

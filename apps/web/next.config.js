@@ -7,7 +7,9 @@ import "./src/env.js";
 /** @type {import("next").NextConfig} */
 const config = {
   images: {
-    unoptimized: true,
+    loader: "custom",
+    // unoptimized: true,
+    loaderFile: "./src/lib/image-loader.ts",
     remotePatterns: [
       // CloudFront custom domain
       {

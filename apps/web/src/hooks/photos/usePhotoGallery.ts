@@ -57,7 +57,6 @@ export function usePhotoGallery({
       data?.pages.flatMap((page) =>
         page.items.map((item) => ({
           ...item,
-          src: item.url,
           blurDataURL: getBlurDataURL(item.thumbHash ?? undefined),
           organizerId: item.orgId,
         })),

@@ -204,8 +204,7 @@ export class PhotoService {
       const key = item.processedKey || item.rawKey;
       return {
         pid: PhotoService.extractPidFromKey(key),
-        s3Key: key,
-        url: `https://images.snap-race.com/${key}`,
+        src: key,
         width: item.dimensions.width,
         height: item.dimensions.height,
         eventId: item.eventId,
@@ -294,7 +293,7 @@ export class PhotoService {
         return {
           pid: PhotoService.extractPidFromKey(key),
           s3Key: key,
-          url: `https://images.snap-race.com/${key}`,
+          src: key,
           width: item.dimensions.width,
           height: item.dimensions.height,
           eventId: item.eventId,

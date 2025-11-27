@@ -1,7 +1,6 @@
 export interface Photo {
   pid: string;
-  s3Key: string;
-  url: string;
+  src: string;
   width: number;
   height: number;
   eventId: string;
