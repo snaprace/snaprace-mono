@@ -46,6 +46,7 @@ export function Header() {
                   fill
                   className="object-contain"
                   priority
+                  unoptimized
                 />
               </div>
             ) : (
@@ -56,6 +57,7 @@ export function Header() {
                   fill
                   className="object-contain"
                   priority
+                  unoptimized
                 />
               </div>
             )}
@@ -108,6 +110,7 @@ export function Header() {
                           alt={name}
                           fill
                           className="object-contain"
+                          unoptimized
                         />
                       </div>
                     ) : (
@@ -117,6 +120,7 @@ export function Header() {
                           alt="SnapRace"
                           fill
                           className="object-contain"
+                          unoptimized
                         />
                       </div>
                     )}

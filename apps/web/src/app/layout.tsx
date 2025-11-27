@@ -70,7 +70,7 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en" className={`${raleway.variable}`}>
+    <html lang="en" className={`${raleway.variable}`} suppressHydrationWarning>
       <head>
         <OrganizerStyles organizer={organizer} />
       </head>
