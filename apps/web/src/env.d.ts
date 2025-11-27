@@ -11,8 +11,8 @@ declare module "@/env" {
     GOOGLE_ANALYTICS_ID?: string;
     NEXT_PUBLIC_SITE_URL: string;
     // Image Handler
-    NEXT_PUBLIC_IMAGE_HANDLER_URL: string;
-    NEXT_PUBLIC_IMAGE_BUCKET: string;
+    // NEXT_PUBLIC_IMAGE_HANDLER_URL: string;
+    // NEXT_PUBLIC_IMAGE_BUCKET: string;
     // Supabase DB
     SUPABASE_URL: string;
     SUPABASE_ANON_KEY: string;
