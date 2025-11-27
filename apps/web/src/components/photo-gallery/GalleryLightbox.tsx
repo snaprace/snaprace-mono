@@ -13,6 +13,7 @@ import type { Photo } from "@/hooks/photos/usePhotoGallery";
 import { useImageDownloader } from "@/hooks/useImageDownloader";
 import { ShareDialog } from "@/components/ShareDialog";
 import { trackPhotoDownload } from "@/lib/analytics";
+import { getOriginalPhotoUrl } from "@/utils/photo";
 
 // Extend module definition for Lightbox
 declare module "yet-another-react-lightbox" {
@@ -61,8 +62,10 @@ export function GalleryLightbox({
         device_type: isMobile ? "mobile" : "desktop",
       });
 
+      const downloadUrl = getOriginalPhotoUrl(currentPhoto.src);
+
       await downloadImage(
-        currentPhoto.src,
+        downloadUrl,
         `${currentPhoto.organizerId}-${currentPhoto.eventId}-${ulid}.jpg`,
       );
     }

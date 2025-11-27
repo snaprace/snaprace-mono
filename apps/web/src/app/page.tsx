@@ -15,7 +15,6 @@ import { useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
 import { EventSelectSkeleton } from "@/components/states/EventsSkeleton";
 import { useOrganizer } from "@/contexts/OrganizerContext";
-import { getOrganizerName, getOrganizerSubdomain } from "@/lib/organizer-helpers";
 import { Footer } from "@/components/Footer";
 
 export default function HomePage() {
@@ -23,8 +22,6 @@ export default function HomePage() {
   const [selectedEventId, setSelectedEventId] = useState("");
   const router = useRouter();
   const { organizer } = useOrganizer();
-  const subdomain = getOrganizerSubdomain(organizer);
-  const name = getOrganizerName(organizer);
 
   const eventsQuery = api.events.getAll.useQuery();
 
@@ -49,7 +46,9 @@ export default function HomePage() {
       <section className="bg-background relative px-4 py-20 sm:py-32">
         <div className="container mx-auto max-w-4xl text-center">
           <h1 className="text-foreground mb-12 text-3xl font-semibold tracking-tight whitespace-pre-wrap sm:text-4xl md:text-5xl">
-            {subdomain ? `${name}\nEvent Photos` : "Find your snap"}
+            {organizer?.subdomain
+              ? `${organizer.name}\nEvent Photos`
+              : "Find your snap"}
           </h1>
 
           {/* Main Search */}

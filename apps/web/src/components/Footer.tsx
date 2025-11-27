@@ -3,21 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useOrganizer } from "@/contexts/OrganizerContext";
-import {
-  getOrganizerName,
-  getOrganizerSubdomain,
-  getContactEmail,
-  getPartners,
-} from "@/lib/organizer-helpers";
-import { getOrganizationAssets } from "@/utils/organization-assets";
 
 export function Footer() {
   const { organizer } = useOrganizer();
-  const name = getOrganizerName(organizer);
-  const subdomain = getOrganizerSubdomain(organizer);
-  const contactEmail = getContactEmail(organizer);
-  const partners = getPartners(organizer);
-  const assets = getOrganizationAssets(subdomain);
 
   return (
     <section className="bg-muted/10 mt-auto border-t">
@@ -32,47 +20,49 @@ export function Footer() {
             </Link>
             <span className="hidden sm:inline">•</span>
             <span>
-              © {new Date().getFullYear()} {name}. All rights reserved.
+              © {new Date().getFullYear()} {organizer?.name}. All rights
+              reserved.
             </span>
-            {contactEmail && (
+            {organizer?.branding_meta?.info?.email && (
               <>
                 <span className="hidden sm:inline">•</span>
                 <a
-                  href={`mailto:${contactEmail}`}
+                  href={`mailto:${organizer?.branding_meta?.info?.email}`}
                   className="hover:text-foreground transition-colors"
                 >
-                  {contactEmail}
+                  {organizer?.branding_meta?.info?.email}
                 </a>
               </>
             )}
           </div>
 
-          {partners.length > 0 && (
-            <div className="flex max-w-full items-center justify-center gap-3 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {partners.map((partner) => (
-                <Link
-                  key={partner.id}
-                  href={partner.siteUrl || "#"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group flex-shrink-0"
-                >
-                  <div className="relative flex h-8 w-fit max-w-[120px] items-center justify-center">
-                    <Image
-                      src={
-                        partner.imageUrl || assets.getPartnerImage(partner.name)
-                      }
-                      alt={partner.name}
-                      width={120}
-                      height={32}
-                      className="max-h-8 w-auto object-contain opacity-70 transition-all duration-200 group-hover:scale-105 group-hover:opacity-100"
-                      sizes="120px"
-                    />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
+          {organizer?.branding_meta?.partners &&
+            organizer?.branding_meta?.partners?.length > 0 && (
+              <div className="flex max-w-full items-center justify-center gap-3 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {organizer?.branding_meta?.partners?.map(
+                  (partner) =>
+                    partner.imageUrl && (
+                      <Link
+                        key={partner.id}
+                        href={partner.siteUrl || "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group shrink-0"
+                      >
+                        <Image
+                          src={partner.imageUrl}
+                          alt={partner.name}
+                          width={120}
+                          height={30}
+                          style={{ height: "auto", width: "auto" }}
+                          className="max-h-8 w-auto object-contain opacity-70 transition-all duration-200 group-hover:scale-105 group-hover:opacity-100"
+                          unoptimized
+                        />
+                      </Link>
+                    ),
+                )}
+              </div>
+            )}
         </div>
       </div>
     </section>

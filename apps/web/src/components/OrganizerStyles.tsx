@@ -1,6 +1,5 @@
 import { oklch } from "culori";
 import type { Organizer } from "@/server/services/organizers";
-import { getPrimaryColor, getSecondaryColor } from "@/lib/organizer-helpers";
 
 interface OrganizerStylesProps {
   organizer: Organizer | null;
@@ -9,8 +8,8 @@ interface OrganizerStylesProps {
 export function OrganizerStyles({ organizer }: OrganizerStylesProps) {
   if (!organizer) return null;
 
-  const primaryColor = getPrimaryColor(organizer);
-  const secondaryColor = getSecondaryColor(organizer);
+  const primaryColor = organizer?.branding_meta?.branding?.primaryColor;
+  const secondaryColor = organizer?.branding_meta?.branding?.secondaryColor;
   let styleContent = "";
 
   if (primaryColor) {
@@ -59,4 +58,3 @@ export function OrganizerStyles({ organizer }: OrganizerStylesProps) {
     />
   );
 }
-

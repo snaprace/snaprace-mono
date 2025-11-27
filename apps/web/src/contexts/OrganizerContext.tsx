@@ -9,10 +9,6 @@ import {
 } from "react";
 import { api } from "@/trpc/react";
 import type { Organizer } from "@/server/services/organizers";
-import {
-  getPrimaryColor,
-  getSecondaryColor,
-} from "@/lib/organizer-helpers";
 import { oklch } from "culori";
 
 interface OrganizerContextType {
@@ -57,8 +53,8 @@ export function OrganizerProvider({
     if (orgData) {
       setOrganizer(orgData);
 
-      const primaryColor = getPrimaryColor(orgData);
-      const secondaryColor = getSecondaryColor(orgData);
+      const primaryColor = orgData?.branding_meta?.branding?.primaryColor;
+      const secondaryColor = orgData?.branding_meta?.branding?.secondaryColor;
 
       // Only apply styles if they're not already set (client-side navigation)
       // Server-side styles are handled by OrganizerStyles component
@@ -145,4 +141,3 @@ export const useOrganizer = () => {
   }
   return context;
 };
-

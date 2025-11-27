@@ -8,6 +8,7 @@ import { ArrowDownToLine, Camera, Forward } from "lucide-react";
 import { useIsMobile } from "@/hooks/useMobile";
 import { useImageDownloader } from "@/hooks/useImageDownloader";
 import { ShareDialog } from "@/components/ShareDialog";
+import { trackPhotoDownload } from "@/lib/analytics";
 
 export function MasonryImage(
   { alt = "", title, className, onClick }: RenderImageProps,
@@ -26,6 +27,14 @@ export function MasonryImage(
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const ulid = customPhoto.pid;
+
+    trackPhotoDownload({
+      event_id: customPhoto.eventId,
+      bib_number: "",
+      download_type: "single",
+      photo_count: 1,
+      device_type: isMobile ? "mobile" : "desktop",
+    });
 
     const downloadUrl = getOriginalPhotoUrl(customPhoto.src);
 

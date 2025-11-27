@@ -8,19 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { usePathname } from "next/navigation";
 import { useOrganizer } from "@/contexts/OrganizerContext";
-import {
-  getOrganizerName,
-  getOrganizerSubdomain,
-} from "@/lib/organizer-helpers";
-import { getOrganizationAssets } from "@/utils/organization-assets";
 
 export function Header() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const pathname = usePathname();
   const { organizer } = useOrganizer();
-  const subdomain = getOrganizerSubdomain(organizer);
-  const name = getOrganizerName(organizer);
-  const assets = getOrganizationAssets(subdomain);
 
   // Disable sticky on photo detail pages: /events/[event]/[bib]
   const isPhotoPage = /^\/events\/[^/]+\/[^/]+$/.test(pathname);
@@ -38,11 +30,11 @@ export function Header() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            {subdomain ? (
+            {organizer?.subdomain ? (
               <div className="relative h-[55px] w-32">
                 <Image
-                  src={assets.logo}
-                  alt={name}
+                  src={organizer?.branding_meta?.branding?.logoUrl || ""}
+                  alt={organizer?.name || ""}
                   fill
                   className="object-contain"
                   priority
@@ -103,11 +95,13 @@ export function Header() {
                     className="flex items-center space-x-2"
                     onClick={() => setIsSheetOpen(false)}
                   >
-                    {subdomain ? (
+                    {organizer?.subdomain ? (
                       <div className="relative h-10 w-32">
                         <Image
-                          src={assets.logo}
-                          alt={name}
+                          src={
+                            organizer?.branding_meta?.branding?.logoUrl || ""
+                          }
+                          alt={organizer?.name || ""}
                           fill
                           className="object-contain"
                           unoptimized
