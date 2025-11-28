@@ -22,7 +22,7 @@ export default async function EventLayout({
   return (
     <div className="min-h-[calc(100vh-64px)] bg-white">
       <EventHeader event={event} />
-      {eventId === "hoboken-turkey-trot-1mile-2025" && <JingleBellBanner />}
+      {event.organizer_id === "winningeventsgroup" && <JingleBellBanner />}
       {children}
     </div>
   );
