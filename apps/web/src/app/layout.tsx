@@ -73,12 +73,6 @@ export default async function RootLayout({
     <html lang="en" className={`${raleway.variable}`} suppressHydrationWarning>
       <head>
         <OrganizerStyles organizer={organizer} />
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3882782715674719"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
       </head>
       <body className="bg-background m-0 min-h-screen antialiased">
         <OrganizerLoader>
