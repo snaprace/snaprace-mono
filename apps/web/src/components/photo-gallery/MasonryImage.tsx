@@ -1,8 +1,10 @@
 import Image from "next/image";
+import { useMemo } from "react";
 import type { RenderImageContext, RenderImageProps } from "react-photo-album";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Photo } from "@/hooks/photos/usePhotoGallery";
 import { getOriginalPhotoUrl } from "@/utils/photo";
+import { getBlurDataURL } from "@/utils/thumbhash";
 import { Badge } from "@/components/ui/badge";
 import { ArrowDownToLine, Camera, Forward } from "lucide-react";
 import { useIsMobile } from "@/hooks/useMobile";
@@ -23,6 +25,11 @@ export function MasonryImage(
 
   const isMobile = useIsMobile();
   const { downloadImage } = useImageDownloader({ isMobile });
+
+  const blurDataURL = useMemo(
+    () => getBlurDataURL(customPhoto.thumbHash ?? undefined),
+    [customPhoto.thumbHash],
+  );
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -73,8 +80,8 @@ export function MasonryImage(
         alt={alt}
         title={title}
         sizes={sizes}
-        placeholder={customPhoto.blurDataURL ? "blur" : "empty"}
-        blurDataURL={customPhoto.blurDataURL}
+        placeholder={blurDataURL ? "blur" : "empty"}
+        blurDataURL={blurDataURL}
         className="cursor-pointer object-cover"
       />
 

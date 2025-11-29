@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import type { Photo } from "@/hooks/photos/usePhotoGallery";
-import { getBlurDataURL } from "@/utils/thumbhash";
 import {
   trackSelfieStart,
   trackSelfieUpload,
@@ -97,7 +96,6 @@ export function SearchSelfieSection({
           ...p,
           isSelfieMatch: true,
           organizerId: p.orgId,
-          blurDataURL: getBlurDataURL(p.thumbHash ?? undefined),
         }));
 
         onPhotosFound(mappedPhotos);

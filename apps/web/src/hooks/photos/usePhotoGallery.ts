@@ -1,11 +1,9 @@
 import { useMemo } from "react";
 import { api } from "@/trpc/react";
-import { getBlurDataURL } from "@/utils/thumbhash";
 import type { Photo as SharedPhoto } from "@/types/photo";
 
 export type Photo = SharedPhoto & {
   src: string;
-  blurDataURL?: string;
   isSelfieMatch?: boolean;
   organizerId: string;
 };
@@ -57,7 +55,6 @@ export function usePhotoGallery({
       data?.pages.flatMap((page) =>
         page.items.map((item) => ({
           ...item,
-          blurDataURL: getBlurDataURL(item.thumbHash ?? undefined),
           organizerId: item.orgId,
         })),
       ) ?? []

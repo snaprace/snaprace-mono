@@ -426,6 +426,7 @@ export class ImageRekognitionStack extends cdk.Stack {
         "format.$": "$.format",
         "size.$": "$.size",
         "ulid.$": "$.ulid",
+        "thumbHash.$": "$.thumbHash",
         "instagramHandle.$": "$.instagramHandle",
         "detectTextResult.$": "$.analysis.detectTextResult",
         "indexFacesResult.$": "$.analysis.indexFacesResult",

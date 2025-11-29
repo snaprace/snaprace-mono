@@ -14,6 +14,7 @@ import { useImageDownloader } from "@/hooks/useImageDownloader";
 import { ShareDialog } from "@/components/ShareDialog";
 import { trackPhotoDownload } from "@/lib/analytics";
 import { getOriginalPhotoUrl } from "@/utils/photo";
+import { getBlurDataURL } from "@/utils/thumbhash";
 
 // Extend module definition for Lightbox
 declare module "yet-another-react-lightbox" {
@@ -84,7 +85,7 @@ export function GalleryLightbox({
         width: photo.width,
         height: photo.height,
         pid: photo.pid,
-        blurDataURL: photo.blurDataURL,
+        blurDataURL: getBlurDataURL(photo.thumbHash ?? undefined),
         eventId: photo.eventId,
         organizerId: photo.organizerId,
       }))}
