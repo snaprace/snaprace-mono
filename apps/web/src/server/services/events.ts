@@ -31,6 +31,7 @@ export async function listEvents(options: {
   let query = supabase
     .from("events")
     .select("*")
+    .eq("is_active", true)
     .order("event_date", { ascending: false, nullsFirst: false });
 
   if (organizationId) {
@@ -59,6 +60,7 @@ export const getEventById = cache(
       .from("events")
       .select("*")
       .eq("event_id", eventId)
+      .eq("is_active", true)
       .maybeSingle();
 
     if (error) {

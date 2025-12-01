@@ -142,6 +142,7 @@ export type Database = {
           event_date: string
           event_id: string
           event_type: string | null
+          is_active: boolean
           location: string | null
           name: string
           organizer_id: string
@@ -154,6 +155,7 @@ export type Database = {
           event_date: string
           event_id: string
           event_type?: string | null
+          is_active?: boolean
           location?: string | null
           name: string
           organizer_id: string
@@ -166,6 +168,7 @@ export type Database = {
           event_date?: string
           event_id?: string
           event_type?: string | null
+          is_active?: boolean
           location?: string | null
           name?: string
           organizer_id?: string
@@ -185,7 +188,6 @@ export type Database = {
       }
       organizers: {
         Row: {
-          active: boolean
           branding_meta: Json | null
           created_at: string | null
           name: string
@@ -193,7 +195,6 @@ export type Database = {
           subdomain: string | null
         }
         Insert: {
-          active: boolean
           branding_meta?: Json | null
           created_at?: string | null
           name: string
@@ -201,7 +202,6 @@ export type Database = {
           subdomain?: string | null
         }
         Update: {
-          active?: boolean
           branding_meta?: Json | null
           created_at?: string | null
           name?: string
