@@ -22,7 +22,9 @@ export function EmptyState({ icon, title, message, action }: EmptyStateProps) {
         </div>
       )}
       <h3 className="text-foreground mb-2 text-xl font-semibold">{title}</h3>
-      <p className="text-muted-foreground mx-auto mb-6 max-w-md">{message}</p>
+      <p className="text-muted-foreground mx-auto mb-6 max-w-md whitespace-pre-wrap">
+        {message}
+      </p>
       {action && (
         <Button variant="outline" onClick={action.onClick}>
           {action.label}
@@ -46,30 +48,40 @@ export function NoPhotosState({
   isAllPhotos = false,
   bibNumber = "",
   onViewAllPhotos,
+  actionLabel = "View All Event Photos",
 }: {
   isAllPhotos?: boolean;
   bibNumber?: string;
-  onViewAllPhotos?: () => void;
+  onViewAllPhotos: () => void;
+  actionLabel?: string;
 }) {
   if (isAllPhotos) {
     return (
       <EmptyState
         icon={<Camera className="text-muted-foreground h-10 w-10" />}
         title="No Photos Available"
-        message="Photos for this event haven't been uploaded yet. Please check back later."
+        message={`Photos for this event haven't been uploaded yet. \nPlease check back later.`}
+        action={{
+          label: "View All Events",
+          onClick: onViewAllPhotos,
+        }}
       />
     );
   }
+
+  const message = bibNumber
+    ? `No photos found for bib number #${bibNumber}. \nPlease try a different bib number.`
+    : "No photos found.";
 
   return (
     <EmptyState
       icon={<User className="text-muted-foreground h-10 w-10" />}
       title="No Photos Found"
-      message={`No photos found for bib number #${bibNumber}. Please try a different bib number.`}
+      message={message}
       action={
         onViewAllPhotos
           ? {
-              label: "View All Event Photos",
+              label: actionLabel,
               onClick: onViewAllPhotos,
             }
           : undefined

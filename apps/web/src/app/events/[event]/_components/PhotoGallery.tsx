@@ -6,6 +6,7 @@ import { usePhotoGallery, type Photo } from "@/hooks/photos/usePhotoGallery";
 import { useIsMobile } from "@/hooks/useMobile";
 import { GalleryGrid, GalleryLightbox } from "@/components/photo-gallery";
 import { useEventPhotographers } from "@/hooks/photographers/useEventPhotographers";
+import { NoPhotosState } from "@/components/states/EmptyState";
 import {
   Select,
   SelectContent,
@@ -121,6 +122,9 @@ export function PhotoGallery({
   const handlePrev = () => setIndex(index - 1);
   const handleNext = () => setIndex(index + 1);
 
+  const showEmptyState =
+    photos.length === 0 && (!isLoading || !!overridePhotos);
+
   return (
     <>
       {!bib && photographers && photographers.length > 0 && (
@@ -156,15 +160,34 @@ export function PhotoGallery({
         </div>
       )}
 
-      <GalleryGrid
-        photos={photos}
-        isLoading={isLoading && !overridePhotos} // Don't show loading if we have override photos
-        hasNextPage={hasNextPage && !overridePhotos} // Disable pagination if filtering
-        isFetchingNextPage={isFetchingNextPage}
-        fetchNextPage={fetchNextPage}
-        onPhotoClick={handlePhotoClick}
-        isMobile={isMobile}
-      />
+      {showEmptyState ? (
+        <div className="mt-8">
+          <NoPhotosState
+            isAllPhotos={!bib && !overridePhotos}
+            bibNumber={bib}
+            onViewAllPhotos={
+              bib || overridePhotos
+                ? () => router.push(`/events/${eventId}`)
+                : () => router.push("/events")
+            }
+            actionLabel={
+              bib || overridePhotos
+                ? "View All Event Photos"
+                : "View All Events"
+            }
+          />
+        </div>
+      ) : (
+        <GalleryGrid
+          photos={photos}
+          isLoading={isLoading && !overridePhotos} // Don't show loading if we have override photos
+          hasNextPage={hasNextPage && !overridePhotos} // Disable pagination if filtering
+          isFetchingNextPage={isFetchingNextPage}
+          fetchNextPage={fetchNextPage}
+          onPhotoClick={handlePhotoClick}
+          isMobile={isMobile}
+        />
+      )}
 
       <GalleryLightbox
         open={index >= 0}
