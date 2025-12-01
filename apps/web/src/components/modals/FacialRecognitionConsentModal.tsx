@@ -99,7 +99,7 @@ export function FacialRecognitionConsentModal({
                 <span className="text-xs sm:text-sm">Processing...</span>
               </div>
             ) : (
-              "I Agree & Upload"
+              "I Agree & Search"
             )}
           </Button>
         </DialogFooter>

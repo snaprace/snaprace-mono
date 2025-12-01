@@ -231,10 +231,10 @@ export function SearchSelfieSection({
           <div className="flex flex-col gap-4">
             <div className="space-y-1 text-left">
               <h4 className="text-base font-semibold md:text-lg">
-                Face Match Selfie Upload
+                Face Match Selfie Search
               </h4>
               <p className="text-muted-foreground text-sm">
-                Upload a selfie to find photos automatically.
+                Search a selfie to find photos automatically.
               </p>
             </div>
 
@@ -331,7 +331,7 @@ export function SearchSelfieSection({
                       <p className="text-sm font-medium">
                         {uploadedFile
                           ? uploadedFile.name
-                          : "Click to upload your selfie"}
+                          : "Click to search your selfie"}
                       </p>
                       <p className="text-muted-foreground mt-1 text-xs">
                         {uploadedFile
