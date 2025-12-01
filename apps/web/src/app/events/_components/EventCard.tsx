@@ -33,20 +33,11 @@ export default function EventCard({ id, name, image, date }: EventCardProps) {
             }}
             priority
           />
-
-          {/* Status Badge */}
-          {/* <div className="absolute top-3 right-3">
-            <div className="bg-background/90 rounded-full px-2 py-1 backdrop-blur-sm">
-              <span className="text-foreground text-xs font-medium">
-                Available Now
-              </span>
-            </div>
-          </div> */}
         </div>
 
         {/* Event Info */}
         <div className="space-y-1">
-          <h3 className="text-foreground tablet:text-xl text-lg font-medium">
+          <h3 className="text-foreground text-md font-medium md:text-lg">
             {name}
           </h3>
           <p className="text-muted-foreground tablet:text-base text-sm">

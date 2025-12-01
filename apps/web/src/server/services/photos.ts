@@ -1,6 +1,7 @@
 import {
   QueryCommand,
   BatchGetCommand,
+  GetCommand,
   type BatchGetCommandOutput,
   type QueryCommandOutput,
 } from "@aws-sdk/lib-dynamodb";
@@ -177,6 +178,54 @@ export class PhotoService {
   private static extractPidFromKey(key: string): string {
     const filename = key.split("/").pop() ?? "";
     return filename.split(".")[0] ?? "";
+  }
+
+  /**
+   * Get a single photo by ID.
+   */
+  static async getPhoto({
+    organizerId,
+    eventId,
+    pid,
+  }: {
+    organizerId: string;
+    eventId: string;
+    pid: string;
+  }): Promise<Photo | null> {
+    if (!TABLES.PHOTO_SERVICE) {
+      throw new Error("DYNAMO_PHOTO_SERVICE_TABLE is not configured");
+    }
+
+    const pk = `ORG#${organizerId}#EVT#${eventId}`;
+    // Assuming pid corresponds to the ULID used in SK
+    const sk = `PHOTO#${pid}`;
+
+    const command = new GetCommand({
+      TableName: TABLES.PHOTO_SERVICE,
+      Key: {
+        PK: pk,
+        SK: sk,
+      },
+    });
+
+    const result = await dynamoClient.send(command);
+    const item = result.Item as PhotoItem | undefined;
+
+    if (!item) {
+      return null;
+    }
+
+    const key = item.processedKey || item.rawKey;
+    return {
+      pid: PhotoService.extractPidFromKey(key),
+      src: key,
+      width: item.dimensions.width,
+      height: item.dimensions.height,
+      eventId: item.eventId,
+      orgId: item.orgId,
+      thumbHash: item.thumbHash,
+      instagramHandle: item.instagramHandle,
+    };
   }
 
   /**
