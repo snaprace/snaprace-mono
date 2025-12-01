@@ -7,20 +7,20 @@ import { ArrowLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@repo/supabase";
 import { Input } from "@/components/ui/input";
-import { SearchModal } from "./SearchModal";
 import { useEventStats } from "@/hooks/events/useEventStats";
 import { Skeleton } from "@/components/ui/skeleton";
+import { trackBibSearch } from "@/lib/analytics";
 
 export function EventHeader({ event }: { event: Tables<"events"> }) {
   const router = useRouter();
   const params = useParams();
   const bib = params?.bib;
   const [searchBib, setSearchBib] = useState("");
-  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   const handleBibSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchBib.trim()) {
+      trackBibSearch(event.event_id, searchBib.trim());
       router.push(`/events/${event.event_id}/${searchBib.trim()}`);
     }
   };
@@ -63,15 +63,6 @@ export function EventHeader({ event }: { event: Tables<"events"> }) {
         </div>
 
         <div className="w-10 md:w-auto">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setIsSearchModalOpen(true)}
-            aria-label="Open search"
-          >
-            <Search className="h-4 w-4" />
-          </Button>
           <form
             onSubmit={handleBibSearch}
             className="hidden items-center gap-2 md:flex"
@@ -89,11 +80,6 @@ export function EventHeader({ event }: { event: Tables<"events"> }) {
           </form>
         </div>
       </div>
-      <SearchModal
-        isOpen={isSearchModalOpen}
-        onClose={() => setIsSearchModalOpen(false)}
-        eventId={event.event_id}
-      />
     </header>
   );
 }

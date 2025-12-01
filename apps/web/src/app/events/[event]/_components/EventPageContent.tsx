@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { SearchSelfieSection } from "./SearchSelfieSection";
+import { SearchBibSection } from "./SearchBibSection";
 import { EventInsightsPanel } from "./EventInsightsPanel";
 import { LeaderboardSection } from "./LeaderboardSection";
 import { PhotoGallery } from "./PhotoGallery";
@@ -40,6 +41,7 @@ export function EventPageContent({
             eventName={event.name}
             onPhotosFound={setSearchedPhotos}
           />,
+          <SearchBibSection key="bib-search" eventId={event.event_id} />,
         ]}
       />
       <div>

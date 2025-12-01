@@ -69,7 +69,7 @@ export default function HomePage() {
                   >
                     <SelectTrigger
                       disabled={events.length === 0}
-                      className="bg-background border-border !h-14 w-full text-sm font-medium"
+                      className="bg-background border-border h-14! w-full text-sm font-medium"
                     >
                       <SelectValue
                         placeholder={
@@ -85,7 +85,7 @@ export default function HomePage() {
                           <SelectItem
                             key={event.event_id}
                             value={event.event_id}
-                            className="!h-14"
+                            className="h-12 whitespace-normal md:min-h-14"
                           >
                             {event.name}
                           </SelectItem>

@@ -1,135 +1,101 @@
-# Turborepo starter
+# SnapRace Monorepo
 
-This Turborepo starter is maintained by the Turborepo core team.
+SnapRace is a platform designed to help marathon and race participants easily find their photos using bib numbers, selfies, and timing data. Developed in collaboration with Millennium Running, it leverages AWS Rekognition for advanced image analysis and search capabilities.
 
-## Using this example
+This project is managed as a monorepo using [Turborepo](https://turborepo.com/).
 
-Run the following command:
+## 🚀 Core Features
 
-```sh
-npx create-turbo@latest
+- **Dynamic Bib Number Pages**: Personalized photo pages based on participant bib numbers.
+- **Race Gallery**: A mobile-optimized gallery for efficiently browsing large volumes of photos.
+- **Face Recognition Search**: Allows users to register a selfie to find photos containing their face (powered by AWS Rekognition).
+- **Photo Download & Sharing**: Functionality for downloading original/watermarked images and sharing directly to social media.
+
+## 📂 Project Structure
+
+This repository consists of the following apps and packages:
+
+### Apps
+
+- **`apps/web`**: The Next.js web application responsible for the user interface.
+  - **Tech Stack**: Next.js (App Router), Tailwind CSS, shadcn/ui, tRPC
+  - **Key Role**: User frontend, gallery viewer, search interface.
+
+### Packages & Infrastructure
+
+- **`packages/image-rekognition`**: AWS infrastructure code for image analysis and bib/face recognition.
+  - **Tech Stack**: AWS CDK, AWS Lambda, DynamoDB, Amazon Rekognition
+  - **Key Role**: Analyzes race photos uploaded to S3 to extract bib and face data, storing results in DynamoDB.
+
+- **`packages/image-transform`**: Serverless image handler for resizing and optimization.
+  - **Tech Stack**: AWS CloudFront, Lambda@Edge (Sharp), API Gateway
+  - **Key Role**: Dynamically transforms and serves images optimized for various devices.
+
+- **`packages/supabase`**: Supabase configuration and database schema management.
+
+- **`packages/scripts`** & **`packages/shell-scripts`**: A collection of utilities for data cleanup, migrations, and maintenance.
+
+- **`packages/ui`**: Shared React UI component library used across applications.
+
+- **Configuration**:
+  - `@repo/eslint-config`: Shared ESLint configurations.
+  - `@repo/typescript-config`: Shared TypeScript configurations (`tsconfig.json`).
+
+## 🛠 Getting Started
+
+### Prerequisites
+
+- Node.js (v18 or higher recommended)
+- pnpm (Package Manager)
+- AWS CLI (Required for infrastructure deployment)
+
+### Installation
+
+```bash
+# Install dependencies
+pnpm install
 ```
 
-## What's inside?
+### Development
 
-This Turborepo includes the following packages/apps:
+Run the development server for all apps and packages:
 
-### Apps and Packages
+```bash
+pnpm dev
+```
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+To run a specific app, use the filter:
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+```bash
+# Run only the web app
+pnpm dev --filter=web
+```
 
 ### Build
 
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+```bash
+pnpm build
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+## 🏗 Architecture & Data Flow
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+1. **Image Upload**: Photographers upload race photos to an S3 bucket.
+2. **Image Analysis (`image-rekognition`)**:
+   - S3 events trigger AWS Lambda functions.
+   - Rekognition detects faces and bib numbers in the photos.
+   - Analyzed data (bibs, face IDs, etc.) is stored in DynamoDB.
+3. **Data Query (`apps/web`)**:
+   - The web app queries DynamoDB (or connected APIs) to display photos to the user.
+4. **Image Serving (`image-transform`)**:
+   - When users request images, they are served via CloudFront and Lambda, optimized and resized on-the-fly.
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
+## 📝 Documentation
 
-### Develop
+For more details, please refer to the documentation within each package:
 
-To develop all apps and packages, run the following command:
+- [Web App Project Spec](apps/web/PROJECT_SPEC.md)
+- [Image Rekognition Docs](packages/image-rekognition/README.md)
 
-```
-cd my-turborepo
+## License
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+This project is Private.

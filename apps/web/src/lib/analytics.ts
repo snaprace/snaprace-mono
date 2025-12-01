@@ -157,6 +157,16 @@ export const trackShareLinkCopy = (
   });
 };
 
+// Bib search tracking
+export const trackBibSearch = (eventId: string, bibNumber: string) => {
+  trackEvent("bib_search", {
+    event_category: "engagement",
+    event_label: `${eventId}_${bibNumber}`,
+    event_id: eventId,
+    bib_number: bibNumber,
+  });
+};
+
 // Selfie upload tracking
 export const trackSelfieUpload = (params: SelfieUploadEvent) => {
   trackEvent("selfie_upload", {
