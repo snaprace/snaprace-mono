@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { Photo } from "@/hooks/photos/usePhotoGallery";
 import { getOriginalPhotoUrl } from "@/utils/photo";
 import { getBlurDataURL } from "@/utils/thumbhash";
+import { formatInstagramHandle } from "@/utils/instagram";
 import { Badge } from "@/components/ui/badge";
 import { ArrowDownToLine, Camera, Forward } from "lucide-react";
 import { useIsMobile } from "@/hooks/useMobile";
@@ -51,15 +52,9 @@ export function MasonryImage(
     );
   };
 
-  const instagramHandle = customPhoto.instagramHandle;
-  const displayHandle = instagramHandle
-    ? instagramHandle.startsWith("@")
-      ? instagramHandle
-      : `@${instagramHandle}`
-    : null;
-  const instagramUrl = instagramHandle
-    ? `https://www.instagram.com/${instagramHandle.replace("@", "")}/`
-    : null;
+  const { displayHandle, instagramUrl } = formatInstagramHandle(
+    customPhoto.instagramHandle,
+  );
 
   return (
     <div
@@ -118,13 +113,13 @@ export function MasonryImage(
 
       {/* Instagram Handle */}
       {displayHandle && instagramUrl && (
-        <div className="absolute bottom-3 left-3 z-20">
+        <div className="absolute bottom-0 left-1 z-20 md:bottom-3 md:left-3">
           <a
             href={instagramUrl}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="text-xs font-medium text-white/90 drop-shadow-md transition-colors duration-200 ease-in-out hover:text-white"
+            className="text-[10px] font-medium text-white/90 drop-shadow-md transition-colors duration-200 ease-in-out hover:text-white md:text-xs"
           >
             {displayHandle}
           </a>

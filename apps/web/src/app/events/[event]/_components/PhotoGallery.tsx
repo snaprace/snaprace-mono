@@ -140,7 +140,9 @@ export function PhotoGallery({
               </div>
             </SelectTrigger>
             <SelectContent align="end">
-              <SelectItem value="all">All Photographers</SelectItem>
+              <SelectItem value="all">
+                <span className="text-muted-foreground">All Photographers</span>
+              </SelectItem>
               {photographers.map((p) => (
                 <SelectItem
                   key={p.instagramHandle}

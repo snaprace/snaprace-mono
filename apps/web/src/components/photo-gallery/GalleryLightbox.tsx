@@ -23,6 +23,7 @@ declare module "yet-another-react-lightbox" {
     blurDataURL?: string;
     eventId?: string;
     organizerId?: string;
+    instagramHandle?: string | null;
   }
 }
 
@@ -88,6 +89,7 @@ export function GalleryLightbox({
         blurDataURL: getBlurDataURL(photo.thumbHash ?? undefined),
         eventId: photo.eventId,
         organizerId: photo.organizerId,
+        instagramHandle: photo.instagramHandle,
       }))}
       render={{
         slide: NextJsImage,

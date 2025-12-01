@@ -7,6 +7,7 @@ import {
   type Slide,
   type SlideImage,
 } from "yet-another-react-lightbox";
+import { formatInstagramHandle } from "@/utils/instagram";
 
 function isNextJsImage(
   slide: Slide,
@@ -49,6 +50,10 @@ export default function NextJsImage({
       )
     : rect.height;
 
+  const { displayHandle, instagramUrl } = formatInstagramHandle(
+    slide.instagramHandle,
+  );
+
   return (
     <div style={{ position: "relative", width, height }}>
       <Image
@@ -76,7 +81,20 @@ export default function NextJsImage({
             : undefined
         }
       />
+      {/* Instagram Handle */}
+      {displayHandle && instagramUrl && (
+        <div className="absolute bottom-1 left-2 z-20 md:bottom-3 md:left-4">
+          <a
+            href={instagramUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-xs font-medium text-white/90 drop-shadow-md transition-colors duration-200 ease-in-out hover:text-white md:text-sm"
+          >
+            {displayHandle}
+          </a>
+        </div>
+      )}
     </div>
   );
 }
-
