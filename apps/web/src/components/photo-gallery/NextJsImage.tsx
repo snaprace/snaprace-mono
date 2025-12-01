@@ -83,7 +83,7 @@ export default function NextJsImage({
       />
       {/* Instagram Handle */}
       {displayHandle && instagramUrl && (
-        <div className="absolute bottom-1 left-2 z-20 md:bottom-3 md:left-4">
+        <div className="absolute bottom-1 left-2 z-1000 md:bottom-2 md:left-2">
           <a
             href={instagramUrl}
             target="_blank"

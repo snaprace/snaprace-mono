@@ -105,7 +105,7 @@ export function GalleryLightbox({
                 left: 0,
                 top: 0,
                 width: "33.33%",
-                height: "100%",
+                height: "calc(100% - 85px)",
                 cursor: "pointer",
                 zIndex: 2,
               }}

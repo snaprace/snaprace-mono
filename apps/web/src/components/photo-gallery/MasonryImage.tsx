@@ -113,7 +113,7 @@ export function MasonryImage(
 
       {/* Instagram Handle */}
       {displayHandle && instagramUrl && (
-        <div className="absolute bottom-0 left-1 z-20 md:bottom-3 md:left-3">
+        <div className="absolute bottom-0 left-1 z-20 md:bottom-1 md:left-2">
           <a
             href={instagramUrl}
             target="_blank"
