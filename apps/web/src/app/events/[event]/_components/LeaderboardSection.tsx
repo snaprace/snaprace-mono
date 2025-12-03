@@ -108,10 +108,6 @@ export function LeaderboardSection({
                       </button>
                     ))}
                   </div>
-                  <div className="text-muted-foreground shrink-0 text-xs md:text-sm">
-                    {currentResults.length} result
-                    {currentResults.length !== 1 ? "s" : ""} found
-                  </div>
                 </div>
               )}
 

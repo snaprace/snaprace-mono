@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "import-runners": "tsx event-runners/import-runners.ts",
+    "import-runners:weg": "tsx event-runners/winningeventsgroup/import-runners.ts",
+    "import-runners:mr": "tsx event-runners/millenniumrunning/import-runners.ts",
     "cleanup-photographer": "tsx cleanup-photographer.ts"
   },
   "dependencies": {
