@@ -252,6 +252,7 @@ export type LeaderboardResult = {
   avgPace?: string;
   city?: string;
   state?: string;
+  sourcePayload?: unknown;
 };
 
 export type EventResultsResponse = {

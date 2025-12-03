@@ -17,6 +17,7 @@ interface LeaderboardFiltersProps {
   filters: FilterState;
   onFiltersChange: (filters: FilterState) => void;
   divisions: string[];
+  hideGenderFilter?: boolean;
 }
 
 export function LeaderboardFilters({
@@ -25,6 +26,7 @@ export function LeaderboardFilters({
   filters,
   onFiltersChange,
   divisions,
+  hideGenderFilter = false,
 }: LeaderboardFiltersProps) {
   return (
     <div className="mt-2 flex flex-col gap-2 px-3 md:flex-row md:items-center md:gap-3 md:px-0">
@@ -65,30 +67,32 @@ export function LeaderboardFilters({
         </Select>
 
         {/* Gender 필터 */}
-        <Select
-          value={filters.gender}
-          onValueChange={(value) =>
-            onFiltersChange({
-              ...filters,
-              gender: value as "all" | "M" | "F",
-            })
-          }
-        >
-          <SelectTrigger className="h-9 w-[90px] border border-gray-200 bg-white text-xs md:h-10 md:w-[120px] md:text-sm">
-            <SelectValue placeholder="All Genders" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all" className="text-xs md:text-sm">
-              All Genders
-            </SelectItem>
-            <SelectItem value="M" className="text-xs md:text-sm">
-              Male
-            </SelectItem>
-            <SelectItem value="F" className="text-xs md:text-sm">
-              Female
-            </SelectItem>
-          </SelectContent>
-        </Select>
+        {!hideGenderFilter && (
+          <Select
+            value={filters.gender}
+            onValueChange={(value) =>
+              onFiltersChange({
+                ...filters,
+                gender: value as "all" | "M" | "F",
+              })
+            }
+          >
+            <SelectTrigger className="h-9 w-[90px] border border-gray-200 bg-white text-xs md:h-10 md:w-[120px] md:text-sm">
+              <SelectValue placeholder="All Genders" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="text-xs md:text-sm">
+                All Genders
+              </SelectItem>
+              <SelectItem value="M" className="text-xs md:text-sm">
+                Male
+              </SelectItem>
+              <SelectItem value="F" className="text-xs md:text-sm">
+                Female
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        )}
       </div>
     </div>
   );

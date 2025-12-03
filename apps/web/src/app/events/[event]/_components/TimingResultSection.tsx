@@ -60,7 +60,7 @@ export function TimingResultSection({
           <div>
             <h2 className="text-lg font-semibold md:text-xl">{fullName}</h2>
             <div className="mt-2 flex items-center gap-2">
-              {runner.gender && (
+              {runner.gender && runner.gender !== "Unknown" && (
                 <Badge variant="outline">{runner.gender}</Badge>
               )}
               {runner.age && <Badge variant="outline">{runner.age} yrs</Badge>}

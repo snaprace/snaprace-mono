@@ -75,6 +75,7 @@ export type Database = {
           first_name: string | null
           gender: string | null
           gun_time_seconds: number | null
+          is_relay: boolean | null
           last_name: string | null
           overall_place: number | null
           source: string | null
@@ -97,6 +98,7 @@ export type Database = {
           first_name?: string | null
           gender?: string | null
           gun_time_seconds?: number | null
+          is_relay?: boolean | null
           last_name?: string | null
           overall_place?: number | null
           source?: string | null
@@ -119,6 +121,7 @@ export type Database = {
           first_name?: string | null
           gender?: string | null
           gun_time_seconds?: number | null
+          is_relay?: boolean | null
           last_name?: string | null
           overall_place?: number | null
           source?: string | null

@@ -12,6 +12,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { LeaderboardTableAdvanced } from "../[bib]/_components/leaderboard-table/LeaderboardTableAdvanced";
+import { RelayLeaderboardTable } from "../[bib]/_components/leaderboard-table/RelayLeaderboardTable";
 import type { LeaderboardResult } from "@/server/services/timing-service";
 import type { Tables } from "@repo/supabase";
 import { formatDuration, formatPace } from "@/utils/time";
@@ -42,11 +43,13 @@ export function LeaderboardSection({
     if (!resultsQuery.data?.sets) return [];
     return resultsQuery.data.sets.map((set, index) => {
       const slug = set.eventSlug ?? `${OVERALL_KEY}-${index}`;
+      const isRelay = set.results.some((r) => r.is_relay);
       return {
         id: slug,
         name: set.label ?? set.eventSlug ?? "Overall",
         count: set.total,
         results: adaptRunnersToLeaderboard(set.results),
+        isRelay,
       };
     });
   }, [resultsQuery.data]);
@@ -58,10 +61,17 @@ export function LeaderboardSection({
   }, [categories, selectedCategory]);
 
   const currentResults = useMemo(() => {
-    if (!categories.length) return [];
-    if (!selectedCategory) return categories[0]!.results;
+    if (!categories.length) return { results: [], isRelay: false };
+    if (!selectedCategory)
+      return {
+        results: categories[0]!.results,
+        isRelay: categories[0]!.isRelay,
+      };
     const match = categories.find((cat) => cat.id === selectedCategory);
-    return match?.results ?? [];
+    return {
+      results: match?.results ?? [],
+      isRelay: match?.isRelay ?? false,
+    };
   }, [categories, selectedCategory]);
 
   if (resultsQuery.isLoading) {
@@ -72,7 +82,7 @@ export function LeaderboardSection({
     return null;
   }
 
-  if (currentResults.length === 0) {
+  if (currentResults.results.length === 0) {
     return null;
   }
 
@@ -90,7 +100,12 @@ export function LeaderboardSection({
             <div className="w-full max-w-full">
               {categories.length > 1 && (
                 <div className="mb-3 flex flex-col gap-2 px-3 md:mb-4 md:flex-row md:items-center md:justify-between md:gap-4 md:px-6">
-                  <div className="flex gap-1.5 overflow-x-auto md:gap-2">
+                  <div
+                    className="flex gap-1.5 overflow-x-auto md:gap-2"
+                    style={{
+                      scrollbarWidth: "none",
+                    }}
+                  >
                     {categories.map((category) => (
                       <button
                         key={category.id}
@@ -111,12 +126,21 @@ export function LeaderboardSection({
                 </div>
               )}
 
-              <LeaderboardTableAdvanced
-                results={currentResults}
-                highlightBib={highlightBib}
-                eventId={eventId}
-                organizationId={organizationId ?? ""}
-              />
+              {currentResults.isRelay ? (
+                <RelayLeaderboardTable
+                  results={currentResults.results}
+                  highlightBib={highlightBib}
+                  eventId={eventId}
+                  organizationId={organizationId ?? ""}
+                />
+              ) : (
+                <LeaderboardTableAdvanced
+                  results={currentResults.results}
+                  highlightBib={highlightBib}
+                  eventId={eventId}
+                  organizationId={organizationId ?? ""}
+                />
+              )}
             </div>
           </AccordionContent>
         </AccordionItem>
@@ -147,6 +171,7 @@ function adaptRunnersToLeaderboard(
       avgPace: formatPace(runner.avg_pace_seconds) ?? undefined,
       city: runner.city ?? undefined,
       state: runner.state ?? undefined,
+      sourcePayload: runner.source_payload,
     };
   });
 }
