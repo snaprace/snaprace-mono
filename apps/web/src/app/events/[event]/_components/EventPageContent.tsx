@@ -5,6 +5,7 @@ import { SearchSelfieSection } from "./SearchSelfieSection";
 import { SearchBibSection } from "./SearchBibSection";
 import { EventInsightsPanel } from "./EventInsightsPanel";
 import { LeaderboardSection } from "./LeaderboardSection";
+import { FinishVideoSection } from "./FinishVideoSection";
 import { PhotoGallery } from "./PhotoGallery";
 import type { Photo } from "@/hooks/photos/usePhotoGallery";
 import {
@@ -23,6 +24,9 @@ export function EventPageContent({
   organizerId,
 }: EventPageContentProps) {
   const [searchedPhotos, setSearchedPhotos] = useState<Photo[] | null>(null);
+  const [selectedSubEventId, setSelectedSubEventId] = useState<string | null>(
+    null,
+  );
 
   useAnalyticsTracking();
   usePerformanceTracking();
@@ -32,7 +36,19 @@ export function EventPageContent({
       <EventInsightsPanel
         sections={[
           event.display_mode === "RESULTS_AND_PHOTOS" && (
-            <LeaderboardSection key="leaderboard" eventId={event.event_id} />
+            <LeaderboardSection
+              key="leaderboard"
+              eventId={event.event_id}
+              selectedSubEventId={selectedSubEventId}
+              onSubEventChange={setSelectedSubEventId}
+            />
+          ),
+          event.display_mode === "RESULTS_AND_PHOTOS" && (
+            <FinishVideoSection
+              key="finish-video"
+              eventId={event.event_id}
+              selectedSubEventId={selectedSubEventId}
+            />
           ),
           <SearchSelfieSection
             key="selfie"

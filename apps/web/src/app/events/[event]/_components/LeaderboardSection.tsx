@@ -23,16 +23,31 @@ interface LeaderboardSectionProps {
   eventId: string;
   organizationId?: string;
   highlightBib?: string;
+  /** Controlled: selected sub-event ID from parent */
+  selectedSubEventId?: string | null;
+  /** Callback when category changes */
+  onSubEventChange?: (subEventId: string | null) => void;
 }
-
-const OVERALL_KEY = "__overall__";
 
 export function LeaderboardSection({
   eventId,
   organizationId,
   highlightBib,
+  selectedSubEventId,
+  onSubEventChange,
 }: LeaderboardSectionProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  // Internal state for uncontrolled mode
+  const [internalSelected, setInternalSelected] = useState<string | null>(null);
+
+  // Use controlled or uncontrolled mode
+  const isControlled = selectedSubEventId !== undefined;
+  const selectedCategory = isControlled ? selectedSubEventId : internalSelected;
+  const setSelectedCategory = (id: string | null) => {
+    if (!isControlled) {
+      setInternalSelected(id);
+    }
+    onSubEventChange?.(id);
+  };
 
   const resultsQuery = api.results.getEventResults.useQuery(
     { eventId },
@@ -41,15 +56,13 @@ export function LeaderboardSection({
 
   const categories = useMemo(() => {
     if (!resultsQuery.data?.sets) return [];
-    return resultsQuery.data.sets.map((set, index) => {
-      const slug = set.eventSlug ?? `${OVERALL_KEY}-${index}`;
-      const isRelay = set.results.some((r) => r.is_relay);
+    return resultsQuery.data.sets.map((set) => {
       return {
-        id: slug,
+        id: set.subEventId,
         name: set.label ?? set.eventSlug ?? "Overall",
         count: set.total,
         results: adaptRunnersToLeaderboard(set.results),
-        isRelay,
+        isRelay: set.isRelay, // Now directly from sub_events table
       };
     });
   }, [resultsQuery.data]);

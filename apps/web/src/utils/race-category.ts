@@ -1,6 +1,10 @@
 /**
  * Race category sorting utilities
  * 카테고리를 Marathon → Half → 5K → Relay → Virtual 순으로 정렬
+ *
+ * @deprecated This file is deprecated after sub_events migration.
+ * Sorting is now handled by sub_events.sort_order column in the database.
+ * This file is kept for backward compatibility with legacy events.
  */
 
 /**

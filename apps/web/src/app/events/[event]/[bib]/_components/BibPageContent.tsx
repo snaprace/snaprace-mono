@@ -5,6 +5,7 @@ import { SearchSelfieSection } from "@/app/events/[event]/_components/SearchSelf
 import { SearchBibSection } from "@/app/events/[event]/_components/SearchBibSection";
 import { EventInsightsPanel } from "@/app/events/[event]/_components/EventInsightsPanel";
 import { LeaderboardSection } from "@/app/events/[event]/_components/LeaderboardSection";
+import { FinishVideoSection } from "@/app/events/[event]/_components/FinishVideoSection";
 import { PhotoGallery } from "@/app/events/[event]/_components/PhotoGallery";
 import { TimingResultSection } from "@/app/events/[event]/_components/TimingResultSection";
 import type { Photo } from "@/hooks/photos/usePhotoGallery";
@@ -14,6 +15,7 @@ import {
 } from "@/hooks/useAnalyticsTracking";
 import type { Tables } from "@repo/supabase";
 import { PartnerBanner, type Partner } from "../../_components/PartnerBanner";
+import { api } from "@/trpc/react";
 
 interface BibPageContentProps {
   event: Tables<"events">;
@@ -22,10 +24,21 @@ interface BibPageContentProps {
 
 export function BibPageContent({ event, bib }: BibPageContentProps) {
   const [extraPhotos, setExtraPhotos] = useState<Photo[] | null>(null);
+  const [selectedSubEventId, setSelectedSubEventId] = useState<string | null>(
+    null,
+  );
   const { event_id, organizer_id, name } = event;
 
   useAnalyticsTracking();
   usePerformanceTracking();
+
+  // Fetch runner data to get gun_time_seconds for video seek
+  const runnerQuery = api.results.getRunnerByBib.useQuery(
+    { eventId: event_id, bib },
+    { enabled: Boolean(event_id && bib) },
+  );
+
+  const runnerGunTimeSeconds = runnerQuery.data?.gun_time_seconds ?? null;
 
   return (
     <>
@@ -39,6 +52,16 @@ export function BibPageContent({ event, bib }: BibPageContentProps) {
               key="leaderboard"
               eventId={event_id}
               highlightBib={bib}
+              selectedSubEventId={selectedSubEventId}
+              onSubEventChange={setSelectedSubEventId}
+            />
+          ),
+          event.display_mode === "RESULTS_AND_PHOTOS" && (
+            <FinishVideoSection
+              key="finish-video"
+              eventId={event_id}
+              runnerGunTimeSeconds={runnerGunTimeSeconds}
+              selectedSubEventId={selectedSubEventId}
             />
           ),
           <SearchSelfieSection

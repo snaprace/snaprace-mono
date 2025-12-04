@@ -23,18 +23,18 @@ const api = axios.create({
  * Usage:
  *   pnpm --filter @repo/scripts tsx event-runners/millenniumrunning/import-runners.ts \
  *     --event_id=EVENT_ID \
- *     --meta_api_url=https://results.raceroster.com/v2/api/events/{eventCode}/sub-events/{subEventId}
+ *     --api_url=https://results.raceroster.com/v2/api/events/{eventCode}
  *
  * Example:
  *   pnpm --filter @repo/scripts tsx event-runners/millenniumrunning/import-runners.ts \
- *     --event_id=maudslay-turkey-trot-2025 \
- *     --meta_api_url=https://results.raceroster.com/v2/api/events/ed6uq2eahq9bpsj4/sub-events/246781
+ *     --event_id=fisher-cats-thanksgiving-5k-2025 \
+ *     --api_url=https://results.raceroster.com/v2/api/events/exhecqdv3uwxy2e4
  *
  * The script will automatically:
- *   1. Fetch event metadata from meta_api_url
- *   2. Extract resultEventId, subEventId, eventUniqueCode
- *   3. Build results API URL: https://results.raceroster.com/v2/api/result-events/{resultEventId}/sub-events/{subEventId}/results
- *   4. Build detail API URL: https://results.raceroster.com/v2/api/events/{eventUniqueCode}/detail/{runnerId}
+ *   1. Fetch event metadata from api_url (includes all sub-events)
+ *   2. For each sub-event:
+ *      - Create/update sub_event in database
+ *      - Fetch all runner results and link them to the sub_event
  */
 
 // Load environment variables from apps/web/.env
@@ -68,9 +68,40 @@ function getSupabaseClient() {
 // Types for RaceRoster API responses
 // ============================================================================
 
-type RaceRosterMetaResponse = {
+type RaceRosterSubEventInfo = {
+  id: number;
+  resultSubEventId: number;
+  resultEventId: number;
+  eventUniqueCode: string;
+  name: string;
+  distanceLabel: string;
+  distance: number;
+  distanceUnit: string;
+  distanceMeters: number;
+  resultCount: number;
+  sortOrder: number;
+  settings: {
+    isRelayEnabled: boolean;
+  };
+  isPublic: boolean;
+  hasResults: boolean;
+};
+
+type RaceRosterEventMetaResponse = {
   data: {
-    id: number; // subEventId
+    id: string; // eventUniqueCode
+    event: {
+      resultEventId: number;
+      uniqueCode: string;
+      name: string;
+      subEvents: RaceRosterSubEventInfo[];
+    };
+  };
+};
+
+type RaceRosterSubEventMetaResponse = {
+  data: {
+    id: number;
     resultEventId: number;
     eventUniqueCode: string;
     name: string;
@@ -105,6 +136,7 @@ type RaceRosterResultsResponse = {
 type RaceRosterDetailResponse = {
   data: {
     result: {
+      resultId: number; // Numeric ID needed for video API
       bib: string;
       firstName: string;
       lastName: string;
@@ -129,16 +161,60 @@ type RaceRosterDetailResponse = {
   };
 };
 
+// ============================================================================
+// Sub Event Types
+// ============================================================================
+
+type FinishlineVideoInfo = {
+  provider: string;
+  url: string;
+  providerVideoId: string;
+  thumbnail: string | null;
+  duration: number;
+  status: string;
+  firstParticipantGunTime: number;
+  firstParticipantVideoTime: number;
+  rewindSeconds: number;
+};
+
+type SubEventInsert = {
+  event_id: string;
+  name: string;
+  slug: string;
+  distance_km: number | null;
+  distance_mi: number | null;
+  is_relay: boolean;
+  sort_order: number;
+  finishline_video_info?: FinishlineVideoInfo | null;
+};
+
+type RaceRosterVideoResponse = Array<{
+  resultEventId: number;
+  subEventId: number;
+  segmentId: number | null;
+  firstParticipantTimeType: string;
+  firstParticipantGunTime: number;
+  firstParticipantLocalTime: string | null;
+  firstParticipantVideoTime: number;
+  participantVideoTime: number;
+  provider: string;
+  name: string;
+  url: string;
+  thumbnail: string;
+  rewindSeconds: number;
+  duration: number;
+  status: string;
+  providerVideoId: string;
+}>;
+
 type RunnerInsert = {
   event_id: string;
+  sub_event_id: string;
   bib_number: number;
   age: number | null;
   gender: string | null;
   first_name: string | null;
   last_name: string | null;
-  event_slug: string | null;
-  event_distance_km: number | null;
-  event_distance_mi: number | null;
   chip_time_seconds: number | null;
   gun_time_seconds: number | null;
   start_time_seconds: number | null;
@@ -149,8 +225,12 @@ type RunnerInsert = {
   state: string | null;
   division_place: string | null;
   overall_place: number | null;
-  is_relay: boolean;
   source_payload: Record<string, unknown>;
+  // Deprecated fields (kept for backward compatibility during transition)
+  event_slug: string | null;
+  event_distance_km: number | null;
+  event_distance_mi: number | null;
+  is_relay: boolean;
 };
 
 // ============================================================================
@@ -225,6 +305,13 @@ async function parallelLimit<T, R>(
 
 const RACEROSTER_BASE = "https://results.raceroster.com/v2/api";
 
+function buildSubEventMetaUrl(
+  eventUniqueCode: string,
+  subEventId: number
+): string {
+  return `${RACEROSTER_BASE}/events/${eventUniqueCode}/sub-events/${subEventId}`;
+}
+
 function buildResultsApiUrl(resultEventId: number, subEventId: number): string {
   return `${RACEROSTER_BASE}/result-events/${resultEventId}/sub-events/${subEventId}/results`;
 }
@@ -233,14 +320,25 @@ function buildDetailApiUrl(eventUniqueCode: string, runnerId: string): string {
   return `${RACEROSTER_BASE}/events/${eventUniqueCode}/detail/${runnerId}?v3Cert=true`;
 }
 
+function buildVideoApiUrl(subEventId: number, resultId: string): string {
+  return `${RACEROSTER_BASE}/videos?subEventId=${subEventId}&resultId=${resultId}`;
+}
+
 // ============================================================================
 // API Fetching Functions
 // ============================================================================
 
 async function fetchEventMeta(
+  apiUrl: string
+): Promise<RaceRosterEventMetaResponse["data"]> {
+  const response = await api.get<RaceRosterEventMetaResponse>(apiUrl);
+  return response.data.data;
+}
+
+async function fetchSubEventMeta(
   metaApiUrl: string
-): Promise<RaceRosterMetaResponse["data"]> {
-  const response = await api.get<RaceRosterMetaResponse>(metaApiUrl);
+): Promise<RaceRosterSubEventMetaResponse["data"]> {
+  const response = await api.get<RaceRosterSubEventMetaResponse>(metaApiUrl);
   return response.data.data;
 }
 
@@ -265,7 +363,7 @@ async function fetchAllResults(
 
       allResults.push(...results);
       process.stdout.write(
-        `\r  Fetched ${allResults.length}/${expectedCount} runners...`
+        `\r    Fetched ${allResults.length}/${expectedCount} runners...`
       );
 
       if (results.length < limit) {
@@ -274,7 +372,14 @@ async function fetchAllResults(
 
       start += limit;
     } catch (error) {
-      console.error(`\n  Error fetching start=${start}`);
+      console.error(`\n    Error fetching start=${start}`);
+      if (axios.isAxiosError(error)) {
+        console.error(`    Status: ${error.response?.status}`);
+        console.error(`    URL: ${url}`);
+        console.error(`    Data:`, error.response?.data);
+      } else {
+        console.error(`    Error:`, error);
+      }
       break;
     }
   }
@@ -297,6 +402,304 @@ async function fetchRunnerDetail(
   }
 }
 
+/**
+ * Fetch finish line video info for a sub-event
+ * Requires numeric resultId from detail API response
+ */
+async function fetchVideoInfo(
+  subEventId: number,
+  numericResultId: number
+): Promise<FinishlineVideoInfo | null> {
+  const url = buildVideoApiUrl(subEventId, String(numericResultId));
+
+  try {
+    const response = await api.get<RaceRosterVideoResponse>(url);
+    const videos = response.data;
+
+    if (!videos || videos.length === 0) {
+      return null;
+    }
+
+    // Take the first video (usually there's only one)
+    const video = videos[0]!;
+
+    if (video.status !== "enabled") {
+      return null;
+    }
+
+    return {
+      provider: video.provider,
+      url: video.url,
+      providerVideoId: video.providerVideoId,
+      thumbnail: video.thumbnail || null,
+      duration: video.duration,
+      status: video.status,
+      firstParticipantGunTime: video.firstParticipantGunTime,
+      firstParticipantVideoTime: video.firstParticipantVideoTime,
+      rewindSeconds: video.rewindSeconds,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// ============================================================================
+// Sub Event Management
+// ============================================================================
+
+/**
+ * Creates or updates a sub_event and returns its ID
+ */
+async function upsertSubEvent(subEvent: SubEventInsert): Promise<string> {
+  const client = getSupabaseClient();
+
+  // Try to find existing sub_event
+  const { data: existing } = await (client.from("sub_events") as any)
+    .select("sub_event_id")
+    .eq("event_id", subEvent.event_id)
+    .eq("slug", subEvent.slug)
+    .maybeSingle();
+
+  if (existing) {
+    // Update existing
+    const updateData: Record<string, unknown> = {
+      name: subEvent.name,
+      distance_km: subEvent.distance_km,
+      distance_mi: subEvent.distance_mi,
+      is_relay: subEvent.is_relay,
+      sort_order: subEvent.sort_order,
+    };
+
+    // Only update video info if provided
+    if (subEvent.finishline_video_info !== undefined) {
+      updateData.finishline_video_info = subEvent.finishline_video_info;
+    }
+
+    const { error } = await (client.from("sub_events") as any)
+      .update(updateData)
+      .eq("sub_event_id", (existing as any).sub_event_id);
+
+    if (error) {
+      console.error("SubEvent update failed:", error.message);
+      throw error;
+    }
+
+    return (existing as any).sub_event_id;
+  }
+
+  // Insert new
+  const { data, error } = await (client.from("sub_events") as any)
+    .insert(subEvent)
+    .select("sub_event_id")
+    .single();
+
+  if (error) {
+    console.error("SubEvent insert failed:", error.message);
+    throw error;
+  }
+
+  return (data as any).sub_event_id;
+}
+
+// ============================================================================
+// Process Single Sub-Event
+// ============================================================================
+
+async function processSubEvent(options: {
+  eventId: string;
+  eventUniqueCode: string;
+  subEventInfo: RaceRosterSubEventInfo;
+  sortOrderIndex: number;
+  concurrency: number;
+  dryRun: boolean;
+}): Promise<{ inserted: number; errors: number }> {
+  const {
+    eventId,
+    eventUniqueCode,
+    subEventInfo,
+    sortOrderIndex,
+    concurrency,
+    dryRun,
+  } = options;
+
+  console.log(
+    `\n  📋 ${subEventInfo.name} | ${subEventInfo.distanceLabel} | ${subEventInfo.resultCount} participants`
+  );
+
+  // Skip if no results
+  if (!subEventInfo.hasResults || subEventInfo.resultCount === 0) {
+    console.log(`    ⏭️  Skipping - no results`);
+    return { inserted: 0, errors: 0 };
+  }
+
+  const eventSlug = slugify(subEventInfo.name)!;
+  const eventDistanceKm = subEventInfo.distanceMeters / 1000;
+  const eventDistanceMi = Number((eventDistanceKm * KM_TO_MI).toFixed(3));
+
+  // Detect relay from settings or name
+  const isRelay =
+    subEventInfo.settings?.isRelayEnabled ||
+    subEventInfo.name.toLowerCase().includes("relay");
+
+  // 1. Create/Update SubEvent
+  const subEventData: SubEventInsert = {
+    event_id: eventId,
+    name: subEventInfo.name,
+    slug: eventSlug,
+    distance_km: eventDistanceKm,
+    distance_mi: eventDistanceMi,
+    is_relay: isRelay,
+    sort_order: sortOrderIndex,
+  };
+
+  let subEventId: string;
+
+  if (dryRun) {
+    console.log(`    [DRY RUN] Would create sub-event:`, subEventData);
+    subEventId = "dry-run-sub-event-id";
+  } else {
+    subEventId = await upsertSubEvent(subEventData);
+    console.log(`    ✅ SubEvent: ${subEventId}`);
+  }
+
+  // 2. Fetch all results
+  const resultsApiUrl = buildResultsApiUrl(
+    subEventInfo.resultEventId,
+    subEventInfo.id
+  );
+
+  console.log(`    📥 Fetching leaderboard...`);
+  const results = await fetchAllResults(
+    resultsApiUrl,
+    subEventInfo.resultCount
+  );
+
+  if (results.length === 0) {
+    console.log(`    ⚠️  No results fetched`);
+    return { inserted: 0, errors: 0 };
+  }
+
+  // 3. Fetch detailed info for each runner - PARALLEL
+  console.log(`    🔍 Fetching runner details (${concurrency} concurrent)...`);
+  const startTime = Date.now();
+
+  const detailResults = await parallelLimit(
+    results,
+    concurrency,
+    async (result) => {
+      const detail = await fetchRunnerDetail(eventUniqueCode, result.id);
+
+      if (!detail || !detail.bib) return null;
+
+      const bibNumber = parseNumber(detail.bib);
+      if (bibNumber === null) return null;
+
+      const avgPaceSeconds = parsePaceToSeconds(detail.overallPace);
+
+      // Detect relay for individual runner (segments or division name)
+      const runnerIsRelay = !!(
+        detail.segments?.length ||
+        detail.division?.toLowerCase().includes("relay")
+      );
+
+      return {
+        event_id: eventId,
+        sub_event_id: subEventId,
+        bib_number: bibNumber,
+        age: detail.age ?? null,
+        gender: normalizeGender(detail.gender),
+        first_name: runnerIsRelay ? detail.name : detail.firstName || null,
+        last_name: runnerIsRelay ? null : detail.lastName || null,
+        chip_time_seconds:
+          detail.chipTimeSec != null ? Math.round(detail.chipTimeSec) : null,
+        gun_time_seconds:
+          detail.gunTimeSec != null ? Math.round(detail.gunTimeSec) : null,
+        start_time_seconds: null,
+        avg_pace_seconds: avgPaceSeconds,
+        age_group: detail.ageGroup ?? detail.division ?? null,
+        source: "raceroster",
+        city: detail.fromCity || null,
+        state: detail.fromProvState || null,
+        division_place: String(detail.divisionPlace) || null,
+        overall_place: detail.overallPlace ?? null,
+        source_payload: { listItem: result, detail },
+        // Deprecated fields (for backward compatibility)
+        event_slug: eventSlug,
+        event_distance_km: eventDistanceKm,
+        event_distance_mi: eventDistanceMi,
+        is_relay: runnerIsRelay,
+      } as RunnerInsert;
+    },
+    (completed, total) => {
+      process.stdout.write(`\r    Progress: ${completed}/${total}`);
+    }
+  );
+
+  const runners = detailResults.filter((r): r is RunnerInsert => r !== null);
+  const failCount = results.length - runners.length;
+  const elapsedSec = ((Date.now() - startTime) / 1000).toFixed(1);
+
+  console.log(
+    `\n    ✅ Processed: ${runners.length} valid, ${failCount} skipped (${elapsedSec}s)`
+  );
+
+  if (runners.length === 0) {
+    return { inserted: 0, errors: 0 };
+  }
+
+  // 3.5. Fetch finish line video info (using first runner's numeric resultId)
+  const firstRunnerPayload = runners[0]?.source_payload as {
+    detail?: { resultId?: number };
+  } | null;
+  const numericResultId = firstRunnerPayload?.detail?.resultId;
+
+  if (numericResultId && !dryRun) {
+    const videoInfo = await fetchVideoInfo(subEventInfo.id, numericResultId);
+
+    if (videoInfo) {
+      console.log(`    🎬 Finish video found: ${videoInfo.provider}`);
+      const client = getSupabaseClient();
+      await (client.from("sub_events") as any)
+        .update({ finishline_video_info: videoInfo })
+        .eq("sub_event_id", subEventId);
+    }
+  }
+
+  // 4. Upsert to Supabase
+  if (dryRun) {
+    console.log(`    🧪 [DRY RUN] Would insert ${runners.length} runners`);
+    return { inserted: runners.length, errors: 0 };
+  }
+
+  console.log(`    💾 Saving to database...`);
+
+  const client = getSupabaseClient();
+  const BATCH_SIZE = 500;
+  let insertedCount = 0;
+  let errorCount = 0;
+
+  for (let i = 0; i < runners.length; i += BATCH_SIZE) {
+    const batch = runners.slice(i, i + BATCH_SIZE);
+    const { error } = await client
+      .from("event_runners")
+      .upsert(batch as any, { onConflict: "event_id,bib_number" });
+
+    if (error) {
+      errorCount += batch.length;
+      console.error(
+        `    Batch ${Math.floor(i / BATCH_SIZE) + 1} failed:`,
+        error.message
+      );
+    } else {
+      insertedCount += batch.length;
+    }
+  }
+
+  console.log(`    ✅ Saved: ${insertedCount}, Errors: ${errorCount}`);
+
+  return { inserted: insertedCount, errors: errorCount };
+}
+
 // ============================================================================
 // Main Function
 // ============================================================================
@@ -308,11 +711,11 @@ async function main() {
       demandOption: true,
       description: "Supabase event_id to store runners under",
     })
-    .option("meta_api_url", {
+    .option("api_url", {
       type: "string",
       demandOption: true,
       description:
-        "RaceRoster event metadata API URL (e.g., https://results.raceroster.com/v2/api/events/{code}/sub-events/{id})",
+        "RaceRoster event API URL (e.g., https://results.raceroster.com/v2/api/events/{eventCode})",
     })
     .option("concurrency", {
       type: "number",
@@ -326,140 +729,64 @@ async function main() {
     })
     .help().argv;
 
-  const { event_id, meta_api_url, concurrency, dry_run } = argv;
+  const { event_id, api_url, concurrency, dry_run } = argv;
 
   try {
-    // 1. Fetch event metadata
-    const eventMeta = await fetchEventMeta(meta_api_url);
+    // 1. Fetch event metadata (includes all sub-events)
+    console.log(`\n📡 Fetching event metadata from ${api_url}...`);
+    const eventMeta = await fetchEventMeta(api_url);
 
-    console.log(
-      `📋 ${eventMeta.name} | ${eventMeta.distanceLabel} | ${eventMeta.resultCount} participants`
-    );
+    const eventName = eventMeta.event.name;
+    const subEvents = eventMeta.event.subEvents || [];
+    const eventUniqueCode = eventMeta.event.uniqueCode;
 
-    const eventSlug = slugify(eventMeta.name);
-    const eventDistanceKm = eventMeta.distanceMeters / 1000;
-    const eventDistanceMi = Number((eventDistanceKm * KM_TO_MI).toFixed(3));
+    console.log(`📋 Event: ${eventName}`);
+    console.log(`📁 Found ${subEvents.length} sub-events:`);
 
-    // 2. Build results API URL from metadata
-    const resultsApiUrl = buildResultsApiUrl(
-      eventMeta.resultEventId,
-      eventMeta.id
-    );
+    // Filter public sub-events with results and sort by sortOrder
+    const validSubEvents = subEvents
+      .filter((se) => se.isPublic && se.hasResults)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
 
-    // 3. Fetch all results from leaderboard
-    console.log(`\n📥 Fetching leaderboard...`);
-    const results = await fetchAllResults(resultsApiUrl, eventMeta.resultCount);
-    console.log(
-      `✅ Fetched ${results.length}/${eventMeta.resultCount} runners`
-    );
+    validSubEvents.forEach((se, index) => {
+      console.log(
+        `  ${index + 1}. ${se.name} (${se.resultCount} runners) [sortOrder: ${se.sortOrder}]`
+      );
+    });
 
-    if (results.length === 0) {
-      console.log("No results found. Exiting.");
+    if (validSubEvents.length === 0) {
+      console.log("No valid sub-events found. Exiting.");
       return;
     }
 
-    // 4. Fetch detailed info for each runner (to get bib number) - PARALLEL
-    console.log(`\n🔍 Fetching runner details (${concurrency} concurrent)...`);
-    const startTime = Date.now();
+    // 2. Process each sub-event
+    console.log(`\n🚀 Processing ${validSubEvents.length} sub-events...`);
 
-    const detailResults = await parallelLimit(
-      results,
-      concurrency,
-      async (result) => {
-        const detail = await fetchRunnerDetail(
-          eventMeta.eventUniqueCode,
-          result.id
-        );
+    let totalInserted = 0;
+    let totalErrors = 0;
 
-        if (!detail || !detail.bib) return null;
+    for (let i = 0; i < validSubEvents.length; i++) {
+      const subEventInfo = validSubEvents[i]!;
 
-        const bibNumber = parseNumber(detail.bib);
-        if (bibNumber === null) return null;
+      const { inserted, errors } = await processSubEvent({
+        eventId: event_id,
+        eventUniqueCode,
+        subEventInfo,
+        sortOrderIndex: i, // Use index as sort order (0, 1, 2, ...)
+        concurrency,
+        dryRun: dry_run,
+      });
 
-        const avgPaceSeconds = parsePaceToSeconds(detail.overallPace);
-
-        // Detect relay: check if segments exist or division contains "relay"
-        const isRelay = !!(
-          detail.segments?.length ||
-          detail.division?.toLowerCase().includes("relay")
-        );
-
-        return {
-          event_id,
-          bib_number: bibNumber,
-          age: detail.age ?? null,
-          gender: normalizeGender(detail.gender),
-          first_name: isRelay ? detail.name : detail.firstName || null,
-          last_name: isRelay ? null : detail.lastName || null,
-          event_slug: eventSlug,
-          event_distance_km: eventDistanceKm,
-          event_distance_mi: eventDistanceMi,
-          chip_time_seconds:
-            detail.chipTimeSec != null ? Math.round(detail.chipTimeSec) : null,
-          gun_time_seconds:
-            detail.gunTimeSec != null ? Math.round(detail.gunTimeSec) : null,
-          start_time_seconds: null,
-          avg_pace_seconds: avgPaceSeconds,
-          age_group: detail.ageGroup ?? detail.division ?? null,
-          source: "raceroster",
-          city: detail.fromCity || null,
-          state: detail.fromProvState || null,
-          division_place: String(detail.divisionPlace) || null,
-          overall_place: detail.overallPlace ?? null,
-          is_relay: isRelay,
-          source_payload: { listItem: result, detail },
-        } as RunnerInsert;
-      },
-      (completed, total) => {
-        process.stdout.write(`\r  Progress: ${completed}/${total}`);
-      }
-    );
-
-    const runners = detailResults.filter((r): r is RunnerInsert => r !== null);
-    const failCount = results.length - runners.length;
-    const elapsedSec = ((Date.now() - startTime) / 1000).toFixed(1);
-
-    console.log(
-      `\n✅ Processed: ${runners.length} valid, ${failCount} skipped (${elapsedSec}s)`
-    );
-
-    if (runners.length === 0) {
-      console.log("No valid runners to insert. Exiting.");
-      return;
+      totalInserted += inserted;
+      totalErrors += errors;
     }
 
-    // 5. Upsert to Supabase
-    if (dry_run) {
-      console.log(`\n🧪 [DRY RUN] Would insert ${runners.length} runners`);
-      console.log("\nSample:", JSON.stringify(runners[0], null, 2));
-      return;
-    }
-
-    console.log(`\n💾 Saving to database...`);
-
-    const client = getSupabaseClient();
-    const BATCH_SIZE = 500;
-    let insertedCount = 0;
-    let errorCount = 0;
-
-    for (let i = 0; i < runners.length; i += BATCH_SIZE) {
-      const batch = runners.slice(i, i + BATCH_SIZE);
-      const { error } = await client
-        .from("event_runners")
-        .upsert(batch as any, { onConflict: "event_id,bib_number" });
-
-      if (error) {
-        errorCount += batch.length;
-        console.error(
-          `  Batch ${Math.floor(i / BATCH_SIZE) + 1} failed:`,
-          error.message
-        );
-      } else {
-        insertedCount += batch.length;
-      }
-    }
-
-    console.log(`✅ Done! Inserted: ${insertedCount}, Errors: ${errorCount}`);
+    // 3. Summary
+    console.log(`\n${"=".repeat(50)}`);
+    console.log(`✅ All done!`);
+    console.log(`   Sub-events processed: ${validSubEvents.length}`);
+    console.log(`   Total runners inserted: ${totalInserted}`);
+    console.log(`   Total errors: ${totalErrors}`);
   } catch (error) {
     console.error("Error:", error);
     process.exit(1);

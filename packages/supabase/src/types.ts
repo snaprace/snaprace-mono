@@ -82,6 +82,7 @@ export type Database = {
           source_payload: Json | null
           start_time_seconds: number | null
           state: string | null
+          sub_event_id: string | null
         }
         Insert: {
           age?: number | null
@@ -105,6 +106,7 @@ export type Database = {
           source_payload?: Json | null
           start_time_seconds?: number | null
           state?: string | null
+          sub_event_id?: string | null
         }
         Update: {
           age?: number | null
@@ -128,6 +130,7 @@ export type Database = {
           source_payload?: Json | null
           start_time_seconds?: number | null
           state?: string | null
+          sub_event_id?: string | null
         }
         Relationships: [
           {
@@ -136,6 +139,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "event_runners_sub_event_id_fkey"
+            columns: ["sub_event_id"]
+            isOneToOne: false
+            referencedRelation: "sub_events"
+            referencedColumns: ["sub_event_id"]
           },
         ]
       }
@@ -236,6 +246,53 @@ export type Database = {
           photographer_id?: string
         }
         Relationships: []
+      }
+      sub_events: {
+        Row: {
+          created_at: string | null
+          distance_km: number | null
+          distance_mi: number | null
+          event_id: string
+          finishline_video_info: Json | null
+          is_relay: boolean | null
+          name: string
+          slug: string
+          sort_order: number | null
+          sub_event_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          distance_km?: number | null
+          distance_mi?: number | null
+          event_id: string
+          finishline_video_info?: Json | null
+          is_relay?: boolean | null
+          name: string
+          slug: string
+          sort_order?: number | null
+          sub_event_id?: string
+        }
+        Update: {
+          created_at?: string | null
+          distance_km?: number | null
+          distance_mi?: number | null
+          event_id?: string
+          finishline_video_info?: Json | null
+          is_relay?: boolean | null
+          name?: string
+          slug?: string
+          sort_order?: number | null
+          sub_event_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sub_events_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["event_id"]
+          },
+        ]
       }
     }
     Views: {
