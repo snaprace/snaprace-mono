@@ -1,6 +1,7 @@
 import { ERROR_MESSAGES, trpcError } from "@/server/api/error-utils";
 import type { Database, Tables } from "@repo/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { sortCategories } from "@/utils/race-category";
 
 type EventRunner = Tables<"event_runners">;
 type DatabaseClient = SupabaseClient<Database>;
@@ -100,9 +101,12 @@ export async function fetchEventResults(options: {
     }),
   );
 
+  // 카테고리 정렬: Marathon → Half → 5K → Relay → Virtual for Millennium Running
+  const sortedSets = sortCategories(sets);
+
   return {
     eventId,
-    sets,
+    sets: sortedSets,
   };
 }
 
@@ -148,4 +152,3 @@ function resolveLabel(runners: EventRunner[]): string | null {
 
   return null;
 }
-

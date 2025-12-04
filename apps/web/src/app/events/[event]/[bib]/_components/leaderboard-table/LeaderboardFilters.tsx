@@ -11,6 +11,12 @@ import {
 import { Search } from "lucide-react";
 import type { FilterState } from "./types";
 
+export interface CategoryOption {
+  id: string;
+  name: string;
+  count: number;
+}
+
 interface LeaderboardFiltersProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -18,6 +24,10 @@ interface LeaderboardFiltersProps {
   onFiltersChange: (filters: FilterState) => void;
   divisions: string[];
   hideGenderFilter?: boolean;
+  // 카테고리 관련 props
+  categories?: CategoryOption[];
+  selectedCategory?: string | null;
+  onCategoryChange?: (categoryId: string) => void;
 }
 
 export function LeaderboardFilters({
@@ -27,7 +37,13 @@ export function LeaderboardFilters({
   onFiltersChange,
   divisions,
   hideGenderFilter = false,
+  categories,
+  selectedCategory,
+  onCategoryChange,
 }: LeaderboardFiltersProps) {
+  const showCategoryFilter =
+    categories && categories.length > 1 && onCategoryChange;
+
   return (
     <div className="mt-2 flex flex-col gap-2 px-3 md:flex-row md:items-center md:gap-3 md:px-0">
       {/* 검색 */}
@@ -44,6 +60,32 @@ export function LeaderboardFilters({
 
       {/* 필터들 */}
       <div className="flex gap-1.5 md:gap-2">
+        {/* 카테고리 필터 */}
+        {showCategoryFilter && (
+          <Select
+            value={selectedCategory ?? categories[0]?.id}
+            onValueChange={onCategoryChange}
+          >
+            <SelectTrigger className="h-9 w-[140px] border border-gray-200 bg-white text-xs md:h-10 md:w-[180px] md:text-sm">
+              <SelectValue placeholder="Select Category" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((category) => (
+                <SelectItem
+                  key={category.id}
+                  value={category.id}
+                  className="text-xs md:text-sm"
+                >
+                  {category.name}{" "}
+                  <span className="text-muted-foreground">
+                    ({category.count})
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
         {/* Division 필터 */}
         <Select
           value={filters.division}

@@ -30,12 +30,17 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { FilterState } from "./types";
+import type { CategoryOption } from "./LeaderboardFilters";
 
 interface LeaderboardTableAdvancedProps {
   results: LeaderboardResult[];
   highlightBib?: string;
   eventId: string;
   organizationId: string;
+  // 카테고리 관련 props
+  categories?: CategoryOption[];
+  selectedCategory?: string | null;
+  onCategoryChange?: (categoryId: string) => void;
 }
 
 export function LeaderboardTableAdvanced({
@@ -43,6 +48,9 @@ export function LeaderboardTableAdvanced({
   highlightBib,
   eventId,
   organizationId: _organizationId,
+  categories,
+  selectedCategory,
+  onCategoryChange,
 }: LeaderboardTableAdvancedProps) {
   // 상태 관리
   const [searchQuery, setSearchQuery] = useState("");
@@ -147,6 +155,9 @@ export function LeaderboardTableAdvanced({
         filters={filters}
         onFiltersChange={setFilters}
         divisions={divisions}
+        categories={categories}
+        selectedCategory={selectedCategory}
+        onCategoryChange={onCategoryChange}
       />
       {/* 결과 카운트 */}
       {/* {showResultsCount && (

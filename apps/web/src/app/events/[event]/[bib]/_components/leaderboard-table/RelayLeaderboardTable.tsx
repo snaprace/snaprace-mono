@@ -18,6 +18,7 @@ import { LeaderboardPagination } from "./LeaderboardPagination";
 import { StickyUserRow } from "./StickyUserRow";
 import { filterBySearch, getUniqueDivisions } from "./utils";
 import type { FilterState } from "./types";
+import type { CategoryOption } from "./LeaderboardFilters";
 import Link from "next/link";
 
 interface RelayLeaderboardTableProps {
@@ -25,6 +26,10 @@ interface RelayLeaderboardTableProps {
   highlightBib?: string;
   eventId: string;
   organizationId: string;
+  // 카테고리 관련 props
+  categories?: CategoryOption[];
+  selectedCategory?: string | null;
+  onCategoryChange?: (categoryId: string) => void;
 }
 
 type RelaySegment = {
@@ -167,6 +172,9 @@ export function RelayLeaderboardTable({
   highlightBib,
   eventId,
   organizationId: _organizationId,
+  categories,
+  selectedCategory,
+  onCategoryChange,
 }: RelayLeaderboardTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch] = useDebounce(searchQuery, 300);
@@ -255,6 +263,9 @@ export function RelayLeaderboardTable({
         onFiltersChange={setFilters}
         divisions={divisions}
         hideGenderFilter={true}
+        categories={categories}
+        selectedCategory={selectedCategory}
+        onCategoryChange={onCategoryChange}
       />
 
       <div className="border-border w-full max-w-full overflow-x-auto md:rounded-lg md:border">

@@ -98,40 +98,15 @@ export function LeaderboardSection({
           </AccordionTrigger>
           <AccordionContent className="overflow-hidden">
             <div className="w-full max-w-full">
-              {categories.length > 1 && (
-                <div className="mb-3 flex flex-col gap-2 px-3 md:mb-4 md:flex-row md:items-center md:justify-between md:gap-4 md:px-6">
-                  <div
-                    className="flex gap-1.5 overflow-x-auto md:gap-2"
-                    style={{
-                      scrollbarWidth: "none",
-                    }}
-                  >
-                    {categories.map((category) => (
-                      <button
-                        key={category.id}
-                        onClick={() => setSelectedCategory(category.id)}
-                        className={`rounded-lg px-2.5 py-1.5 text-xs font-medium whitespace-nowrap transition-colors md:px-4 md:py-2 md:text-sm ${
-                          selectedCategory === category.id
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted hover:bg-muted/80"
-                        }`}
-                      >
-                        {category.name}
-                        <span className="ml-1 text-[10px] opacity-70 md:ml-2 md:text-xs">
-                          ({category.count})
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {currentResults.isRelay ? (
                 <RelayLeaderboardTable
                   results={currentResults.results}
                   highlightBib={highlightBib}
                   eventId={eventId}
                   organizationId={organizationId ?? ""}
+                  categories={categories}
+                  selectedCategory={selectedCategory}
+                  onCategoryChange={setSelectedCategory}
                 />
               ) : (
                 <LeaderboardTableAdvanced
@@ -139,6 +114,9 @@ export function LeaderboardSection({
                   highlightBib={highlightBib}
                   eventId={eventId}
                   organizationId={organizationId ?? ""}
+                  categories={categories}
+                  selectedCategory={selectedCategory}
+                  onCategoryChange={setSelectedCategory}
                 />
               )}
             </div>
