@@ -229,15 +229,6 @@ export function SearchSelfieSection({
       <div className="grid gap-4">
         <div className="border-border/60 bg-background/95 rounded-2xl border p-5 shadow-sm md:p-6">
           <div className="flex flex-col gap-4">
-            <div className="space-y-1 text-left">
-              <h4 className="text-base font-semibold md:text-lg">
-                Face Match Selfie Search
-              </h4>
-              <p className="text-muted-foreground text-sm">
-                Search a selfie to find photos automatically.
-              </p>
-            </div>
-
             <div>
               <input
                 id="selfie-upload"
