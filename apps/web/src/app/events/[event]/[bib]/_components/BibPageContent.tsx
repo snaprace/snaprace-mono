@@ -27,15 +27,19 @@ export function BibPageContent({ event, bib }: BibPageContentProps) {
   const [selectedSubEventId, setSelectedSubEventId] = useState<string | null>(
     null,
   );
-  const { event_id, organizer_id, name } = event;
+  const { event_id, organizer_id, name, display_mode } = event;
 
   useAnalyticsTracking();
   usePerformanceTracking();
 
-  // Fetch runner data to get gun_time_seconds for video seek
   const runnerQuery = api.results.getRunnerByBib.useQuery(
     { eventId: event_id, bib },
-    { enabled: Boolean(event_id && bib) },
+    {
+      enabled: Boolean(
+        event_id && bib && display_mode === "RESULTS_AND_PHOTOS",
+      ),
+      retry: false,
+    },
   );
 
   const runnerGunTimeSeconds = runnerQuery.data?.gun_time_seconds ?? null;
