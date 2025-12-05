@@ -101,7 +101,7 @@ export function LeaderboardSection({
 
   return (
     <article className="border-border/60 bg-background/95 overflow-hidden rounded-2xl border shadow-sm">
-      <Accordion type="single" collapsible defaultValue="leaderboard">
+      <Accordion type="single" collapsible>
         <AccordionItem value="leaderboard" className="border-0">
           <AccordionTrigger className="px-3 hover:no-underline">
             <div className="flex items-center gap-1.5 md:gap-2">
