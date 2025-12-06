@@ -1,19 +1,152 @@
 {
   "common": {
     "search": "검색",
-    "loading": "로딩 중...",
-    "error": "오류가 발생했습니다"
+    "loading": "불러오는 중...",
+    "error": "오류가 발생했습니다",
+    "back": "뒤로",
+    "retry": "재시도",
+    "tryAgain": "다시 시도",
+    "copy": "복사",
+    "share": "공유",
+    "download": "다운로드",
+    "downloading": "다운로드 중...",
+    "processing": "처리 중...",
+    "cancel": "취소",
+    "confirm": "확인",
+    "close": "닫기",
+    "all": "전체",
+    "photos": "장",
+    "allRightsReserved": "All rights reserved"
   },
   "home": {
-    "title": "내 사진 찾기",
+    "title": "Find your snap",
     "searchPlaceholder": "배번 입력",
-    "eventPhotos": "{name}\n이벤트 사진"
+    "eventPhotos": "{name}\n이벤트 사진",
+    "event": "이벤트",
+    "selectEvent": "이벤트를 선택하세요",
+    "noEventsAvailable": "이벤트가 없습니다",
+    "bibNumber": "배번",
+    "bibPlaceholder": "배번을 입력하세요 (예: 1234)",
+    "findMyPhotos": "배번 검색",
+    "goToAllPhotos": "전체 사진 보기"
   },
   "events": {
     "title": "이벤트",
+    "organizerEvents": "{name} 이벤트",
     "noEvents": "이벤트가 없습니다",
     "viewPhotos": "사진 보기",
-    "viewResults": "결과 보기"
+    "viewResults": "결과 보기",
+    "noEventsTitle": "이벤트 없음",
+    "noEventsMessage": "현재 진행 중인 이벤트가 없습니다. 나중에 다시 확인해 주세요.",
+    "loadError": "이벤트를 불러오지 못했습니다",
+    "loadErrorMessage": "이벤트를 불러오는 중 오류가 발생했습니다. 다시 시도해 주세요."
+  },
+  "photos": {
+    "noPhotosTitle": "사진을 찾을 수 없습니다",
+    "noPhotosAvailableTitle": "사진 없음",
+    "noPhotosAvailableMessage": "이 이벤트의 사진이 아직 업로드되지 않았습니다.\n나중에 다시 확인해 주세요.",
+    "noPhotosForBib": "배번 #{bibNumber}에 해당하는 사진이 없습니다.\n다른 배번으로 검색해 보세요.",
+    "noPhotosFound": "사진이 없습니다.",
+    "viewAllEvents": "전체 이벤트 보기",
+    "viewAllEventPhotos": "이벤트 전체 사진 보기",
+    "allPhotographers": "전체 포토그래퍼"
+  },
+  "eventHeader": {
+    "enterBib": "배번 검색",
+    "statsFormat": "{label} • {count}장",
+    "statsWithRunnerFormat": "{label} • {runnerName} • {count}장"
+  },
+  "search": {
+    "enterBibNumber": "배번을 입력하세요",
+    "searchByNameOrBib": "이름 또는 배번으로 검색..."
+  },
+  "selfieSearch": {
+    "searchingPhotos": "사진을 찾는 중...",
+    "selfieMatched": "셀피 매칭 완료!",
+    "foundPhotos": "{count}장의 사진을 찾았습니다",
+    "foundPhotosPlural": "{count}장의 사진을 찾았습니다",
+    "uploadAnother": "다른 사진 업로드",
+    "clickToSearch": "셀피로 검색하세요",
+    "fileFormat": "JPG, PNG, HEIC • 최대 10MB",
+    "noMatchesTitle": "일치하는 사진 없음",
+    "noMatchesMessage": "조명이 더 좋거나 얼굴이 더 잘 보이는 다른 셀피로 시도해 보세요.",
+    "processingError": "처리 오류",
+    "processingErrorMessage": "문제가 발생했습니다. 다시 시도해 주세요.",
+    "noMatchingPhotos": "일치하는 사진이 없습니다.",
+    "foundMatchingPhotos": "{count}장의 새로운 사진을 찾았습니다!",
+    "fileTooLarge": "파일 크기가 너무 큽니다. 10MB 이하의 이미지를 업로드해 주세요.",
+    "failedToProcess": "셀피 처리에 실패했습니다. 다시 시도해 주세요.",
+    "failedToProcessImage": "이미지 처리에 실패했습니다. 다시 시도해 주세요."
+  },
+  "leaderboard": {
+    "title": "순위표",
+    "selectCategory": "카테고리 선택",
+    "allDivisions": "전체 부문",
+    "allGenders": "전체 성별",
+    "male": "남성",
+    "female": "여성",
+    "noResults": "검색 결과가 없습니다. 필터나 검색어를 수정해 보세요.",
+    "rows": "표시"
+  },
+  "timing": {
+    "runnerSpotlight": "러너 스포트라이트",
+    "chipTime": "칩 타임",
+    "clockTime": "건 타임",
+    "averagePace": "평균 페이스",
+    "divisionPlace": "부문 순위",
+    "overallPlace": "전체 순위",
+    "division": "부문",
+    "unableToLoad": "기록을 불러올 수 없습니다",
+    "loadError": "현재 기록 데이터를 불러올 수 없습니다.",
+    "years": "세"
+  },
+  "video": {
+    "finishVideo": "피니시 영상",
+    "unableToLoad": "영상을 불러올 수 없습니다",
+    "tryAgainLater": "나중에 다시 시도해 주세요"
+  },
+  "share": {
+    "title": "공유하기",
+    "sharePhoto": "사진 공유",
+    "shareYourRacePhoto": "레이스 사진 공유",
+    "linkCopied": "링크가 복사되었습니다!",
+    "copyPhotoLink": "사진 링크 복사",
+    "copied": "복사됨!",
+    "copyLink": "링크 복사",
+    "directLink": "링크:",
+    "sharedWithFile": "파일과 함께 공유되었습니다!",
+    "sharedSuccessfully": "공유되었습니다!",
+    "failedToShare": "공유에 실패했습니다",
+    "failedToCopy": "링크 복사에 실패했습니다",
+    "messenger": "메신저",
+    "whatsapp": "왓츠앱",
+    "facebook": "페이스북",
+    "email": "이메일",
+    "twitter": "X (트위터)",
+    "pinterest": "핀터레스트",
+    "threads": "스레드",
+    "more": "더보기",
+    "instagram": "인스타그램",
+    "checkOutRacePhoto": "레이스 사진을 확인해 보세요!",
+    "photoOpenedInNewTab": "새 탭에서 사진이 열렸습니다",
+    "downloadStarted": "사진 다운로드를 시작합니다",
+    "downloadFailed": "다운로드에 실패했습니다. 다시 시도해 주세요.",
+    "nativeSharingFailed": "공유가 취소되었거나 실패했습니다"
+  },
+  "consent": {
+    "title": "얼굴 인식 동의",
+    "description": "사진을 찾기 위해 SnapRace가 셀피에서 얼굴의 특징을 분석합니다. \n 셀피는 저장되지 않습니다. 자세한 내용은",
+    "privacyPolicyLink": "개인정보처리방침",
+    "photoUsage": "셀피는 개인 용도로만 사용 가능하며, 상업적 사용은 불가합니다.",
+    "creditPhotographers": "공유 시 포토그래퍼를 표시해 주세요.",
+    "agreeAndSearch": "동의하고 검색",
+    "requiredNote": "셀피 검색 기능을 사용하여 본인 사진을 자동으로 찾으려면 얼굴 사진 검색에 동의해야 합니다."
+  },
+  "error": {
+    "title": "문제가 발생했습니다",
+    "message": "데이터를 불러오는 중 오류가 발생했습니다",
+    "failedToLoad": "불러오기 실패",
+    "tryAgain": "다시 시도"
   },
   "locale": {
     "unsupported": "이 주최자는 {locale}을(를) 지원하지 않습니다",
@@ -22,7 +155,97 @@
   "footer": {
     "privacy": "개인정보처리방침",
     "terms": "이용약관"
+  },
+  "metadata": {
+    "privacyPolicyTitle": "개인정보처리방침 - SnapRace",
+    "privacyPolicyDescription": "SnapRace가 얼굴 인식 서비스를 포함하여 개인 정보를 어떻게 수집, 사용, 보호하는지 알아보세요."
+  },
+  "privacy": {
+    "title": "개인정보처리방침",
+    "effectiveDate": "시행일",
+    "lastUpdated": "최종 수정일",
+    "section1": {
+      "title": "1. 소개",
+      "p1": "본 개인정보처리방침은 SnapRace(\"회사\", \"저희\")가 사진 식별 및 갤러리 서비스(\"서비스\")와 관련하여 정보를 수집, 사용 및 공유하는 방법을 설명합니다. 저희의 목표는 참가자 여러분이 레이스 사진을 빠르고 쉽게 찾을 수 있도록 돕는 것입니다.",
+      "p2": "본 방침은 저희 고객인 레이스 주최자(\"주최자\")가 주관하는 이벤트(\"이벤트\")의 참가자에게 적용됩니다."
+    },
+    "section2": {
+      "title": "2. 수집하는 정보",
+      "fromOrganizers": "레이스 주최자로부터 받는 정보:",
+      "eventPhotos": "이벤트 사진:",
+      "eventPhotosDesc": "주최자가 직접 촬영하거나 대행하여 촬영한 공식 이벤트 사진을 제공받습니다.",
+      "participantData": "참가자 데이터:",
+      "participantDataDesc": "주최자로부터 이름, 배번 등 제한된 정보를 제공받을 수 있습니다.",
+      "fromPhotos": "사진에서 얻는 정보:",
+      "bibNumbers": "배번:",
+      "bibNumbersDesc": "저희 기술이 이벤트 사진을 자동으로 스캔하여 배번을 감지하고 읽습니다.",
+      "biometricInfo": "생체 정보 (얼굴 기하학):",
+      "biometricInfoDesc": "사진을 처리할 때 저희 기술은 얼굴을 감지하고 각 얼굴의 고유한 수치 표현(\"페이스 벡터\" 또는 \"임베딩\")을 생성합니다. 자세한 내용은 아래 4조의 생체 정보 정책을 참조하세요.",
+      "fromYou": "직접 제공하는 정보:",
+      "selfiesAndBibs": "셀피 및 배번:",
+      "selfiesAndBibsDesc": "셀피 검색 기능을 사용하시면 특정 이벤트에 대한 셀피와 배번을 저희에게 제공하게 됩니다."
+    },
+    "section3": {
+      "title": "3. 정보 사용 방법",
+      "intro": "저희는 수집한 정보를 서비스 제공 및 개선이라는 하나의 주요 목적을 위해 사용합니다. 여기에는 다음이 포함됩니다:",
+      "gallery": "사진 갤러리 생성:",
+      "galleryDesc": "이벤트의 모든 사진을 자동으로 식별하여 개인 갤러리로 그룹화합니다.",
+      "linking": "사진 연결:",
+      "linkingDesc": "배번 감지 및/또는 얼굴 인식을 통해 사진을 사용자와 연결합니다.",
+      "selfieSearch": "셀피 검색 활성화:",
+      "selfieSearchDesc": "셀피와 배번을 제공하여 사진을 찾을 수 있도록 합니다.",
+      "improving": "서비스 개선:",
+      "improvingDesc": "사진 식별 기술의 정확도를 향상시킵니다."
+    },
+    "section4": {
+      "title": "4. 생체 정보 정책",
+      "important": "중요",
+      "intro": "여러분의 신뢰가 저희의 최우선 과제입니다. 저희는 생체 정보를 책임감 있고 투명하게 처리하기 위해 최선을 다하고 있습니다.",
+      "whatWeCollect": "수집 항목:",
+      "whatWeCollectDesc": "이벤트 사진 및 제공하신 셀피에서 얼굴 기하학의 수치 표현을 수집합니다. 실제 얼굴 데이터는 저장하지 않습니다. 눈, 지문 또는 음성 스캔은 수집하거나 저장하지 않습니다.",
+      "purpose": "수집 목적:",
+      "purposeDesc": "이 얼굴 기하학 데이터는 특정 이벤트에서 레이스 사진을 식별하고 그룹화하는 데만 사용됩니다. 배번이 보이지 않는 사진을 찾는 핵심 기술입니다.",
+      "consent": "동의:",
+      "consentDesc": "이 생체 정보의 수집 및 사용에 대한 동의는 레이스 등록 시 동의하는 이벤트 등록 면책 동의서를 통해 레이스 주최자가 취득합니다.",
+      "prohibition": "이익 추구 금지:",
+      "prohibitionDesc": "저희는 생체 정보를 판매, 임대, 거래하거나 다른 방식으로 이익을 취하지 않습니다.",
+      "retention": "데이터 보관 및 파기:",
+      "retentionDesc": "다음 중 빠른 시점에 시스템에서 생체 정보를 영구적으로 파기합니다: (a) 데이터 삭제 요청 시, 또는 (b) 마지막 이용으로부터 최대 3년 이후."
+    },
+    "section5": {
+      "title": "5. 정보 공유 방법",
+      "intro": "저희는 아래에 설명된 제한된 상황을 제외하고는 개인 정보를 제3자와 공유하지 않습니다:",
+      "withOrganizers": "레이스 주최자와:",
+      "withOrganizersDesc": "참가하신 이벤트의 주최자에게 최종 정리된 사진 갤러리를 제공합니다.",
+      "withProviders": "서비스 제공업체와:",
+      "withProvidersDesc": "클라우드 호스팅 및 얼굴 인식 API(예: Amazon Web Services) 등 서비스의 기반 기술을 제공하기 위해 신뢰할 수 있는 제3자 업체를 이용합니다. 이러한 업체들은 계약상 데이터를 보호할 의무가 있습니다.",
+      "forLegal": "법적 사유로:",
+      "forLegalDesc": "법률에서 요구하거나 SnapRace, 사용자 또는 일반 대중의 권리, 재산 또는 안전을 보호하기 위해 정보를 공유할 수 있습니다."
+    },
+    "section6": {
+      "title": "6. 데이터 보안",
+      "content": "저희는 무단 접근, 사용 또는 공개로부터 정보를 보호하기 위해 합리적이고 적절한 기술적, 조직적 보안 조치를 시행합니다. 여기에는 저장 및 전송 중 데이터 암호화와 엄격한 접근 제어가 포함됩니다."
+    },
+    "section7": {
+      "title": "7. 귀하의 권리와 선택",
+      "intro": "귀하는 본인의 정보를 통제할 수 있습니다.",
+      "accessPhotos": "사진 접근:",
+      "accessPhotosDesc": "레이스 주최자가 제공하는 갤러리를 통해 사진에 접근할 수 있습니다.",
+      "deleteData": "데이터 삭제 (수신 거부):",
+      "deleteDataDesc": "언제든지 시스템에서 사진 및 관련 생체 정보의 삭제를 요청할 권리가 있습니다. 요청하시려면 다음 주소로 연락해 주세요:",
+      "deleteDataSuffix": "이벤트명, 이름, 배번을 함께 알려주시면 신속하게 처리해 드리겠습니다."
+    },
+    "section8": {
+      "title": "8. 아동 개인정보 보호",
+      "content": "저희 서비스는 16세 미만 아동을 대상으로 하지 않으며, 그들로부터 고의로 개인 정보를 수집하지 않습니다. 부모의 동의 없이 아동으로부터 정보를 수집한 사실을 인지하게 되면 해당 정보를 삭제하기 위한 조치를 취할 것입니다."
+    },
+    "section9": {
+      "title": "9. 본 방침의 변경",
+      "content": "본 개인정보처리방침은 수시로 업데이트될 수 있습니다. 변경 사항이 있으면 이 페이지에 새 방침을 게시하고 \"최종 수정일\"을 업데이트하여 알려드리겠습니다."
+    },
+    "section10": {
+      "title": "10. 문의하기",
+      "content": "본 개인정보처리방침에 관해 궁금한 점이 있으시면 다음 주소로 문의해 주세요:"
+    }
   }
 }
-
-

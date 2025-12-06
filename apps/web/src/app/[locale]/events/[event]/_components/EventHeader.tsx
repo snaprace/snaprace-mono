@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Search } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@repo/supabase";
@@ -12,6 +13,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trackBibSearch } from "@/lib/analytics";
 
 export function EventHeader({ event }: { event: Tables<"events"> }) {
+  const t = useTranslations("eventHeader");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const params = useParams();
   const bib = params?.bib;
@@ -39,6 +42,10 @@ export function EventHeader({ event }: { event: Tables<"events"> }) {
     }
   };
 
+  const statsText = runnerName
+    ? t("statsWithRunnerFormat", { label, runnerName, count })
+    : t("statsFormat", { label, count });
+
   return (
     <header className="bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-30 flex h-16 items-center border-b backdrop-blur md:h-18">
       <div className="container mx-auto flex items-center justify-between px-1 md:px-4">
@@ -48,7 +55,7 @@ export function EventHeader({ event }: { event: Tables<"events"> }) {
           onClick={handleBack}
         >
           <ArrowLeft className="h-4 w-4" />
-          <span className="hidden md:inline">Back</span>
+          <span className="hidden md:inline">{tCommon("back")}</span>
         </Button>
 
         <div className="flex-1 text-center">
@@ -57,7 +64,7 @@ export function EventHeader({ event }: { event: Tables<"events"> }) {
             {isLoading ? (
               <Skeleton className="h-[16px] w-[140px] md:h-[20px] md:w-[160px]" />
             ) : (
-              <span>{`${label} • ${runnerName ? `${runnerName} • ` : ""}${count} photos`}</span>
+              <span>{statsText}</span>
             )}
           </div>
         </div>
@@ -69,7 +76,7 @@ export function EventHeader({ event }: { event: Tables<"events"> }) {
           >
             <Input
               type="text"
-              placeholder="Enter bib"
+              placeholder={t("enterBib")}
               value={searchBib}
               onChange={(e) => setSearchBib(e.target.value)}
               className="w-[100px] border border-gray-200 transition-all duration-300 focus:w-[140px]"

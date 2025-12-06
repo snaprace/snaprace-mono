@@ -18,10 +18,10 @@ import * as path from "path";
 // AWS 리전 설정
 const rekognition = new RekognitionClient({ region: "ap-northeast-2" });
 
-// 정규표현식 패턴 (수정된 로직과 동일)
-// 알파벳 접두사(0~2자) + 숫자(3~6자리) 패턴
-// 캡처 그룹으로 숫자 부분만 추출
-const BIB_REGEX = /^[A-Z]{0,2}([0-9]{3,6})$/i;
+// 순수 숫자 3~6자리 패턴 (접두사 없음)
+const BIB_REGEX = /^[0-9]{3,6}$/;
+// 제외할 패턴 (0000 등)
+const EXCLUDED_PATTERNS = ["2025", "0000", "00000", "000000"];
 
 async function detectTextFromImage(imagePath: string) {
   const imageBytes = fs.readFileSync(imagePath);
@@ -36,24 +36,22 @@ async function detectTextFromImage(imagePath: string) {
 }
 
 /**
- * 수정된 로직: 알파벳 접두사 허용 + 숫자만 추출
+ * 수정된 로직: 순수 숫자만 추출 (0000 등 제외)
  */
 function extractBibs(
   detections: Awaited<ReturnType<typeof detectTextFromImage>>
-): { bibs: string[]; details: Array<{ original: string; extracted: string }> } {
+): { bibs: string[]; details: Array<{ text: string }> } {
   const bibSet = new Set<string>();
-  const details: Array<{ original: string; extracted: string }> = [];
+  const details: Array<{ text: string }> = [];
 
   for (const detection of detections) {
     if (detection.Type === "WORD" && detection.DetectedText) {
       const match = detection.DetectedText.match(BIB_REGEX);
-      if (match) {
-        const extracted = match[1]; // 숫자 부분만
-        if (!bibSet.has(extracted)) {
-          bibSet.add(extracted);
+      if (match && !EXCLUDED_PATTERNS.includes(detection.DetectedText)) {
+        if (!bibSet.has(detection.DetectedText)) {
+          bibSet.add(detection.DetectedText);
           details.push({
-            original: detection.DetectedText,
-            extracted,
+            text: detection.DetectedText,
           });
         }
       }
@@ -87,16 +85,13 @@ async function testImage(imagePath: string) {
     const { bibs, details } = extractBibs(detections);
     console.log("\n🔍 Bib Detection 결과:");
     console.log("-".repeat(50));
-    console.log(`  정규표현식: /^[A-Z]{0,2}([0-9]{3,6})$/i`);
+    console.log(`  정규표현식: /^[0-9]{3,6}$/`);
+    console.log(`  제외 패턴: ${EXCLUDED_PATTERNS.join(", ")}`);
     console.log("-".repeat(50));
 
     if (details.length > 0) {
-      for (const { original, extracted } of details) {
-        if (original === extracted) {
-          console.log(`  ✅ "${original}" → 저장: ${extracted}`);
-        } else {
-          console.log(`  ✅ "${original}" → 접두사 제거 → 저장: ${extracted}`);
-        }
+      for (const { text } of details) {
+        console.log(`  ✅ "${text}"`);
       }
       console.log("-".repeat(50));
       console.log(`  📦 최종 저장될 bib: [${bibs.join(", ")}]`);

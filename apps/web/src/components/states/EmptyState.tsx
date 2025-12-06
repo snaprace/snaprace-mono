@@ -1,6 +1,7 @@
 "use client";
 
 import { Camera, Calendar, User } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 
 interface EmptyStateProps {
@@ -35,11 +36,12 @@ export function EmptyState({ icon, title, message, action }: EmptyStateProps) {
 }
 
 export function NoEventsState() {
+  const t = useTranslations("events");
   return (
     <EmptyState
       icon={<Calendar className="text-muted-foreground h-10 w-10" />}
-      title="No Events Available"
-      message="There are no events available at the moment. Please check back later."
+      title={t("noEventsTitle")}
+      message={t("noEventsMessage")}
     />
   );
 }
@@ -48,21 +50,23 @@ export function NoPhotosState({
   isAllPhotos = false,
   bibNumber = "",
   onViewAllPhotos,
-  actionLabel = "View All Event Photos",
+  actionLabel,
 }: {
   isAllPhotos?: boolean;
   bibNumber?: string;
   onViewAllPhotos: () => void;
   actionLabel?: string;
 }) {
+  const t = useTranslations("photos");
+
   if (isAllPhotos) {
     return (
       <EmptyState
         icon={<Camera className="text-muted-foreground h-10 w-10" />}
-        title="No Photos Available"
-        message={`Photos for this event haven't been uploaded yet. \nPlease check back later.`}
+        title={t("noPhotosAvailableTitle")}
+        message={t("noPhotosAvailableMessage")}
         action={{
-          label: "View All Events",
+          label: t("viewAllEvents"),
           onClick: onViewAllPhotos,
         }}
       />
@@ -70,18 +74,18 @@ export function NoPhotosState({
   }
 
   const message = bibNumber
-    ? `No photos found for bib number #${bibNumber}. \nPlease try a different bib number.`
-    : "No photos found.";
+    ? t("noPhotosForBib", { bibNumber })
+    : t("noPhotosFound");
 
   return (
     <EmptyState
       icon={<User className="text-muted-foreground h-10 w-10" />}
-      title="No Photos Found"
+      title={t("noPhotosTitle")}
       message={message}
       action={
         onViewAllPhotos
           ? {
-              label: actionLabel,
+              label: actionLabel || t("viewAllEventPhotos"),
               onClick: onViewAllPhotos,
             }
           : undefined

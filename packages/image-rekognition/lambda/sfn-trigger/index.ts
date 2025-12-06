@@ -101,11 +101,13 @@ export const handler = async (event: SqsEvent): Promise<void> => {
     };
     const filename = parts.slice(3).join("-");
     const safeFilename = filename.replace(/[^a-zA-Z0-9-_]/g, "-");
+    const timestamp = Date.now();
+    const executionName = `${safeFilename}-${timestamp}`.slice(0, 80); // Step Functions 이름 최대 80자
 
     await sfn.send(
       new StartExecutionCommand({
         stateMachineArn: STATE_MACHINE_ARN,
-        name: safeFilename,
+        name: executionName,
         input: JSON.stringify(input),
       })
     );

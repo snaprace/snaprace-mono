@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useDebounce } from "use-debounce";
+import { useTranslations } from "next-intl";
 import {
   useReactTable,
   getCoreRowModel,
@@ -52,6 +53,7 @@ export function LeaderboardTableAdvanced({
   selectedCategory,
   onCategoryChange,
 }: LeaderboardTableAdvancedProps) {
+  const t = useTranslations("leaderboard");
   // 상태 관리
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch] = useDebounce(searchQuery, 300);
@@ -283,7 +285,7 @@ export function LeaderboardTableAdvanced({
                   colSpan={visibleColumns.length}
                   className="text-muted-foreground p-8 text-center text-sm"
                 >
-                  No results found. Try adjusting your filters or search query.
+                  {t("noResults")}
                 </td>
               </tr>
             )}

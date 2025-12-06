@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
@@ -38,6 +39,8 @@ export function SearchSelfieSection({
   bib,
   onPhotosFound,
 }: SearchSelfieSectionProps) {
+  const t = useTranslations("selfieSearch");
+  const tCommon = useTranslations("common");
   const inputRef = useRef<HTMLInputElement>(null);
   const startTimeRef = useRef<number>(0);
   const fileRef = useRef<File | null>(null);
@@ -89,7 +92,7 @@ export function SearchSelfieSection({
       if (matches.length === 0) {
         setShowNoMatches(true);
         onPhotosFound([]); // Empty array to indicate "search done but no results" if needed, or handle in UI
-        toast.info("No matching photos found.");
+        toast.info(t("noMatchingPhotos"));
       } else {
         setShowNoMatches(false);
         const mappedPhotos: Photo[] = matches.map((p) => ({
@@ -99,7 +102,7 @@ export function SearchSelfieSection({
         }));
 
         onPhotosFound(mappedPhotos);
-        toast.success(`Found ${matches.length} new matching photos!`);
+        toast.success(t("foundMatchingPhotos", { count: matches.length }));
       }
     },
     onError: (error) => {
@@ -118,7 +121,7 @@ export function SearchSelfieSection({
         error instanceof Error ? error.message : "Unknown error",
       );
 
-      toast.error("Failed to process selfie. Please try again.");
+      toast.error(t("failedToProcess"));
     },
   });
 
@@ -166,7 +169,7 @@ export function SearchSelfieSection({
       if (inputRef.current) {
         inputRef.current.value = ""; // Reset file input
       }
-      toast.error("File size too large. Please upload an image under 10MB.");
+      toast.error(t("fileTooLarge"));
       return;
     }
 
@@ -205,7 +208,7 @@ export function SearchSelfieSection({
       setUploadedFile(null);
       fileRef.current = null;
       if (inputRef.current) inputRef.current.value = "";
-      toast.error("Failed to process image. Please try again.");
+      toast.error(t("failedToProcessImage"));
     }
   };
 
@@ -258,7 +261,7 @@ export function SearchSelfieSection({
                       <div className="flex flex-col items-center gap-3">
                         <div className="border-primary/30 border-t-primary h-10 w-10 animate-spin rounded-full border-4" />
                         <p className="text-muted-foreground text-xs">
-                          Searching for matching photos...
+                          {t("searchingPhotos")}
                         </p>
                       </div>
                     </div>
@@ -276,10 +279,11 @@ export function SearchSelfieSection({
                           ✓
                         </div>
                         <div className="text-center">
-                          <p className="text-sm font-medium">Selfie matched!</p>
+                          <p className="text-sm font-medium">{t("selfieMatched")}</p>
                           <p className="text-muted-foreground text-xs">
-                            Found {matchedCount} photo
-                            {matchedCount !== 1 ? "s" : ""}
+                            {matchedCount !== 1
+                              ? t("foundPhotosPlural", { count: matchedCount })
+                              : t("foundPhotos", { count: matchedCount })}
                           </p>
                         </div>
                         <Button
@@ -292,7 +296,7 @@ export function SearchSelfieSection({
                             handleRetry();
                           }}
                         >
-                          Upload another
+                          {t("uploadAnother")}
                         </Button>
                       </div>
                     </div>
@@ -322,12 +326,12 @@ export function SearchSelfieSection({
                       <p className="text-sm font-medium">
                         {uploadedFile
                           ? uploadedFile.name
-                          : "Click to search your selfie"}
+                          : t("clickToSearch")}
                       </p>
                       <p className="text-muted-foreground mt-1 text-xs">
                         {uploadedFile
                           ? `${(uploadedFile.size / 1024 / 1024).toFixed(1)} MB`
-                          : "JPG, PNG, or HEIC • Max 10 MB"}
+                          : t("fileFormat")}
                       </p>
                     </div>
                   </div>
@@ -341,12 +345,12 @@ export function SearchSelfieSection({
                   <Info size={16} className="my-auto" />
                   <div className="space-y-1">
                     <p className="font-medium">
-                      {hasError ? "Processing Error" : "No matches found"}
+                      {hasError ? t("processingError") : t("noMatchesTitle")}
                     </p>
                     <p className="text-xs">
                       {hasError
-                        ? "Something went wrong. Please try again."
-                        : "Try uploading a different selfie with better lighting or a clearer view of your face."}
+                        ? t("processingErrorMessage")
+                        : t("noMatchesMessage")}
                     </p>
                   </div>
                   <Button
@@ -355,7 +359,7 @@ export function SearchSelfieSection({
                     onClick={handleRetry}
                     className="ml-auto text-xs"
                   >
-                    Try again
+                    {tCommon("tryAgain")}
                   </Button>
                 </div>
               </div>

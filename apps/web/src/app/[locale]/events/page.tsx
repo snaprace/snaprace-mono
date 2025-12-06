@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import EventsGrid from "./_components/EventsGrid";
 import { api } from "@/trpc/react";
 import { EventsGridSkeleton } from "@/components/states/EventsSkeleton";
@@ -10,6 +11,7 @@ import { useOrganizer } from "@/contexts/OrganizerContext";
 import { getCountryFromLocale, type Locale } from "@/i18n/config";
 
 export default function EventsPage() {
+  const t = useTranslations("events");
   const { organizer } = useOrganizer();
   const params = useParams<{ locale: string }>();
   const country = organizer ? undefined : getCountryFromLocale(params.locale as Locale);
@@ -20,7 +22,7 @@ export default function EventsPage() {
     <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-12 text-center">
         <h1 className="text-foreground mb-4 text-3xl font-bold">
-          {organizer ? `${organizer.name} Events` : "Events"}
+          {organizer ? t("organizerEvents", { name: organizer.name }) : t("title")}
         </h1>
       </div>
 
@@ -29,8 +31,8 @@ export default function EventsPage() {
           <EventsGridSkeleton />
         ) : eventsQuery.error ? (
           <ErrorState
-            title="Failed to load events"
-            message="There was an error loading the events. Please try again."
+            title={t("loadError")}
+            message={t("loadErrorMessage")}
             onRetry={() => eventsQuery.refetch()}
           />
         ) : eventsQuery.data && eventsQuery.data.length > 0 ? (

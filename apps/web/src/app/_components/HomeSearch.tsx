@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type { Event } from "@/server/services/events";
 import type { Organizer } from "@/server/services/organizers";
 
@@ -21,6 +22,7 @@ interface HomeSearchProps {
 }
 
 export function HomeSearch({ initialEvents }: HomeSearchProps) {
+  const t = useTranslations("home");
   const [bibNumber, setBibNumber] = useState("");
   const [selectedEventId, setSelectedEventId] = useState("");
   const router = useRouter();
@@ -47,7 +49,7 @@ export function HomeSearch({ initialEvents }: HomeSearchProps) {
         <div className="space-y-2">
           <label className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
             <Trophy className="h-4 w-4" />
-            Event
+            {t("event")}
           </label>
           <Select value={selectedEventId} onValueChange={setSelectedEventId}>
             <SelectTrigger
@@ -57,8 +59,8 @@ export function HomeSearch({ initialEvents }: HomeSearchProps) {
               <SelectValue
                 placeholder={
                   events.length === 0
-                    ? "No events available"
-                    : "Select an event"
+                    ? t("noEventsAvailable")
+                    : t("selectEvent")
                 }
               />
             </SelectTrigger>
@@ -81,11 +83,11 @@ export function HomeSearch({ initialEvents }: HomeSearchProps) {
         <div className="space-y-2">
           <label className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
             <Search className="h-4 w-4" />
-            Bib Number
+            {t("bibNumber")}
           </label>
           <Input
             type="text"
-            placeholder="Enter your bib number (e.g., 1234)"
+            placeholder={t("bibPlaceholder")}
             value={bibNumber}
             onChange={(e) => setBibNumber(e.target.value)}
             disabled={events.length === 0}
@@ -103,7 +105,7 @@ export function HomeSearch({ initialEvents }: HomeSearchProps) {
           disabled={!bibNumber.trim() || !selectedEventId}
         >
           <Search className="mr-2 h-5 w-5" />
-          Find My Photos
+          {t("findMyPhotos")}
         </Button>
 
         <Button
@@ -114,7 +116,7 @@ export function HomeSearch({ initialEvents }: HomeSearchProps) {
           disabled={!selectedEventId}
         >
           <Images className="mr-2 h-5 w-5" />
-          Go to All Photos
+          {t("goToAllPhotos")}
         </Button>
       </form>
     </div>

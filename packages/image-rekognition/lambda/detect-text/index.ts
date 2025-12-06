@@ -38,17 +38,18 @@ export const handler = async (
   const rawText: string[] = [];
   const bibCandidates: string[] = [];
 
-  // 알파벳 접두사(0~2자) + 숫자(3~6자리) 패턴
-  // 캡처 그룹으로 숫자 부분만 추출하여 저장
-  const BIB_REGEX = /^[A-Z]{0,2}([0-9]{3,6})$/i;
+  // 순수 숫자 3~6자리 패턴 (접두사 없음)
+  const BIB_REGEX = /^[0-9]{3,6}$/;
+  // 제외할 패턴 (연도, 0000 등)
+  const EXCLUDED_PATTERNS = ["2025", "0000", "00000", "000000"];
 
   for (const t of res.TextDetections ?? []) {
     if (!t.DetectedText) continue;
     rawText.push(t.DetectedText);
     if (t.Type === "WORD") {
       const match = t.DetectedText.match(BIB_REGEX);
-      if (match) {
-        bibCandidates.push(match[1]);
+      if (match && !EXCLUDED_PATTERNS.includes(t.DetectedText)) {
+        bibCandidates.push(t.DetectedText);
       }
     }
   }

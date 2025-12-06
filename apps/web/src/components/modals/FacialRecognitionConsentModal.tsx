@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,8 @@ export function FacialRecognitionConsentModal({
   eventName: _eventName,
   isRequired = false,
 }: FacialRecognitionConsentModalProps) {
+  const t = useTranslations("consent");
+  const tCommon = useTranslations("common");
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleAgree = async () => {
@@ -58,36 +61,27 @@ export function FacialRecognitionConsentModal({
         }}
       >
         <DialogHeader className="space-y-2 sm:space-y-3">
-          <DialogTitle className="text-lg sm:text-xl">
-            Facial Recognition Consent
+          <DialogTitle className="text-center text-lg sm:text-xl">
+            {t("title")}
           </DialogTitle>
-          <DialogDescription className="md:text-md text-xs leading-relaxed sm:text-base">
-            To find your photos, SnapRace will scan the geometry of the face in
-            your selfie. For more details, please review our{" "}
+          <DialogDescription className="text-center text-[10px] leading-relaxed whitespace-pre-wrap md:text-base">
+            {t("description")}{" "}
             <Link
               href="/privacy-policy"
               className="font-medium text-blue-600 hover:underline"
             >
-              Privacy Policy
+              {t("privacyPolicyLink")}
             </Link>
             .<br />
-            Photos are for personal use only — no commercial use allowed.
+            {t("photoUsage")}
             <br />
-            Please credit photographers when sharing.
+            {t("creditPhotographers")}
           </DialogDescription>
         </DialogHeader>
 
         {/* Minimal, simplified content only */}
 
         <DialogFooter className="flex flex-col gap-2 pt-3 sm:flex-row sm:gap-3 sm:pt-4 lg:justify-center">
-          {/* <Button
-            variant="outline"
-            onClick={handleDeny}
-            disabled={isProcessing}
-            className="order-2 h-10 text-sm sm:order-1 sm:h-11 sm:text-base"
-          >
-            {isRequired ? "Cancel" : "No Thanks"}
-          </Button> */}
           <Button
             onClick={handleAgree}
             disabled={isProcessing}
@@ -96,18 +90,19 @@ export function FacialRecognitionConsentModal({
             {isProcessing ? (
               <div className="flex items-center gap-2">
                 <div className="border-background h-3 w-3 animate-spin rounded-full border-2 border-t-transparent sm:h-4 sm:w-4" />
-                <span className="text-xs sm:text-sm">Processing...</span>
+                <span className="text-xs sm:text-sm">
+                  {tCommon("processing")}
+                </span>
               </div>
             ) : (
-              "I Agree & Search"
+              t("agreeAndSearch")
             )}
           </Button>
         </DialogFooter>
 
         {isRequired && (
           <p className="text-muted-foreground mt-3 text-xs sm:mt-4 sm:text-sm">
-            Facial recognition consent is required to use our selfie search
-            feature and find your photos automatically.
+            {t("requiredNote")}
           </p>
         )}
       </DialogContent>

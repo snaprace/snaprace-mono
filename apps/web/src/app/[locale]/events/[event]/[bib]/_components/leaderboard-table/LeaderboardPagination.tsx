@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -30,6 +31,7 @@ export function LeaderboardPagination({
   onPageChange,
   onPageSizeChange,
 }: LeaderboardPaginationProps) {
+  const t = useTranslations("leaderboard");
   const totalPages = Math.ceil(totalResults / pageSize);
   const startResult = (currentPage - 1) * pageSize + 1;
   const endResult = Math.min(currentPage * pageSize, totalResults);
@@ -42,7 +44,7 @@ export function LeaderboardPagination({
     <div className="flex flex-col items-center gap-3 px-2 sm:flex-row sm:items-center sm:justify-between">
       {/* Rows per page */}
       <div className="flex items-center gap-1.5 md:gap-2">
-        <span className="text-muted-foreground text-xs md:text-sm">Rows:</span>
+        <span className="text-muted-foreground text-xs md:text-sm">{t("rows")}:</span>
         <Select
           value={pageSize.toString()}
           onValueChange={(value) => onPageSizeChange(parseInt(value))}

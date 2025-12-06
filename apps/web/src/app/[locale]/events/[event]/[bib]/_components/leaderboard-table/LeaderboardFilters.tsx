@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -41,6 +42,8 @@ export function LeaderboardFilters({
   selectedCategory,
   onCategoryChange,
 }: LeaderboardFiltersProps) {
+  const t = useTranslations("leaderboard");
+  const tSearch = useTranslations("search");
   const showCategoryFilter =
     categories && categories.length > 1 && onCategoryChange;
 
@@ -51,7 +54,7 @@ export function LeaderboardFilters({
         <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 md:left-3 md:h-4 md:w-4" />
         <Input
           type="text"
-          placeholder="Search by name or bib..."
+          placeholder={tSearch("searchByNameOrBib")}
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           className="h-9 border border-gray-200 bg-white pl-8 text-xs md:h-10 md:pl-10 md:text-sm"
@@ -67,7 +70,7 @@ export function LeaderboardFilters({
             onValueChange={onCategoryChange}
           >
             <SelectTrigger className="h-9 w-[140px] border border-gray-200 bg-white text-xs md:h-10 md:w-[180px] md:text-sm">
-              <SelectValue placeholder="Select Category" />
+              <SelectValue placeholder={t("selectCategory")} />
             </SelectTrigger>
             <SelectContent>
               {categories.map((category) => (
@@ -94,11 +97,11 @@ export function LeaderboardFilters({
           }
         >
           <SelectTrigger className="h-9 w-[110px] border border-gray-200 bg-white text-xs md:h-10 md:w-[140px] md:text-sm">
-            <SelectValue placeholder="All Divisions" />
+            <SelectValue placeholder={t("allDivisions")} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all" className="text-xs md:text-sm">
-              All Divisions
+              {t("allDivisions")}
             </SelectItem>
             {divisions.map((div) => (
               <SelectItem key={div} value={div} className="text-xs md:text-sm">
@@ -120,17 +123,17 @@ export function LeaderboardFilters({
             }
           >
             <SelectTrigger className="h-9 w-[90px] border border-gray-200 bg-white text-xs md:h-10 md:w-[120px] md:text-sm">
-              <SelectValue placeholder="All Genders" />
+              <SelectValue placeholder={t("allGenders")} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all" className="text-xs md:text-sm">
-                All Genders
+                {t("allGenders")}
               </SelectItem>
               <SelectItem value="M" className="text-xs md:text-sm">
-                Male
+                {t("male")}
               </SelectItem>
               <SelectItem value="F" className="text-xs md:text-sm">
-                Female
+                {t("female")}
               </SelectItem>
             </SelectContent>
           </Select>

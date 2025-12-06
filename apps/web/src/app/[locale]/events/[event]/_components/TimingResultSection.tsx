@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, Timer } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { api } from "@/trpc/react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,6 +17,7 @@ export function TimingResultSection({
   eventId,
   bib,
 }: TimingResultSectionProps) {
+  const t = useTranslations("timing");
   const query = api.results.getRunnerByBib.useQuery(
     { eventId, bib },
     { enabled: Boolean(bib) },
@@ -29,7 +31,7 @@ export function TimingResultSection({
     return (
       <TimingErrorCard
         message={
-          query.error?.message ?? "We couldn’t load timing data right now."
+          query.error?.message ?? t("loadError")
         }
       />
     );
@@ -55,7 +57,7 @@ export function TimingResultSection({
         <div className="flex flex-col gap-2">
           <div className="text-muted-foreground flex items-center gap-2 text-xs tracking-wide uppercase">
             <Timer className="h-4 w-4" />
-            <span>Runner Spotlight</span>
+            <span>{t("runnerSpotlight")}</span>
           </div>
           <div>
             <h2 className="text-lg font-semibold md:text-xl">{fullName}</h2>
@@ -63,23 +65,20 @@ export function TimingResultSection({
               {runner.gender && runner.gender !== "Unknown" && (
                 <Badge variant="outline">{runner.gender}</Badge>
               )}
-              {runner.age && <Badge variant="outline">{runner.age} yrs</Badge>}
+              {runner.age && <Badge variant="outline">{runner.age} {t("years")}</Badge>}
               {location && <Badge variant="outline">{location}</Badge>}
             </div>
-            {/* <div className="text-muted-foreground text-sm">
-              Bib #{runner.bib_number} {location ? `(${location})` : ""}
-            </div> */}
           </div>
         </div>
       </div>
 
       <dl className="mt-4 grid grid-cols-2 gap-3 text-sm md:grid-cols-3 md:gap-4">
-        <TimingMetric label="Chip Time" value={chipTime} highlight />
-        <TimingMetric label="Clock Time" value={clockTime} />
-        <TimingMetric label="Average Pace" value={avgPace} />
-        <TimingMetric label="Division Place" value={divisionPlace} />
-        <TimingMetric label="Overall Place" value={overallPlace} />
-        <TimingMetric label="Division" value={division} />
+        <TimingMetric label={t("chipTime")} value={chipTime} highlight />
+        <TimingMetric label={t("clockTime")} value={clockTime} />
+        <TimingMetric label={t("averagePace")} value={avgPace} />
+        <TimingMetric label={t("divisionPlace")} value={divisionPlace} />
+        <TimingMetric label={t("overallPlace")} value={overallPlace} />
+        <TimingMetric label={t("division")} value={division} />
       </dl>
     </article>
   );
@@ -143,6 +142,7 @@ function TimingSummarySkeleton() {
 }
 
 function TimingErrorCard({ message }: { message: string }) {
+  const t = useTranslations("timing");
   return (
     <article className="border-border/60 bg-background/95 rounded-2xl border p-5 shadow-sm md:p-6">
       <div className="flex min-h-[180px] flex-col items-center justify-center gap-4 text-center">
@@ -151,7 +151,7 @@ function TimingErrorCard({ message }: { message: string }) {
         </div>
         <div className="space-y-2">
           <h3 className="text-base font-semibold">
-            Unable to load timing data
+            {t("unableToLoad")}
           </h3>
           <p className="text-muted-foreground text-sm">{message}</p>
         </div>

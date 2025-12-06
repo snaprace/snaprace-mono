@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { createServerClient } from "@repo/supabase";
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { env } from "@/env";
 import { Footer } from "@/components/Footer";
 import { getOrganizerBySubdomainServer } from "@/server/services/organizers-server";
@@ -16,6 +16,8 @@ export default async function HomePage({
   const { locale } = await params;
   setRequestLocale(locale);
 
+  const t = await getTranslations("home");
+
   const headersList = await headers();
   const subdomain = headersList.get("x-organization");
 
@@ -28,7 +30,9 @@ export default async function HomePage({
   let events: Event[] = [];
 
   try {
-    const country = organizer ? undefined : getCountryFromLocale(locale as Locale);
+    const country = organizer
+      ? undefined
+      : getCountryFromLocale(locale as Locale);
     events = await listEvents({
       supabase,
       organizationId: organizer?.organizer_id,
@@ -44,8 +48,8 @@ export default async function HomePage({
         <div className="container mx-auto max-w-4xl text-center">
           <h1 className="text-foreground mb-12 text-3xl font-semibold tracking-tight whitespace-pre-wrap sm:text-4xl md:text-5xl">
             {organizer?.subdomain
-              ? `${organizer.name}\nEvent Photos`
-              : "Find your snap"}
+              ? t("eventPhotos", { name: organizer.name })
+              : t("title")}
           </h1>
           <HomeSearch initialEvents={events} organizer={organizer} />
         </div>
@@ -54,4 +58,3 @@ export default async function HomePage({
     </div>
   );
 }
-

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { PlayCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { api } from "@/trpc/react";
 import {
@@ -25,6 +26,7 @@ export function FinishVideoSection({
   runnerGunTimeSeconds,
   selectedSubEventId,
 }: FinishVideoSectionProps) {
+  const t = useTranslations("video");
   const [hasError, setHasError] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
 
@@ -118,7 +120,7 @@ export function FinishVideoSection({
           <AccordionTrigger className="px-3 hover:no-underline">
             <div className="flex items-center gap-1.5 md:gap-2">
               <PlayCircle className="text-primary h-4 w-4 md:h-5 md:w-5" />
-              <h2 className="text-sm font-semibold md:text-lg">Finish Video</h2>
+              <h2 className="text-sm font-semibold md:text-lg">{t("finishVideo")}</h2>
             </div>
           </AccordionTrigger>
           <AccordionContent className="overflow-hidden pb-0">
@@ -168,20 +170,22 @@ export function FinishVideoSection({
 }
 
 function VideoErrorDisplay({ onRetry }: { onRetry: () => void }) {
+  const t = useTranslations("video");
+  const tCommon = useTranslations("common");
   return (
     <div className="bg-muted flex aspect-video w-full flex-col items-center justify-center rounded-lg p-6 text-center">
       <PlayCircle className="text-muted-foreground mb-4 h-12 w-12" />
       <h3 className="text-foreground mb-2 font-semibold">
-        Unable to load video
+        {t("unableToLoad")}
       </h3>
       <p className="text-muted-foreground mb-4 text-sm">
-        Please try again later
+        {t("tryAgainLater")}
       </p>
       <button
         onClick={onRetry}
         className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-4 py-2 text-sm font-medium transition-colors"
       >
-        Retry
+        {tCommon("retry")}
       </button>
     </div>
   );

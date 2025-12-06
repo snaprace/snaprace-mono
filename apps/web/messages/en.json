@@ -2,18 +2,151 @@
   "common": {
     "search": "Search",
     "loading": "Loading...",
-    "error": "An error occurred"
+    "error": "An error occurred",
+    "back": "Back",
+    "retry": "Retry",
+    "tryAgain": "Try Again",
+    "copy": "Copy",
+    "share": "Share",
+    "download": "Download",
+    "downloading": "Downloading...",
+    "processing": "Processing...",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "all": "All",
+    "photos": "photos",
+    "allRightsReserved": "All rights reserved"
   },
   "home": {
     "title": "Find your snap",
     "searchPlaceholder": "Enter bib number",
-    "eventPhotos": "{name}\nEvent Photos"
+    "eventPhotos": "{name}\nEvent Photos",
+    "event": "Event",
+    "selectEvent": "Select an event",
+    "noEventsAvailable": "No events available",
+    "bibNumber": "Bib Number",
+    "bibPlaceholder": "Enter your bib number (e.g., 1234)",
+    "findMyPhotos": "Find My Photos",
+    "goToAllPhotos": "Go to All Photos"
   },
   "events": {
     "title": "Events",
+    "organizerEvents": "{name} Events",
     "noEvents": "No events found",
     "viewPhotos": "View Photos",
-    "viewResults": "View Results"
+    "viewResults": "View Results",
+    "noEventsTitle": "No Events Available",
+    "noEventsMessage": "There are no events available at the moment. Please check back later.",
+    "loadError": "Failed to load events",
+    "loadErrorMessage": "There was an error loading the events. Please try again."
+  },
+  "photos": {
+    "noPhotosTitle": "No Photos Found",
+    "noPhotosAvailableTitle": "No Photos Available",
+    "noPhotosAvailableMessage": "Photos for this event haven't been uploaded yet.\nPlease check back later.",
+    "noPhotosForBib": "No photos found for bib number #{bibNumber}.\nPlease try a different bib number.",
+    "noPhotosFound": "No photos found.",
+    "viewAllEvents": "View All Events",
+    "viewAllEventPhotos": "View All Event Photos",
+    "allPhotographers": "All Photographers"
+  },
+  "eventHeader": {
+    "enterBib": "Enter bib",
+    "statsFormat": "{label} • {count} photos",
+    "statsWithRunnerFormat": "{label} • {runnerName} • {count} photos"
+  },
+  "search": {
+    "enterBibNumber": "Enter Bib Number",
+    "searchByNameOrBib": "Search by name or bib..."
+  },
+  "selfieSearch": {
+    "searchingPhotos": "Searching for matching photos...",
+    "selfieMatched": "Selfie matched!",
+    "foundPhotos": "Found {count} photo",
+    "foundPhotosPlural": "Found {count} photos",
+    "uploadAnother": "Upload another",
+    "clickToSearch": "Click to search your selfie",
+    "fileFormat": "JPG, PNG, or HEIC • Max 10 MB",
+    "noMatchesTitle": "No matches found",
+    "noMatchesMessage": "Try uploading a different selfie with better lighting or a clearer view of your face.",
+    "processingError": "Processing Error",
+    "processingErrorMessage": "Something went wrong. Please try again.",
+    "noMatchingPhotos": "No matching photos found.",
+    "foundMatchingPhotos": "Found {count} new matching photos!",
+    "fileTooLarge": "File size too large. Please upload an image under 10MB.",
+    "failedToProcess": "Failed to process selfie. Please try again.",
+    "failedToProcessImage": "Failed to process image. Please try again."
+  },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "selectCategory": "Select Category",
+    "allDivisions": "All Divisions",
+    "allGenders": "All Genders",
+    "male": "Male",
+    "female": "Female",
+    "noResults": "No results found. Try adjusting your filters or search query.",
+    "rows": "Rows"
+  },
+  "timing": {
+    "runnerSpotlight": "Runner Spotlight",
+    "chipTime": "Chip Time",
+    "clockTime": "Clock Time",
+    "averagePace": "Average Pace",
+    "divisionPlace": "Division Place",
+    "overallPlace": "Overall Place",
+    "division": "Division",
+    "unableToLoad": "Unable to load timing data",
+    "loadError": "We couldn't load timing data right now.",
+    "years": "yrs"
+  },
+  "video": {
+    "finishVideo": "Finish Video",
+    "unableToLoad": "Unable to load video",
+    "tryAgainLater": "Please try again later"
+  },
+  "share": {
+    "title": "SHARE",
+    "sharePhoto": "Share Photo",
+    "shareYourRacePhoto": "Share Your Race Photo",
+    "linkCopied": "Link copied to clipboard!",
+    "copyPhotoLink": "Copy Photo Link",
+    "copied": "Copied!",
+    "copyLink": "Copy Link",
+    "directLink": "Direct link:",
+    "sharedWithFile": "Shared with file!",
+    "sharedSuccessfully": "Shared successfully!",
+    "failedToShare": "Failed to share",
+    "failedToCopy": "Failed to copy link",
+    "messenger": "Messenger",
+    "whatsapp": "WhatsApp",
+    "facebook": "Facebook",
+    "email": "Email",
+    "twitter": "X (Twitter)",
+    "pinterest": "Pinterest",
+    "threads": "Threads",
+    "more": "More",
+    "instagram": "Instagram",
+    "checkOutRacePhoto": "Check out this race photo!",
+    "photoOpenedInNewTab": "Photo opened in new tab for download",
+    "downloadStarted": "Photo download started",
+    "downloadFailed": "Download failed. Please try again.",
+    "nativeSharingFailed": "Native sharing cancelled or failed"
+  },
+  "consent": {
+    "title": "Facial Recognition Consent",
+    "description": "To find your photos, SnapRace will scan the geometry of the face in your selfie. For more details, please review our",
+    "privacyPolicyLink": "Privacy Policy",
+    "photoUsage": "Photos are for personal use only — no commercial use allowed.",
+    "creditPhotographers": "Please credit photographers when sharing.",
+    "agreeAndSearch": "I Agree & Search",
+    "requiredNote": "Facial recognition consent is required to use our selfie search feature and find your photos automatically."
+  },
+  "error": {
+    "title": "Something went wrong",
+    "message": "An error occurred while loading the data",
+    "failedToLoad": "Failed to load",
+    "tryAgain": "Try Again"
   },
   "locale": {
     "unsupported": "This organizer does not support {locale}",
@@ -22,7 +155,97 @@
   "footer": {
     "privacy": "Privacy Policy",
     "terms": "Terms of Service"
+  },
+  "metadata": {
+    "privacyPolicyTitle": "Privacy Policy - SnapRace",
+    "privacyPolicyDescription": "Learn how SnapRace collects, uses, and protects your personal information, including our biometric information policy for facial recognition services."
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "effectiveDate": "Effective Date",
+    "lastUpdated": "Last Updated",
+    "section1": {
+      "title": "1. Introduction",
+      "p1": "This Privacy Policy explains how we (\"SnapRace,\" \"we,\" \"us,\" or \"our\") collect, use, and share information in connection with our photo identification and gallery services (the \"Service\"). Our mission is to help you, the participant, find your race photos quickly and easily.",
+      "p2": "This policy applies to the participants of events (\"Events\") organized by our clients, the race organizers (\"Organizers\")."
+    },
+    "section2": {
+      "title": "2. Information We Collect",
+      "fromOrganizers": "Information from Race Organizers:",
+      "eventPhotos": "Event Photos:",
+      "eventPhotosDesc": "We receive official event photos taken by or on behalf of the Organizer.",
+      "participantData": "Participant Data:",
+      "participantDataDesc": "We may receive limited data about you from the Organizer, such as your name and assigned bib number for the event.",
+      "fromPhotos": "Information from Your Photos:",
+      "bibNumbers": "Bib Numbers:",
+      "bibNumbersDesc": "Our technology automatically scans event photos to detect and read bib numbers.",
+      "biometricInfo": "Biometric Information (Facial Geometry):",
+      "biometricInfoDesc": "When we process photos, our technology detects faces and creates a unique numeric representation of each face (a \"face vector\" or \"embedding\"). Please see our detailed Biometric Information Policy in Section 4 below.",
+      "fromYou": "Information You Provide Directly:",
+      "selfiesAndBibs": "Selfies and Bib Numbers:",
+      "selfiesAndBibsDesc": "If you use our selfie search feature, you provide us with a photo of yourself (a \"selfie\") and your bib number for a specific event."
+    },
+    "section3": {
+      "title": "3. How We Use Your Information",
+      "intro": "We use the information we collect for one primary purpose: to provide and improve our Service. This includes:",
+      "gallery": "Generating Your Photo Gallery:",
+      "galleryDesc": "To automatically identify and group all of your photos from an event into a personal gallery.",
+      "linking": "Linking Photos:",
+      "linkingDesc": "To associate photos with you via bib number detection and/or facial recognition.",
+      "selfieSearch": "Enabling Selfie Search:",
+      "selfieSearchDesc": "To allow you to find your photos by providing a selfie and bib number.",
+      "improving": "Improving Our Service:",
+      "improvingDesc": "To enhance the accuracy of our photo identification technology."
+    },
+    "section4": {
+      "title": "4. Biometric Information Policy",
+      "important": "Important",
+      "intro": "Your trust is our priority. We are committed to handling your biometric information responsibly and transparently.",
+      "whatWeCollect": "What We Collect:",
+      "whatWeCollectDesc": "We collect a numeric representation of your facial geometry from event photos and any selfies you provide. We do not store your actual facial data. We do not collect or store scans of your eyes, fingerprints, or voice.",
+      "purpose": "Purpose of Collection:",
+      "purposeDesc": "This facial geometry data is used exclusively to identify and group your race photos for a specific event. It is the key to finding photos where your bib number is not visible.",
+      "consent": "Consent:",
+      "consentDesc": "Your consent to the collection and use of this biometric information is obtained by the Race Organizer through the event registration waiver you agree to when you sign up for the race.",
+      "prohibition": "Prohibition on Profiting:",
+      "prohibitionDesc": "We will never sell, lease, trade, or otherwise profit from your biometric information.",
+      "retention": "Data Retention & Destruction:",
+      "retentionDesc": "We will permanently destroy your biometric information from our systems upon the earlier of: (a) your request to delete your data, or (b) no more than three (3) years after our last interaction with you."
+    },
+    "section5": {
+      "title": "5. How We Share Your Information",
+      "intro": "We do not share your personal information with third parties except in the limited circumstances described below:",
+      "withOrganizers": "With Race Organizers:",
+      "withOrganizersDesc": "We provide the final, organized photo galleries to the Organizer of the event you participated in.",
+      "withProviders": "With Service Providers:",
+      "withProvidersDesc": "We use trusted third-party vendors to provide the underlying technology for our service, such as cloud hosting and facial recognition APIs (e.g., Amazon Web Services). These vendors are contractually obligated to protect your data.",
+      "forLegal": "For Legal Reasons:",
+      "forLegalDesc": "We may share information if required by law or to protect the rights, property, or safety of SnapRace, our users, or the public."
+    },
+    "section6": {
+      "title": "6. Data Security",
+      "content": "We implement reasonable and appropriate technical and organizational security measures to protect your information from unauthorized access, use, or disclosure. This includes data encryption at rest and in transit and strict access controls."
+    },
+    "section7": {
+      "title": "7. Your Rights and Choices",
+      "intro": "You have control over your information.",
+      "accessPhotos": "Accessing Your Photos:",
+      "accessPhotosDesc": "You can access your photos through the gallery provided by your Race Organizer.",
+      "deleteData": "Deleting Your Data (Opt-Out):",
+      "deleteDataDesc": "You have the right to request the deletion of your photos and any associated biometric information from our systems at any time. To do so, please contact us at",
+      "deleteDataSuffix": "with the event name, your name, and your bib number. We will process your request in a timely manner."
+    },
+    "section8": {
+      "title": "8. Children's Privacy",
+      "content": "Our Service is not directed to children under the age of 16, and we do not knowingly collect personal information from them. If we become aware that we have collected information from a child without parental consent, we will take steps to delete it."
+    },
+    "section9": {
+      "title": "9. Changes to This Policy",
+      "content": "We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new policy on this page and updating the \"Last Updated\" date."
+    },
+    "section10": {
+      "title": "10. Contact Us",
+      "content": "If you have any questions about this Privacy Policy, please contact us at"
+    }
   }
 }
-
-

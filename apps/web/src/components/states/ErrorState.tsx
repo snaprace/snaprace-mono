@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertCircle, RefreshCw } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 
 interface ErrorStateProps {
@@ -11,11 +12,15 @@ interface ErrorStateProps {
 }
 
 export function ErrorState({ 
-  title = "Something went wrong",
-  message = "An error occurred while loading the data",
+  title,
+  message,
   onRetry,
   showRetry = true
 }: ErrorStateProps) {
+  const t = useTranslations("error");
+  const displayTitle = title || t("title");
+  const displayMessage = message || t("message");
+
   return (
     <div className="py-12 text-center">
       <div className="mb-4 flex justify-center">
@@ -24,15 +29,15 @@ export function ErrorState({
         </div>
       </div>
       <h3 className="mb-2 text-xl font-semibold text-foreground">
-        {title}
+        {displayTitle}
       </h3>
       <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-        {message}
+        {displayMessage}
       </p>
       {showRetry && onRetry && (
         <Button variant="outline" onClick={onRetry}>
           <RefreshCw className="mr-2 h-4 w-4" />
-          Try Again
+          {t("tryAgain")}
         </Button>
       )}
     </div>
@@ -40,21 +45,24 @@ export function ErrorState({
 }
 
 export function SimpleErrorState({ 
-  message = "Failed to load", 
+  message, 
   onRetry 
 }: { 
   message?: string; 
   onRetry?: () => void;
 }) {
+  const t = useTranslations("error");
+  const displayMessage = message || t("failedToLoad");
+
   return (
     <div className="py-8 text-center">
-      <p className="text-destructive mb-4">{message}</p>
+      <p className="text-destructive mb-4">{displayMessage}</p>
       {onRetry && (
         <button 
           onClick={onRetry}
           className="text-primary hover:underline text-sm"
         >
-          Try again
+          {t("tryAgain")}
         </button>
       )}
     </div>

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { usePhotoGallery, type Photo } from "@/hooks/photos/usePhotoGallery";
 import { useIsMobile } from "@/hooks/useMobile";
 import { GalleryGrid, GalleryLightbox } from "@/components/photo-gallery";
@@ -30,6 +31,7 @@ export function PhotoGallery({
   overridePhotos,
   extraPhotos,
 }: PhotoGalleryProps) {
+  const t = useTranslations("photos");
   const isMobile = useIsMobile();
   const router = useRouter();
   const pathname = usePathname();
@@ -140,12 +142,12 @@ export function PhotoGallery({
               className="w-[180px] text-sm backdrop-blur-sm md:w-[200px]"
             >
               <div className="flex items-center gap-2 truncate">
-                <SelectValue placeholder="All Photographers" />
+                <SelectValue placeholder={t("allPhotographers")} />
               </div>
             </SelectTrigger>
             <SelectContent align="end">
               <SelectItem value="all">
-                <span className="text-muted-foreground">All Photographers</span>
+                <span className="text-muted-foreground">{t("allPhotographers")}</span>
               </SelectItem>
               {photographers.map((p) => (
                 <SelectItem
@@ -172,8 +174,8 @@ export function PhotoGallery({
             }
             actionLabel={
               bib || overridePhotos
-                ? "View All Event Photos"
-                : "View All Events"
+                ? t("viewAllEventPhotos")
+                : t("viewAllEvents")
             }
           />
         </div>

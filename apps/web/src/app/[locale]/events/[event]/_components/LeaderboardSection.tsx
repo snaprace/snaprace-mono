@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Trophy } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { api } from "@/trpc/react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,6 +37,7 @@ export function LeaderboardSection({
   selectedSubEventId,
   onSubEventChange,
 }: LeaderboardSectionProps) {
+  const t = useTranslations("leaderboard");
   // Internal state for uncontrolled mode
   const [internalSelected, setInternalSelected] = useState<string | null>(null);
 
@@ -106,7 +108,7 @@ export function LeaderboardSection({
           <AccordionTrigger className="px-3 hover:no-underline">
             <div className="flex items-center gap-1.5 md:gap-2">
               <Trophy className="text-primary h-4 w-4 md:h-5 md:w-5" />
-              <h2 className="text-sm font-semibold md:text-lg">Leaderboard</h2>
+              <h2 className="text-sm font-semibold md:text-lg">{t("title")}</h2>
             </div>
           </AccordionTrigger>
           <AccordionContent className="overflow-hidden">

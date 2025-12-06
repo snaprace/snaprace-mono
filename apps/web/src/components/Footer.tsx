@@ -2,9 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useOrganizer } from "@/contexts/OrganizerContext";
 
 export function Footer() {
+  const t = useTranslations("footer");
+  const tCommon = useTranslations("common");
   const { organizer } = useOrganizer();
 
   return (
@@ -16,12 +19,11 @@ export function Footer() {
               href="/privacy-policy"
               className="hover:text-foreground underline underline-offset-2 transition-colors"
             >
-              Privacy Policy
+              {t("privacy")}
             </Link>
             <span className="hidden sm:inline">•</span>
             <span>
-              © {new Date().getFullYear()} {organizer?.name}. All rights
-              reserved.
+              © {new Date().getFullYear()} {organizer?.name}. {tCommon("allRightsReserved")}
             </span>
             {organizer?.branding_meta?.info?.email && (
               <>
