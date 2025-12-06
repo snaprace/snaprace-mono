@@ -6,20 +6,27 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { usePathname } from "next/navigation";
+import { usePathname, useParams } from "next/navigation";
 import { useOrganizer } from "@/contexts/OrganizerContext";
+import { LocaleSwitcher } from "@/components/LocaleSwitcher";
+import type { Locale } from "@/i18n/config";
+import { useTranslations } from "next-intl";
 
 export function Header() {
+  const t = useTranslations();
+
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const pathname = usePathname();
+  const params = useParams<{ locale: string }>();
   const { organizer } = useOrganizer();
+  const locale = (params.locale || "en") as Locale;
 
   // Disable sticky on photo detail pages: /events/[event]/[bib]
-  const isPhotoPage = /^\/events\/[^/]+\/[^/]+$/.test(pathname);
+  const isPhotoPage = /^\/[a-z]{2}\/events\/[^/]+\/[^/]+$/.test(pathname);
 
   const navigation = [
-    { name: "Search", href: "/" },
-    { name: "Events", href: "/events" },
+    { name: t("common.search"), href: `/${locale}` },
+    { name: t("events.title"), href: `/${locale}/events` },
   ];
 
   return (
@@ -60,7 +67,7 @@ export function Header() {
             {navigation.map((item) => {
               const isActive =
                 pathname === item.href ||
-                (item.href !== "/" && pathname.startsWith(item.href));
+                (item.href !== `/${locale}` && pathname.startsWith(item.href));
 
               const navLinkClass = `text-sm transition-colors ${
                 isActive
@@ -74,11 +81,18 @@ export function Header() {
                 </Link>
               );
             })}
+            <LocaleSwitcher
+              currentLocale={locale}
+              organizerCountries={organizer?.countries}
+            />
           </nav>
 
           {/* Mobile Controls */}
-          <div className="flex items-center space-x-2 md:hidden">
-            {/* Mobile Menu */}
+          <div className="flex items-center gap-2 md:hidden">
+            <LocaleSwitcher
+              currentLocale={locale}
+              organizerCountries={organizer?.countries}
+            />
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="sm" aria-label="Open menu">
@@ -124,7 +138,8 @@ export function Header() {
                     {navigation.map((item) => {
                       const isActive =
                         pathname === item.href ||
-                        (item.href !== "/" && pathname.startsWith(item.href));
+                        (item.href !== `/${locale}` &&
+                          pathname.startsWith(item.href));
 
                       return (
                         <Link

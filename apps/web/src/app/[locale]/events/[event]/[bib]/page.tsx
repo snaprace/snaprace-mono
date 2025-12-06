@@ -1,11 +1,12 @@
 import { notFound, redirect } from "next/navigation";
+import { setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { getEventById } from "@/server/services/events";
 import { BibPageContent } from "./_components/BibPageContent";
 import { getPhotoMetadata } from "@/server/utils/metadata";
 
 type Props = {
-  params: Promise<{ event: string; bib: string }>;
+  params: Promise<{ event: string; bib: string; locale: string }>;
   searchParams: Promise<{ pid?: string }>;
 };
 
@@ -38,13 +39,13 @@ export async function generateMetadata({
 export default async function EventBibPage({
   params,
 }: {
-  params: Promise<{ event: string; bib: string }>;
+  params: Promise<{ event: string; bib: string; locale: string }>;
 }) {
-  const eventId = (await params).event;
-  const bib = (await params).bib;
+  const { event: eventId, bib, locale } = await params;
+  setRequestLocale(locale);
 
   if (bib === "null") {
-    redirect(`/events/${eventId}`);
+    redirect(`/${locale}/events/${eventId}`);
   }
 
   const event = await getEventById({ eventId });

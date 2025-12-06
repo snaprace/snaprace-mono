@@ -10,6 +10,7 @@ export const eventsRouter = createTRPCRouter({
         .object({
           organizationId: z.string().optional(),
           overrideOrganizationId: z.string().optional(),
+          country: z.string().optional(),
         })
         .optional(),
     )
@@ -26,6 +27,7 @@ export const eventsRouter = createTRPCRouter({
       return listEvents({
         supabase: ctx.supabase,
         organizationId,
+        country: organizationId ? undefined : input?.country,
       });
     }),
 

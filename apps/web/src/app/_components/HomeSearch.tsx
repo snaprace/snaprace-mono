@@ -20,7 +20,7 @@ interface HomeSearchProps {
   organizer: Organizer | null;
 }
 
-export function HomeSearch({ initialEvents, organizer }: HomeSearchProps) {
+export function HomeSearch({ initialEvents }: HomeSearchProps) {
   const [bibNumber, setBibNumber] = useState("");
   const [selectedEventId, setSelectedEventId] = useState("");
   const router = useRouter();
@@ -49,10 +49,7 @@ export function HomeSearch({ initialEvents, organizer }: HomeSearchProps) {
             <Trophy className="h-4 w-4" />
             Event
           </label>
-          <Select
-            value={selectedEventId}
-            onValueChange={setSelectedEventId}
-          >
+          <Select value={selectedEventId} onValueChange={setSelectedEventId}>
             <SelectTrigger
               disabled={events.length === 0}
               className="bg-background border-border h-14! w-full text-sm font-medium"
@@ -123,4 +120,3 @@ export function HomeSearch({ initialEvents, organizer }: HomeSearchProps) {
     </div>
   );
 }
-

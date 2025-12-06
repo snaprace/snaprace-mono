@@ -1,0 +1,28 @@
+{
+  "common": {
+    "search": "검색",
+    "loading": "로딩 중...",
+    "error": "오류가 발생했습니다"
+  },
+  "home": {
+    "title": "내 사진 찾기",
+    "searchPlaceholder": "배번 입력",
+    "eventPhotos": "{name}\n이벤트 사진"
+  },
+  "events": {
+    "title": "이벤트",
+    "noEvents": "이벤트가 없습니다",
+    "viewPhotos": "사진 보기",
+    "viewResults": "결과 보기"
+  },
+  "locale": {
+    "unsupported": "이 주최자는 {locale}을(를) 지원하지 않습니다",
+    "switchTo": "{locale}로 변경"
+  },
+  "footer": {
+    "privacy": "개인정보처리방침",
+    "terms": "이용약관"
+  }
+}
+
+

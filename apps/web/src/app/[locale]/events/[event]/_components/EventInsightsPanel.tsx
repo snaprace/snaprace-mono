@@ -1,8 +1,8 @@
-import { Fragment, type ReactNode } from "react";
+import { Fragment } from "react";
 
 interface EventInsightsPanelProps {
-  sections?: Array<ReactNode | null | false | undefined>;
-  children?: ReactNode;
+  sections?: Array<React.ReactNode | false>;
+  children?: React.ReactNode;
   title?: string;
   description?: string;
 }
