@@ -1,58 +1,98 @@
+import createMiddleware from "next-intl/middleware";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { routing } from "./i18n/routing";
+import {
+  shouldSkipLocaleHandling,
+  getLocaleFromPathname,
+  getUnsupportedLocaleFromPathname,
+  detectLocaleFromAcceptLanguage,
+  extractSubdomain,
+} from "./i18n/middleware-utils";
+import { locales, defaultLocale, type Locale } from "./i18n/config";
+
+const intlMiddleware = createMiddleware(routing);
 
 export function middleware(request: NextRequest) {
-  // Get the hostname from the request headers
+  const { pathname } = request.nextUrl;
   const hostname = request.headers.get("host") || "";
 
-  // For local development, support subdomain testing via environment variable
-  const isLocalDev =
-    hostname.includes("localhost") || hostname.includes("127.0.0.1");
-
-  let subdomain = "";
-
-  if (isLocalDev) {
-    // In development, check for subdomain override in URL query params or env
-    subdomain =
-      request.nextUrl.searchParams.get("org") ||
-      process.env.NEXT_PUBLIC_DEV_SUBDOMAIN ||
-      "";
-  } else {
-    // In production, extract subdomain from hostname
-    const parts = hostname.split(".");
-
-    // Check if it's a subdomain (not www or the main domain)
-    if (parts.length >= 3) {
-      const potentialSubdomain = parts[0];
-      if (potentialSubdomain && potentialSubdomain !== "www") {
-        subdomain = potentialSubdomain;
-      }
-    }
+  // 정적 파일 및 제외 경로는 스킵
+  if (shouldSkipLocaleHandling(pathname)) {
+    return NextResponse.next();
   }
 
-  // Create response with subdomain header if found
-  const response = NextResponse.next();
+  // 서브도메인 추출
+  const isLocalDev =
+    hostname.includes("localhost") || hostname.includes("127.0.0.1");
+  const queryOrg = request.nextUrl.searchParams.get("org");
+  const subdomain = extractSubdomain(
+    hostname,
+    isLocalDev,
+    queryOrg,
+    process.env.NEXT_PUBLIC_DEV_SUBDOMAIN,
+  );
 
+  // 경로에서 locale 확인
+  const pathnameLocale = getLocaleFromPathname(pathname);
+
+  // 지원하지 않는 locale이면 기본 locale로 리다이렉트 (예: /fr/events → /en/events)
+  const unsupportedLocale = getUnsupportedLocaleFromPathname(pathname);
+  if (unsupportedLocale) {
+    const pathWithoutLocale =
+      pathname.replace(`/${unsupportedLocale}`, "") || "/";
+    const newUrl = new URL(
+      `/${defaultLocale}${pathWithoutLocale}${request.nextUrl.search}`,
+      request.url,
+    );
+    const response = NextResponse.redirect(newUrl, { status: 308 });
+    if (subdomain) {
+      response.headers.set("x-organization", subdomain);
+    }
+    return response;
+  }
+
+  // locale 없으면 리다이렉트
+  if (!pathnameLocale) {
+    const cookieLocale = request.cookies.get("NEXT_LOCALE")?.value as
+      | Locale
+      | undefined;
+    let targetLocale: Locale;
+
+    if (cookieLocale && locales.includes(cookieLocale)) {
+      targetLocale = cookieLocale;
+    } else {
+      const acceptLanguage = request.headers.get("Accept-Language");
+      targetLocale = detectLocaleFromAcceptLanguage(acceptLanguage);
+    }
+
+    const newUrl = new URL(
+      `/${targetLocale}${pathname}${request.nextUrl.search}`,
+      request.url,
+    );
+    const response = NextResponse.redirect(newUrl, { status: 308 });
+
+    if (subdomain) {
+      response.headers.set("x-organization", subdomain);
+    }
+
+    return response;
+  }
+
+  // next-intl 미들웨어 실행
+  const response = intlMiddleware(request);
+
+  // 커스텀 헤더 추가
   if (subdomain) {
     response.headers.set("x-organization", subdomain);
   }
+  response.headers.set("x-locale", pathnameLocale);
 
   return response;
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico, sitemap.xml, robots.txt (metadata files)
-     * - images, fonts (static assets)
-     * - api/auth (NextAuth routes don't need org context)
-     * - api/download-image (direct download routes)
-     * - api/feedback (feedback routes)
-     * But INCLUDE api/trpc for organization-aware tRPC requests
-     */
-    "/((?!api/auth|api/download-image|api/feedback|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|images|fonts|.*\\.(?:jpg|jpeg|gif|png|svg|ico|webp|js|css|woff|woff2|ttf|eot)).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|images|fonts|.*\\.(?:jpg|jpeg|gif|png|svg|ico|webp|js|css|woff|woff2|ttf|eot)).*)",
   ],
 };

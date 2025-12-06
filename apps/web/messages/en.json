@@ -1,0 +1,28 @@
+{
+  "common": {
+    "search": "Search",
+    "loading": "Loading...",
+    "error": "An error occurred"
+  },
+  "home": {
+    "title": "Find your snap",
+    "searchPlaceholder": "Enter bib number",
+    "eventPhotos": "{name}\nEvent Photos"
+  },
+  "events": {
+    "title": "Events",
+    "noEvents": "No events found",
+    "viewPhotos": "View Photos",
+    "viewResults": "View Results"
+  },
+  "locale": {
+    "unsupported": "This organizer does not support {locale}",
+    "switchTo": "Switch to {locale}"
+  },
+  "footer": {
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service"
+  }
+}
+
+

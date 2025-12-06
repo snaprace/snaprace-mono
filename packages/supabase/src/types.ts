@@ -151,6 +151,7 @@ export type Database = {
       }
       events: {
         Row: {
+          countries: string[] | null
           display_mode: string
           event_date: string
           event_id: string
@@ -164,6 +165,7 @@ export type Database = {
           thumbnail_image: string | null
         }
         Insert: {
+          countries?: string[] | null
           display_mode?: string
           event_date: string
           event_id: string
@@ -177,6 +179,7 @@ export type Database = {
           thumbnail_image?: string | null
         }
         Update: {
+          countries?: string[] | null
           display_mode?: string
           event_date?: string
           event_id?: string
@@ -202,6 +205,7 @@ export type Database = {
       organizers: {
         Row: {
           branding_meta: Json | null
+          countries: string[] | null
           created_at: string | null
           name: string
           organizer_id: string
@@ -209,6 +213,7 @@ export type Database = {
         }
         Insert: {
           branding_meta?: Json | null
+          countries?: string[] | null
           created_at?: string | null
           name: string
           organizer_id: string
@@ -216,6 +221,7 @@ export type Database = {
         }
         Update: {
           branding_meta?: Json | null
+          countries?: string[] | null
           created_at?: string | null
           name?: string
           organizer_id?: string

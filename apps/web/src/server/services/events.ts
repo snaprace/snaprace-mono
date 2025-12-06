@@ -25,8 +25,9 @@ export type Event = Omit<Tables<"events">, "partners"> & {
 export async function listEvents(options: {
   supabase: DatabaseClient;
   organizationId?: string | null;
+  country?: string;
 }): Promise<Event[]> {
-  const { supabase, organizationId } = options;
+  const { supabase, organizationId, country } = options;
 
   let query = supabase
     .from("events")
@@ -36,6 +37,8 @@ export async function listEvents(options: {
 
   if (organizationId) {
     query = query.eq("organizer_id", organizationId);
+  } else if (country) {
+    query = query.contains("countries", [country]);
   }
 
   const { data, error } = await query;

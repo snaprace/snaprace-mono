@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { SearchSelfieSection } from "@/app/events/[event]/_components/SearchSelfieSection";
-import { SearchBibSection } from "@/app/events/[event]/_components/SearchBibSection";
-import { EventInsightsPanel } from "@/app/events/[event]/_components/EventInsightsPanel";
-import { LeaderboardSection } from "@/app/events/[event]/_components/LeaderboardSection";
-import { FinishVideoSection } from "@/app/events/[event]/_components/FinishVideoSection";
-import { PhotoGallery } from "@/app/events/[event]/_components/PhotoGallery";
-import { TimingResultSection } from "@/app/events/[event]/_components/TimingResultSection";
+import { SearchSelfieSection } from "@/app/[locale]/events/[event]/_components/SearchSelfieSection";
+import { SearchBibSection } from "@/app/[locale]/events/[event]/_components/SearchBibSection";
+import { EventInsightsPanel } from "@/app/[locale]/events/[event]/_components/EventInsightsPanel";
+import { LeaderboardSection } from "@/app/[locale]/events/[event]/_components/LeaderboardSection";
+import { FinishVideoSection } from "@/app/[locale]/events/[event]/_components/FinishVideoSection";
+import { PhotoGallery } from "@/app/[locale]/events/[event]/_components/PhotoGallery";
+import { TimingResultSection } from "@/app/[locale]/events/[event]/_components/TimingResultSection";
 import type { Photo } from "@/hooks/photos/usePhotoGallery";
 import {
   useAnalyticsTracking,

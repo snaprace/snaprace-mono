@@ -1,3 +1,4 @@
+import { setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { PhotoService } from "@/server/services/photos";
@@ -6,10 +7,9 @@ import { env } from "@/env";
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ event: string; bib: string }>;
+  params: Promise<{ event: string; bib: string; locale: string }>;
 }): Promise<Metadata> {
-  const eventId = (await params).event;
-  const bib = (await params).bib;
+  const { event: eventId, bib } = await params;
 
   if (bib === "null") {
     return {};
@@ -67,7 +67,16 @@ export async function generateMetadata({
   };
 }
 
-export default function BibLayout({ children }: { children: ReactNode }) {
+export default async function BibLayout({
+  children,
+  params,
+}: {
+  children: ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+
   return <>{children}</>;
 }
 

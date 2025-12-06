@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { setRequestLocale } from "next-intl/server";
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
 
@@ -10,7 +11,7 @@ import { env } from "@/env";
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ event: string }>;
+  params: Promise<{ event: string; locale: string }>;
 }): Promise<Metadata> {
   const eventId = (await params).event;
   const event = await getEventById({ eventId });
@@ -76,9 +77,11 @@ export default async function EventLayout({
   params,
 }: {
   children: ReactNode;
-  params: Promise<{ event: string }>;
+  params: Promise<{ event: string; locale: string }>;
 }) {
-  const eventId = (await params).event;
+  const { event: eventId, locale } = await params;
+  setRequestLocale(locale);
+
   const event = await getEventById({ eventId });
 
   if (!event) {
