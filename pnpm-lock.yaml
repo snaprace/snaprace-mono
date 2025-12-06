@@ -165,7 +165,7 @@ importers:
         specifier: ^0.541.0
         version: 0.541.0(react@19.1.2)
       next:
-        specifier: ^15.2.3
+        specifier: ^15.2.6
         version: 15.5.6(react-dom@19.1.2(react@19.1.2))(react@19.1.2)
       next-auth:
         specifier: 5.0.0-beta.25
@@ -280,7 +280,7 @@ importers:
         specifier: ^9.23.0
         version: 9.39.0(jiti@2.6.1)
       eslint-config-next:
-        specifier: ^15.2.3
+        specifier: ^15.2.6
         version: 15.5.6(eslint@9.39.0(jiti@2.6.1))(typescript@5.9.2)
       postcss:
         specifier: ^8.5.3
@@ -5543,6 +5543,7 @@ packages:
   next@15.5.6:
     resolution: {integrity: sha512-zTxsnI3LQo3c9HSdSf91O1jMNsEzIXDShXd4wVdg9y5shwLqBXi4ZtUUJyB86KGVSJLZx0PFONvO54aheGX8QQ==}
     engines: {node: ^18.18.0 || ^19.8.0 || >= 20.0.0}
+    deprecated: This version has a security vulnerability. Please upgrade to a patched version. See https://nextjs.org/blog/CVE-2025-66478 for more details.
     hasBin: true
     peerDependencies:
       '@opentelemetry/api': ^1.1.0
