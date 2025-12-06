@@ -1,9 +1,8 @@
 import { notFound } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
-import type { ReactNode } from "react";
 import type { Metadata } from "next";
 
-import { getEventById } from "@/server/services/events";
+import { getEventById, type Event } from "@/server/services/events";
 import { EventHeader } from "./_components/EventHeader";
 import { JingleBellBanner } from "./_components/JingleBellBanner";
 import { env } from "@/env";
@@ -14,7 +13,7 @@ export async function generateMetadata({
   params: Promise<{ event: string; locale: string }>;
 }): Promise<Metadata> {
   const eventId = (await params).event;
-  const event = await getEventById({ eventId });
+  const event: Event | null = await getEventById({ eventId });
 
   if (!event) {
     return {
@@ -76,13 +75,13 @@ export default async function EventLayout({
   children,
   params,
 }: {
-  children: ReactNode;
+  children: React.ReactNode;
   params: Promise<{ event: string; locale: string }>;
 }) {
   const { event: eventId, locale } = await params;
   setRequestLocale(locale);
 
-  const event = await getEventById({ eventId });
+  const event: Event | null = await getEventById({ eventId });
 
   if (!event) {
     notFound();

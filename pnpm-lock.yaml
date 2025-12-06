@@ -264,6 +264,12 @@ importers:
       '@types/node':
         specifier: ^20.14.10
         version: 20.19.24
+      '@types/react':
+        specifier: ^19
+        version: 19.1.2
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.1.2(@types/react@19.1.2)
       '@types/yargs':
         specifier: ^17.0.34
         version: 17.0.34
@@ -11553,7 +11559,6 @@ snapshots:
   '@types/react-dom@19.1.2(@types/react@19.1.2)':
     dependencies:
       '@types/react': 19.1.2
-    optional: true
 
   '@types/react@19.1.2':
     dependencies:

@@ -3,6 +3,8 @@ import { createServerClient } from "@repo/supabase";
 import { cache } from "react";
 import { getOrganizerBySubdomain, type Organizer } from "./organizers";
 
+export type { Organizer };
+
 /**
  * Cached server-side organizer fetch by subdomain
  * Used by Server Components (layout, organizer-loader)

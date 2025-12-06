@@ -13,7 +13,10 @@ import { Header } from "@/components/header";
 import { Toaster } from "@/components/ui/sonner";
 import ClarityInit from "@/components/analytics/ClarityInit";
 import { UnsupportedLocaleWarning } from "@/components/UnsupportedLocaleWarning";
-import { getOrganizerBySubdomainServer } from "@/server/services/organizers-server";
+import {
+  getOrganizerBySubdomainServer,
+  type Organizer,
+} from "@/server/services/organizers-server";
 import Script from "next/script";
 import { env } from "@/env";
 import { routing } from "@/i18n/routing";
@@ -32,7 +35,7 @@ export async function generateMetadata({
   const headersList = await headers();
   const subdomain = headersList.get("x-organization");
 
-  let organizer = null;
+  let organizer: Organizer | null = null;
   if (subdomain) {
     try {
       organizer = await getOrganizerBySubdomainServer(subdomain);
@@ -53,7 +56,13 @@ export async function generateMetadata({
     metadataBase: new URL(env.NEXT_PUBLIC_SITE_URL),
     title,
     description,
-    keywords: ["race photos", "marathon photos", "running", "bib search", siteName],
+    keywords: [
+      "race photos",
+      "marathon photos",
+      "running",
+      "bib search",
+      siteName,
+    ],
     openGraph: {
       title,
       description,
@@ -62,7 +71,9 @@ export async function generateMetadata({
       locale,
       images: [
         {
-          url: organizer?.branding_meta?.branding?.logoUrl || "/images/og-landing.png",
+          url:
+            organizer?.branding_meta?.branding?.logoUrl ||
+            "/images/og-landing.png",
           width: 1200,
           height: 630,
           alt: title,
@@ -73,12 +84,16 @@ export async function generateMetadata({
       card: "summary_large_image",
       title,
       description,
-      images: [organizer?.branding_meta?.branding?.logoUrl || "/images/og-landing.png"],
+      images: [
+        organizer?.branding_meta?.branding?.logoUrl || "/images/og-landing.png",
+      ],
     },
     icons: [
       {
         rel: "icon",
-        url: organizer?.branding_meta?.branding?.logoUrl || "/images/snaprace-logo-icon-only.svg",
+        url:
+          organizer?.branding_meta?.branding?.logoUrl ||
+          "/images/snaprace-logo-icon-only.svg",
       },
     ],
   };
@@ -110,7 +125,7 @@ export default async function LocaleLayout({
   const subdomain = headersList.get("x-organization");
   const CRISP_WEBSITE_ID = process.env.CRISP_WEBSITE_ID!;
 
-  let organizer = null;
+  let organizer: Organizer | null = null;
   if (subdomain) {
     try {
       organizer = await getOrganizerBySubdomainServer(subdomain);
@@ -133,7 +148,11 @@ export default async function LocaleLayout({
   };
 
   return (
-    <html lang={locale} className={`${raleway.variable}`} suppressHydrationWarning>
+    <html
+      lang={locale}
+      className={`${raleway.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <OrganizerStyles organizer={organizer} />
         <script
@@ -183,4 +202,3 @@ export default async function LocaleLayout({
     </html>
   );
 }
-

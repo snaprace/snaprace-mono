@@ -3,7 +3,6 @@ import type { Database, Tables } from "@repo/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 type EventRunner = Tables<"event_runners">;
-type SubEvent = Tables<"sub_events">;
 type DatabaseClient = SupabaseClient<Database>;
 
 export type FinishlineVideoInfo = {
