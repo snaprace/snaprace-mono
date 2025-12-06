@@ -123,7 +123,7 @@ export default async function LocaleLayout({
 
   const headersList = await headers();
   const subdomain = headersList.get("x-organization");
-  const CRISP_WEBSITE_ID = process.env.CRISP_WEBSITE_ID!;
+  const CRISP_WEBSITE_ID = process.env.CRISP_WEBSITE_ID;
 
   let organizer: Organizer | null = null;
   if (subdomain) {
@@ -188,8 +188,9 @@ export default async function LocaleLayout({
             <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
           )}
         <ClarityInit />
-        <Script id="crisp-widget" strategy="afterInteractive">
-          {`
+        {CRISP_WEBSITE_ID && (
+          <Script id="crisp-widget" strategy="afterInteractive">
+            {`
             window.$crisp=[]; window.CRISP_WEBSITE_ID="${CRISP_WEBSITE_ID}";
             (function(){
               const d=document,s=d.createElement("script");
@@ -197,7 +198,8 @@ export default async function LocaleLayout({
               d.getElementsByTagName("head")[0].appendChild(s);
             })();
           `}
-        </Script>
+          </Script>
+        )}
       </body>
     </html>
   );

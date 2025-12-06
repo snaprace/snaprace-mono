@@ -17,12 +17,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get("host") || "";
 
-  // 정적 파일 및 제외 경로는 스킵
-  if (shouldSkipLocaleHandling(pathname)) {
-    return NextResponse.next();
-  }
-
-  // 서브도메인 추출
+  // 서브도메인 추출 (모든 경로에서 필요)
   const isLocalDev =
     hostname.includes("localhost") || hostname.includes("127.0.0.1");
   const queryOrg = request.nextUrl.searchParams.get("org");
@@ -32,6 +27,20 @@ export function middleware(request: NextRequest) {
     queryOrg,
     process.env.NEXT_PUBLIC_DEV_SUBDOMAIN,
   );
+
+  // API 경로는 locale 처리 없이 헤더만 설정
+  if (pathname.startsWith("/api")) {
+    const response = NextResponse.next();
+    if (subdomain) {
+      response.headers.set("x-organization", subdomain);
+    }
+    return response;
+  }
+
+  // 정적 파일 및 제외 경로는 스킵
+  if (shouldSkipLocaleHandling(pathname)) {
+    return NextResponse.next();
+  }
 
   // 경로에서 locale 확인
   const pathnameLocale = getLocaleFromPathname(pathname);
@@ -93,6 +102,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|images|fonts|.*\\.(?:jpg|jpeg|gif|png|svg|ico|webp|js|css|woff|woff2|ttf|eot)).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|images|fonts|.*\\.(?:jpg|jpeg|gif|png|svg|ico|webp|js|css|woff|woff2|ttf|eot)).*)",
   ],
 };

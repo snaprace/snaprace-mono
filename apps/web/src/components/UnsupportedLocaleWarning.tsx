@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,7 @@ import {
   localeNames,
   type Locale,
 } from "@/i18n/config";
+import { useLocaleSwitcher } from "@/hooks/useLocaleSwitcher";
 
 interface UnsupportedLocaleWarningProps {
   organizerCountries: string[];
@@ -20,8 +20,7 @@ export function UnsupportedLocaleWarning({
   organizerCountries,
   currentLocale,
 }: UnsupportedLocaleWarningProps) {
-  const router = useRouter();
-  const pathname = usePathname();
+  const { switchLocale } = useLocaleSwitcher();
 
   const currentCountry = localeToCountry[currentLocale];
 
@@ -29,14 +28,8 @@ export function UnsupportedLocaleWarning({
     return null;
   }
 
-  const suggestedLocale = countryToLocale[organizerCountries[0] ?? "US"] || "en";
-
-  const switchToSuggested = () => {
-    document.cookie = `NEXT_LOCALE=${suggestedLocale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
-    const segments = pathname.split("/");
-    segments[1] = suggestedLocale;
-    router.push(segments.join("/"));
-  };
+  const suggestedLocale =
+    countryToLocale[organizerCountries[0] ?? "US"] || "en";
 
   return (
     <Alert className="mb-4 border-yellow-500 bg-yellow-50">
@@ -48,7 +41,7 @@ export function UnsupportedLocaleWarning({
         <Button
           variant="outline"
           size="sm"
-          onClick={switchToSuggested}
+          onClick={() => switchLocale(suggestedLocale)}
           className="ml-4"
         >
           Switch to {localeNames[suggestedLocale]}
@@ -57,5 +50,3 @@ export function UnsupportedLocaleWarning({
     </Alert>
   );
 }
-
-

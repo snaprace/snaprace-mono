@@ -1,6 +1,5 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
 import ReactCountryFlag from "react-country-flag";
 import {
   locales,
@@ -15,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useLocaleSwitcher } from "@/hooks/useLocaleSwitcher";
 
 interface LocaleSwitcherProps {
   currentLocale: Locale;
@@ -50,8 +50,7 @@ export function LocaleSwitcher({
   currentLocale,
   organizerCountries,
 }: LocaleSwitcherProps) {
-  const router = useRouter();
-  const pathname = usePathname();
+  const { switchLocale } = useLocaleSwitcher();
 
   const availableLocales = organizerCountries
     ? organizerCountries
@@ -62,13 +61,6 @@ export function LocaleSwitcher({
   if (availableLocales.length <= 1) {
     return null;
   }
-
-  const switchLocale = (newLocale: Locale) => {
-    document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
-    const segments = pathname.split("/");
-    segments[1] = newLocale;
-    router.push(segments.join("/"));
-  };
 
   return (
     <Select

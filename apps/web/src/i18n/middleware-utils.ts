@@ -2,7 +2,7 @@ import { locales, defaultLocale, type Locale } from "./config";
 
 const PUBLIC_FILE_REGEX = /\.(.*)$/;
 const EXCLUDED_PATHS = [
-  "/api",
+  // "/api" 제거 - 미들웨어에서 직접 처리 (x-organization 헤더 설정)
   "/_next",
   "/favicon.ico",
   "/robots.txt",
