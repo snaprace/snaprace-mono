@@ -69,7 +69,7 @@ export function LocaleSwitcher({
     >
       <SelectTrigger
         isDisplayChevron={false}
-        className="w-auto gap-0 border-none bg-transparent px-2 shadow-none focus:ring-0"
+        className="w-auto gap-0 border-none bg-transparent p-1 shadow-none focus:ring-0 md:p-2"
       >
         <SelectValue>
           <CircleFlag countryCode={localeToCountry[currentLocale]} size={22} />

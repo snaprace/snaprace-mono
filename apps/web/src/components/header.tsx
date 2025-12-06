@@ -88,7 +88,7 @@ export function Header() {
           </nav>
 
           {/* Mobile Controls */}
-          <div className="flex items-center gap-2 md:hidden">
+          <div className="flex items-center gap-1 md:hidden md:gap-2">
             <LocaleSwitcher
               currentLocale={locale}
               organizerCountries={organizer?.countries}
