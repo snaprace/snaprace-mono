@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { displayDate } from "@/utils/date";
+import { useLocale } from "next-intl";
 
 interface EventCardProps {
   id: string;
@@ -12,6 +13,7 @@ interface EventCardProps {
 }
 
 export default function EventCard({ id, name, image, date }: EventCardProps) {
+  const locale = useLocale();
   const imageUrl = image || "/images/no-image.jpg";
   const isExternal =
     imageUrl.startsWith("http") || imageUrl.startsWith("https");
@@ -41,7 +43,7 @@ export default function EventCard({ id, name, image, date }: EventCardProps) {
             {name}
           </h3>
           <p className="text-muted-foreground tablet:text-base text-sm">
-            {displayDate(date)}
+            {displayDate(date, locale)}
           </p>
         </div>
       </Link>

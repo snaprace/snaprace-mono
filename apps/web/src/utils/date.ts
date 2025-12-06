@@ -1,8 +1,12 @@
-import { parseISO, format } from "date-fns";
+import { parseISO } from "date-fns";
 
 // UTC to browser Time
-export const displayDate = (date: string) => {
-  if(!date) return ""
+export const displayDate = (date: string, locale = "en-US") => {
+  if (!date) return "";
   const dateObj = parseISO(date);
-  return format(dateObj, 'MMMM d, yyyy');
-}
+  return new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(dateObj);
+};

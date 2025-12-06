@@ -43,8 +43,8 @@ export function EventHeader({ event }: { event: Tables<"events"> }) {
   };
 
   const statsText = runnerName
-    ? t("statsWithRunnerFormat", { label, runnerName, count })
-    : t("statsFormat", { label, count });
+    ? t("statsWithRunnerFormat", { label, runnerName, count: count ?? 0 })
+    : t("statsFormat", { label, count: count ?? 0 });
 
   return (
     <header className="bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-30 flex h-16 items-center border-b backdrop-blur md:h-18">
