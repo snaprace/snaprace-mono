@@ -16,9 +16,14 @@ describe("shouldSkipLocaleHandling", () => {
   });
 
   it("제외 경로는 스킵", () => {
-    expect(shouldSkipLocaleHandling("/api/trpc")).toBe(true);
+    // /api는 미들웨어에서 직접 처리 (x-organization 헤더 설정)
     expect(shouldSkipLocaleHandling("/_next/static")).toBe(true);
     expect(shouldSkipLocaleHandling("/favicon.ico")).toBe(true);
+  });
+
+  it("API 경로는 스킵 안함 (미들웨어에서 헤더 설정 필요)", () => {
+    expect(shouldSkipLocaleHandling("/api/trpc")).toBe(false);
+    expect(shouldSkipLocaleHandling("/api/auth")).toBe(false);
   });
 
   it("일반 경로는 스킵 안함", () => {

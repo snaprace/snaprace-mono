@@ -51,14 +51,14 @@ export function getUnsupportedLocaleFromPathname(
 export function detectLocaleFromAcceptLanguage(header: string | null): Locale {
   if (!header) return defaultLocale;
 
-  const languages = header.split(",").map((lang) => {
-    const [code] = lang.trim().split(";");
-    return code?.split("-")[0]?.toLowerCase();
+  const acceptedLanguages = header.split(",").map((lang) => {
+    return lang.trim().split(";")[0]?.toLowerCase().split("-")[0];
   });
 
-  for (const lang of languages) {
-    if (lang === "ko") return "ko";
-    if (lang === "en") return "en";
+  for (const lang of acceptedLanguages) {
+    if (lang && locales.includes(lang as Locale)) {
+      return lang as Locale;
+    }
   }
 
   return defaultLocale;
