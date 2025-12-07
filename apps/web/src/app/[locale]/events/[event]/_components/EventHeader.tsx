@@ -29,12 +29,10 @@ export function EventHeader({ event }: { event: Tables<"events"> }) {
     e.preventDefault();
     const trimmedBib = searchBib.trim();
 
-    // 검색어가 있으면 검색, 없으면 초기화(전체 목록으로 이동)
     if (trimmedBib) {
       trackBibSearch(event.event_id, trimmedBib);
       router.push(`/events/${event.event_id}/${trimmedBib}`);
     } else {
-      // 비어있는 경우 초기화
       router.push(`/events/${event.event_id}`);
     }
   };
@@ -44,6 +42,8 @@ export function EventHeader({ event }: { event: Tables<"events"> }) {
     event.organizer_id,
     event.display_mode,
   );
+
+  console.log(label, count, isLoading, runnerName);
 
   const handleBack = () => {
     if (bib) {

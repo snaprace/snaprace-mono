@@ -73,6 +73,7 @@
   },
   "eventHeader": {
     "enterBib": "배번 검색",
+    "allPhotos": "전체 사진",
     "statsFormat": "{label} • {count}장",
     "statsWithRunnerFormat": "{label} • {runnerName} • {count}장"
   },

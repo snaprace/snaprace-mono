@@ -1,4 +1,5 @@
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { api } from "@/trpc/react";
 
 export function useEventStats(
@@ -6,6 +7,7 @@ export function useEventStats(
   organizerId: string,
   displayMode: string,
 ) {
+  const t = useTranslations("eventHeader");
   const params = useParams();
   const currentBib = params?.bib as string | undefined;
 
@@ -36,7 +38,7 @@ export function useEventStats(
   }
 
   return {
-    label: "All Photos",
+    label: t("allPhotos"),
     count: eventCountQuery.data,
     isLoading: eventCountQuery.isLoading,
   };

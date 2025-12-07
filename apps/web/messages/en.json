@@ -73,6 +73,7 @@
   },
   "eventHeader": {
     "enterBib": "Enter bib",
+    "allPhotos": "All Photos",
     "statsFormat": "{label} • {count} photos",
     "statsWithRunnerFormat": "{label} • {runnerName} • {count} photos"
   },
