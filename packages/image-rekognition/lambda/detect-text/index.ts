@@ -38,17 +38,36 @@ export const handler = async (
   const rawText: string[] = [];
   const bibCandidates: string[] = [];
 
-  // 순수 숫자 3~6자리 패턴 (접두사 없음)
-  const BIB_REGEX = /^[0-9]{3,6}$/;
-  // 제외할 패턴 (연도, 0000 등)
-  const EXCLUDED_PATTERNS = ["2025", "0000", "00000", "000000"];
+  // ============================================
+  // 🎯 배번 패턴 설정 (대회에 따라 주석 처리로 전환)
+  // ============================================
+  const BIB_PATTERNS = [
+    /^[0-9]{3,6}$/, // 순수 숫자: 123, 1234
+    // /^[A-Z][0-9]{3,6}$/, // 접두사+숫자: A123, B1234, C12345 (필요시 활성화)
+  ];
+
+  // 제외할 패턴 (연도, 0000 등) - Set으로 O(1) 조회
+  const EXCLUDED_PATTERNS = new Set([
+    // "2024",
+    // "2025",
+    "0000",
+    "00000",
+    "000000",
+  ]);
+
+  // 최소 신뢰도 (오탐 방지용)
+  const MIN_CONFIDENCE = 90;
 
   for (const t of res.TextDetections ?? []) {
     if (!t.DetectedText) continue;
     rawText.push(t.DetectedText);
-    if (t.Type === "WORD") {
-      const match = t.DetectedText.match(BIB_REGEX);
-      if (match && !EXCLUDED_PATTERNS.includes(t.DetectedText)) {
+
+    // WORD 타입 + 신뢰도 90% 이상만 처리
+    if (t.Type === "WORD" && (t.Confidence ?? 0) >= MIN_CONFIDENCE) {
+      const text = t.DetectedText.toUpperCase();
+      const isMatch = BIB_PATTERNS.some((pattern) => pattern.test(text));
+
+      if (isMatch && !EXCLUDED_PATTERNS.has(text)) {
         bibCandidates.push(t.DetectedText);
       }
     }
