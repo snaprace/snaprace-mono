@@ -14,14 +14,15 @@ import {
 } from "@aws-sdk/client-rekognition";
 import * as fs from "fs";
 import * as path from "path";
+import {
+  extractBibsFromDetections,
+  BIB_PATTERNS,
+  EXCLUDED_PATTERNS,
+  MIN_CONFIDENCE,
+} from "../lambda/detect-text/bib-detector";
 
 // AWS 리전 설정
 const rekognition = new RekognitionClient({ region: "ap-northeast-2" });
-
-// 순수 숫자 3~6자리 패턴 (접두사 없음)
-const BIB_REGEX = /^[0-9]{3,6}$/;
-// 제외할 패턴 (0000 등)
-const EXCLUDED_PATTERNS = ["2025", "0000", "00000", "000000"];
 
 async function detectTextFromImage(imagePath: string) {
   const imageBytes = fs.readFileSync(imagePath);
@@ -33,32 +34,6 @@ async function detectTextFromImage(imagePath: string) {
   );
 
   return response.TextDetections ?? [];
-}
-
-/**
- * 수정된 로직: 순수 숫자만 추출 (0000 등 제외)
- */
-function extractBibs(
-  detections: Awaited<ReturnType<typeof detectTextFromImage>>
-): { bibs: string[]; details: Array<{ text: string }> } {
-  const bibSet = new Set<string>();
-  const details: Array<{ text: string }> = [];
-
-  for (const detection of detections) {
-    if (detection.Type === "WORD" && detection.DetectedText) {
-      const match = detection.DetectedText.match(BIB_REGEX);
-      if (match && !EXCLUDED_PATTERNS.includes(detection.DetectedText)) {
-        if (!bibSet.has(detection.DetectedText)) {
-          bibSet.add(detection.DetectedText);
-          details.push({
-            text: detection.DetectedText,
-          });
-        }
-      }
-    }
-  }
-
-  return { bibs: [...bibSet], details };
 }
 
 async function testImage(imagePath: string) {
@@ -81,17 +56,19 @@ async function testImage(imagePath: string) {
       }
     }
 
-    // 수정된 로직 결과
-    const { bibs, details } = extractBibs(detections);
+    // 공통 로직으로 Bib 추출
+    const { bibs } = extractBibsFromDetections(detections);
+
     console.log("\n🔍 Bib Detection 결과:");
     console.log("-".repeat(50));
-    console.log(`  정규표현식: /^[0-9]{3,6}$/`);
-    console.log(`  제외 패턴: ${EXCLUDED_PATTERNS.join(", ")}`);
+    console.log(`  패턴: ${BIB_PATTERNS.map((p) => p.toString()).join(", ")}`);
+    console.log(`  제외: ${[...EXCLUDED_PATTERNS].join(", ")}`);
+    console.log(`  최소 신뢰도: ${MIN_CONFIDENCE}%`);
     console.log("-".repeat(50));
 
-    if (details.length > 0) {
-      for (const { text } of details) {
-        console.log(`  ✅ "${text}"`);
+    if (bibs.length > 0) {
+      for (const bib of bibs) {
+        console.log(`  ✅ "${bib}"`);
       }
       console.log("-".repeat(50));
       console.log(`  📦 최종 저장될 bib: [${bibs.join(", ")}]`);
@@ -99,7 +76,7 @@ async function testImage(imagePath: string) {
       console.log("  ❌ 감지된 bib 없음");
     }
 
-    return { bibs, details, detections };
+    return { bibs, detections };
   } catch (error) {
     console.error(`  ❌ 오류 발생:`, error);
     throw error;
@@ -108,14 +85,11 @@ async function testImage(imagePath: string) {
 
 async function main() {
   const args = process.argv.slice(2);
-
   let imagePaths: string[] = [];
 
   if (args.length > 0) {
-    // 커맨드라인에서 이미지 경로 지정
     imagePaths = args.map((arg) => path.resolve(arg));
   } else {
-    // 기본: test/images 폴더의 모든 이미지
     const imagesDir = path.join(__dirname, "images");
     if (fs.existsSync(imagesDir)) {
       const files = fs
