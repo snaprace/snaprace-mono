@@ -9,8 +9,9 @@ export function createDownloadClickHandler(params: {
   bibNumber?: string;
   index: number;
   isMobile: boolean;
+  t: (key: string) => string;
 }): (e: { stopPropagation?: () => void }) => Promise<void> {
-  const { url, event, bibNumber, index, isMobile } = params;
+  const { url, event, bibNumber, index, isMobile, t } = params;
 
   return async (e: { stopPropagation?: () => void }) => {
     try {
@@ -22,26 +23,26 @@ export function createDownloadClickHandler(params: {
       if (result.success) {
         switch (result.method) {
           case "native_share":
-            toast.success("Shared to save on device!");
+            toast.success(t("sharedToSave"));
             break;
           case "new_tab":
-            toast.info("Opened in new tab. Use browser save.");
+            toast.info(t("openedInNewTab"));
             break;
           case "proxy":
           case "direct":
-            toast.success("Photo download started!");
+            toast.success(t("downloadStarted"));
             break;
           case "newTab":
-            toast.info("Photo opened in new tab. Right-click to save.");
+            toast.info(t("openedInNewTabRightClick"));
             break;
           default:
-            toast.success("Photo download started!");
+            toast.success(t("downloadStarted"));
         }
       } else {
-        toast.error("Unable to download photo.");
+        toast.error(t("unableToDownload"));
       }
     } catch {
-      toast.error("Unable to download photo.");
+      toast.error(t("unableToDownload"));
     }
   };
 }

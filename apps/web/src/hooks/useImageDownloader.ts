@@ -1,12 +1,15 @@
 import { useCallback } from "react";
 import { saveAs } from "file-saver";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 interface UseImageDownloaderProps {
   isMobile: boolean;
 }
 
 export function useImageDownloader({ isMobile }: UseImageDownloaderProps) {
+  const t = useTranslations("toast");
+
   const downloadImage = useCallback(
     async (imageUrl: string, filename: string) => {
       try {
@@ -28,7 +31,7 @@ export function useImageDownloader({ isMobile }: UseImageDownloaderProps) {
 
             if (navigator.canShare?.(shareData)) {
               await navigator.share(shareData);
-              toast.success("Image shared successfully!");
+              toast.success(t("imageShared"));
               return;
             }
           } catch (error) {
@@ -37,7 +40,7 @@ export function useImageDownloader({ isMobile }: UseImageDownloaderProps) {
               console.error("Share failed:", error);
               // Fallback to saving
               saveAs(blob, filename);
-              toast.success("Image downloaded!");
+              toast.success(t("imageDownloaded"));
             }
             return;
           }
@@ -45,10 +48,10 @@ export function useImageDownloader({ isMobile }: UseImageDownloaderProps) {
 
         // Desktop or Web Share API not supported/failed
         saveAs(blob, filename);
-        toast.success("Image downloaded!");
+        toast.success(t("imageDownloaded"));
       } catch (error) {
         console.error("Download failed:", error);
-        toast.error("Failed to download image.");
+        toast.error(t("imageDownloadFailed"));
       }
     },
     [isMobile],

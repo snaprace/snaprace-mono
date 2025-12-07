@@ -24,6 +24,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 interface PhotoActionsProps {
   photo: {
@@ -43,6 +44,7 @@ export function PhotoActions({
   compact = false,
   className = "",
 }: PhotoActionsProps) {
+  const t = useTranslations("toast");
   const [downloading, setDownloading] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -69,7 +71,7 @@ export function PhotoActions({
         } catch {
           // Fallback to opening in new tab if CORS issues
           window.open(photo.url, "_blank");
-          toast.success("Photo opened in new tab for download");
+          toast.success(t("openedInNewTabDownload"));
           return;
         }
       }
@@ -83,10 +85,10 @@ export function PhotoActions({
         URL.revokeObjectURL(link.href);
       }
 
-      toast.success("Photo download started");
+      toast.success(t("downloadStarted"));
     } catch (error) {
       console.error("Download failed:", error);
-      toast.error("Download failed. Please try again.");
+      toast.error(t("downloadFailedRetry"));
     } finally {
       setDownloading(false);
     }
@@ -100,9 +102,9 @@ export function PhotoActions({
           text: shareText,
           url: shareUrl,
         });
-        toast.success("Photo shared successfully!");
+        toast.success(t("photoSharedSuccess"));
       } catch {
-        toast.error("Native sharing cancelled or failed");
+        toast.error(t("nativeShareFailed"));
       }
     }
   };
@@ -111,10 +113,10 @@ export function PhotoActions({
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
-      toast.success("Link copied to clipboard!");
+      toast.success(t("linkCopied"));
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("Failed to copy link");
+      toast.error(t("linkCopyFailed"));
     }
   };
 

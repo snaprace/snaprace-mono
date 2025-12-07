@@ -3,7 +3,6 @@
  */
 
 import { env } from "@/env";
-import { toast } from "sonner";
 
 /**
  * Get original photo URL from S3 Key
@@ -323,7 +322,6 @@ export async function downloadPhoto(
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return downloadWithBlob(await response.blob(), "direct");
   } catch (error) {
-    toast.error("Failed to download photo");
     console.error("CORS fetch failed:", error);
   }
 

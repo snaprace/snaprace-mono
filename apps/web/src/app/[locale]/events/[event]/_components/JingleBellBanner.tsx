@@ -6,8 +6,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
 import { trackEvent } from "@/lib/analytics";
+import { useTranslations } from "next-intl";
 
 export function JingleBellBanner() {
+  const t = useTranslations("toast");
+
   const handleCopy = () => {
     trackEvent("jingle_bell_promo_copy", {
       event_category: "engagement",
@@ -15,7 +18,7 @@ export function JingleBellBanner() {
       promo_code: "JINGLE2025",
     });
     void navigator.clipboard.writeText("JINGLE2025").then(() => {
-      toast.success("Promo code copied to clipboard!");
+      toast.success(t("promoCopied"));
     });
   };
 

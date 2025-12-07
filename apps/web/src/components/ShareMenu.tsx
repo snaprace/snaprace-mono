@@ -22,6 +22,7 @@ import {
   trackShareComplete,
   trackShareLinkCopy,
 } from "@/lib/analytics";
+import { useTranslations } from "next-intl";
 
 interface ShareMenuProps {
   photoUrl: string;
@@ -43,6 +44,7 @@ export function ShareMenu({
   children,
   shareOptions,
 }: ShareMenuProps) {
+  const t = useTranslations("toast");
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const shareableUrl = generateShareablePhotoUrl(photoUrl, shareOptions);
@@ -74,14 +76,14 @@ export function ShareMenu({
       if (eventId) {
         trackShareLinkCopy(eventId, bibNumber, true);
       }
-      toast.success("Link copied to clipboard!");
+      toast.success(t("linkCopied"));
       setIsOpen(false);
     } catch {
       // Track failed link copy
       if (eventId) {
         trackShareLinkCopy(eventId, bibNumber, false);
       }
-      toast.error("Failed to copy link");
+      toast.error(t("linkCopyFailed"));
     }
   };
 
@@ -106,13 +108,13 @@ export function ShareMenu({
 
       switch (result.method) {
         case "native_file":
-          toast.success("Shared with file!");
+          toast.success(t("sharedWithFile"));
           break;
         case "native_url":
-          toast.success("Shared successfully!");
+          toast.success(t("sharedSuccess"));
           break;
         case "clipboard":
-          toast.success("Link copied to clipboard!");
+          toast.success(t("linkCopied"));
           break;
       }
     } else if (result.method !== "cancelled") {
@@ -120,7 +122,7 @@ export function ShareMenu({
       if (eventId) {
         trackShareComplete(eventId, bibNumber, "more", false);
       }
-      toast.error("Failed to share");
+      toast.error(t("shareFailed"));
     }
 
     setIsOpen(false);
