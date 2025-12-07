@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Search, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -18,13 +18,24 @@ export function EventHeader({ event }: { event: Tables<"events"> }) {
   const router = useRouter();
   const params = useParams();
   const bib = params?.bib;
-  const [searchBib, setSearchBib] = useState("");
+  const [searchBib, setSearchBib] = useState(bib ? String(bib) : "");
+
+  const handleClear = () => {
+    setSearchBib("");
+    router.push(`/events/${event.event_id}`);
+  };
 
   const handleBibSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchBib.trim()) {
-      trackBibSearch(event.event_id, searchBib.trim());
-      router.push(`/events/${event.event_id}/${searchBib.trim()}`);
+    const trimmedBib = searchBib.trim();
+
+    // 검색어가 있으면 검색, 없으면 초기화(전체 목록으로 이동)
+    if (trimmedBib) {
+      trackBibSearch(event.event_id, trimmedBib);
+      router.push(`/events/${event.event_id}/${trimmedBib}`);
+    } else {
+      // 비어있는 경우 초기화
+      router.push(`/events/${event.event_id}`);
     }
   };
 
@@ -72,16 +83,28 @@ export function EventHeader({ event }: { event: Tables<"events"> }) {
         <div className="w-10 md:w-auto">
           <form
             onSubmit={handleBibSearch}
-            className="hidden items-center gap-2 md:flex"
+            className="relative hidden items-center gap-2 md:flex"
           >
-            <Input
-              type="text"
-              placeholder={t("enterBib")}
-              value={searchBib}
-              onChange={(e) => setSearchBib(e.target.value)}
-              className="w-[100px] border border-gray-200 transition-all duration-300 focus:w-[140px]"
-            />
-            <Button type="submit" size="sm" disabled={!searchBib.trim()}>
+            <div className="relative">
+              <Input
+                type="text"
+                placeholder={t("enterBib")}
+                value={searchBib}
+                onChange={(e) => setSearchBib(e.target.value)}
+                className="w-[100px] border border-gray-200 pr-8 transition-all duration-300 focus:w-[140px]"
+              />
+              {(searchBib || bib) && (
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="absolute top-1/2 right-2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+
+            <Button type="submit" size="sm">
               <Search className="h-4 w-4" />
             </Button>
           </form>
