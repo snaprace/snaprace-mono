@@ -43,8 +43,6 @@ export function EventHeader({ event }: { event: Tables<"events"> }) {
     event.display_mode,
   );
 
-  console.log(label, count, isLoading, runnerName);
-
   const handleBack = () => {
     if (bib) {
       router.push(`/events/${event.event_id}`);
