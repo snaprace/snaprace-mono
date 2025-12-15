@@ -112,7 +112,7 @@ export function AdBanner({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
-                className="max-w-md text-sm text-white/80 md:text-base"
+                className="w-full text-sm text-white/80 md:text-base"
               >
                 {description}
               </motion.p>
