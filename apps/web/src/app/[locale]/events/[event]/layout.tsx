@@ -4,8 +4,8 @@ import type { Metadata } from "next";
 
 import { getEventById, type Event } from "@/server/services/events";
 import { EventHeader } from "./_components/EventHeader";
-import { JingleBellBanner } from "./_components/JingleBellBanner";
 import { env } from "@/env";
+import { AdBanner } from "./_components/AdBanner";
 
 export async function generateMetadata({
   params,
@@ -90,7 +90,18 @@ export default async function EventLayout({
   return (
     <div className="min-h-[calc(100vh-64px)] bg-white">
       <EventHeader event={event} />
-      {event.organizer_id === "winningeventsgroup" && <JingleBellBanner />}
+      {event.organizer_id === "winningeventsgroup" && (
+        <AdBanner
+          title="Winning Events Group — Creating Unforgettable Experiences"
+          description="Trusted race management for runners, communities, and charities since 2013"
+          backgroundImage="https://wvlrlvkfgwsbbhcsuarh.supabase.co/storage/v1/object/public/assets/winningeventsgroup/ad-banner-background.png"
+          ctaLink="https://winningeventsgroup.com/"
+          ctaText="Get Started"
+          instagramHandle="winningeventsgroup"
+          logoImage="https://wvlrlvkfgwsbbhcsuarh.supabase.co/storage/v1/object/public/assets/winningeventsgroup/logo.png"
+          gradientTheme="blue"
+        />
+      )}
       {children}
     </div>
   );
