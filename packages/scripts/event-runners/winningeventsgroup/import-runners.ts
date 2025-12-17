@@ -227,8 +227,7 @@ async function upsertSubEvent(subEvent: SubEventInsert): Promise<string> {
   const client = getSupabaseClient();
 
   // Try to find existing sub_event
-  const { data: existing } = await (client
-    .from("sub_events") as any)
+  const { data: existing } = await (client.from("sub_events") as any)
     .select("sub_event_id")
     .eq("event_id", subEvent.event_id)
     .eq("slug", subEvent.slug)
@@ -243,8 +242,7 @@ async function upsertSubEvent(subEvent: SubEventInsert): Promise<string> {
       is_relay: subEvent.is_relay,
       sort_order: subEvent.sort_order,
     };
-    const { error } = await (client
-      .from("sub_events") as any)
+    const { error } = await (client.from("sub_events") as any)
       .update(updateData)
       .eq("sub_event_id", (existing as any).sub_event_id);
 
@@ -257,8 +255,7 @@ async function upsertSubEvent(subEvent: SubEventInsert): Promise<string> {
   }
 
   // Insert new
-  const { data, error } = await (client
-    .from("sub_events") as any)
+  const { data, error } = await (client.from("sub_events") as any)
     .insert(subEvent)
     .select("sub_event_id")
     .single();
@@ -350,9 +347,26 @@ async function main() {
       default: false,
       description: "If true, do not insert into database",
     })
+    .option("exclude_bibs", {
+      type: "string",
+      description:
+        "Comma-separated list of bib numbers to exclude (e.g. DNF runners)",
+    })
     .help().argv;
 
-  const { event_id, api_url, dry_run } = argv;
+  const { event_id, api_url, dry_run, exclude_bibs } = argv;
+
+  // Parse exclude_bibs option
+  const excludeBibSet = new Set<number>();
+  if (exclude_bibs) {
+    exclude_bibs.split(",").forEach((bib) => {
+      const num = parseInt(bib.trim(), 10);
+      if (!isNaN(num)) {
+        excludeBibSet.add(num);
+      }
+    });
+    console.log(`\n🚫 Excluding bibs: ${Array.from(excludeBibSet).join(", ")}`);
+  }
 
   console.log(`\n📡 Fetching data from ${api_url}...`);
 
@@ -366,9 +380,25 @@ async function main() {
 
     console.log(`✅ Fetched ${data.length} records.`);
 
+    // Filter out excluded bibs
+    let filteredData = data;
+    if (excludeBibSet.size > 0) {
+      filteredData = data.filter((item) => {
+        const bib = parseNumber(item.Bib);
+        if (bib !== null && excludeBibSet.has(bib)) {
+          console.log(`  🚫 Excluding bib ${bib}: ${item.Name ?? "Unknown"}`);
+          return false;
+        }
+        return true;
+      });
+      console.log(
+        `✅ After exclusion: ${filteredData.length} records (excluded ${data.length - filteredData.length})`
+      );
+    }
+
     // 1. Group raw data by Contest (category)
     const contestGroups = new Map<string, RaceresultItem[]>();
-    data.forEach((item) => {
+    filteredData.forEach((item) => {
       const contest = item.Contest?.trim() || "__default__";
       if (!contestGroups.has(contest)) {
         contestGroups.set(contest, []);
@@ -430,7 +460,7 @@ async function main() {
     // 3. Process runners with sub_event_id
     console.log(`\n🔄 Processing runners...`);
 
-    const runners: RunnerInsert[] = data.map((item) => {
+    const runners: RunnerInsert[] = filteredData.map((item) => {
       const contest = item.Contest?.trim() || "__default__";
       const subEventId = subEventMap.get(contest)!;
       const meta = subEventMetaMap.get(contest)!;
