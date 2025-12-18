@@ -7,10 +7,8 @@ interface ImageLoaderProps {
 }
 
 export default function imageLoader({ src, width, quality }: ImageLoaderProps) {
-  // If src is already a full URL (e.g. external), return it as is
   if (src.startsWith("http") || src.startsWith("https")) return src;
 
-  // Local static images (starting with /) should return as is
   if (src.startsWith("/")) return src;
 
   const IMAGE_HANDLER_URL = process.env.NEXT_PUBLIC_IMAGE_HANDLER_URL;
@@ -37,7 +35,6 @@ export default function imageLoader({ src, width, quality }: ImageLoaderProps) {
   };
 
   const json = JSON.stringify(imageRequest);
-  // Safe base64 encoding for Unicode characters
   const encoded = btoa(
     encodeURIComponent(json).replace(
       /%([0-9A-F]{2})/g,
