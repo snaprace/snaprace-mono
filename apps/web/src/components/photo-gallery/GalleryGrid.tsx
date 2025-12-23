@@ -14,6 +14,9 @@ interface GalleryGridProps {
   fetchNextPage: () => void;
   onPhotoClick: (index: number) => void;
   isMobile: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelection?: (id: string) => void;
+  isSelectionMode?: boolean;
 }
 
 export function GalleryGrid({
@@ -24,6 +27,9 @@ export function GalleryGrid({
   fetchNextPage,
   onPhotoClick,
   isMobile,
+  selectedIds,
+  onToggleSelection,
+  isSelectionMode,
 }: GalleryGridProps) {
   const columns = (containerWidth: number) => {
     if (containerWidth < 834) return 2;
@@ -43,7 +49,15 @@ export function GalleryGrid({
         columns={columns}
         spacing={4}
         render={{
-          image: MasonryImage,
+          image: (props, context) => (
+            <MasonryImage
+              {...props}
+              {...context}
+              selectedIds={selectedIds}
+              onToggleSelection={onToggleSelection}
+              isSelectionMode={isSelectionMode}
+            />
+          ),
           button: ({ onClick, ...rest }) => (
             // Override button rendering to div to avoid nested buttons
             <div

@@ -17,7 +17,11 @@
     "openedInNewTabDownload": "Photo opened in new tab for download",
     "downloadFailedRetry": "Download failed. Please try again.",
     "photoSharedSuccess": "Photo shared successfully!",
-    "nativeShareFailed": "Native sharing cancelled or failed"
+    "nativeShareFailed": "Native sharing cancelled or failed",
+    "bulkDownloadComplete": "Downloaded {count} photos successfully!",
+    "generatingZip": "Generating ZIP file...",
+    "selectionLimitReached": "Maximum {max} photos can be selected at once.",
+    "downloadPartialFailure": "Downloaded {success} of {total} photos. {failed} failed."
   },
   "common": {
     "search": "Search",
@@ -36,7 +40,9 @@
     "close": "Close",
     "all": "All",
     "photos": "photos",
-    "allRightsReserved": "All rights reserved"
+    "allRightsReserved": "All rights reserved",
+    "selected": "{count} Selected",
+    "clear": "Clear"
   },
   "home": {
     "title": "Find your snap",

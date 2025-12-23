@@ -17,7 +17,11 @@
     "openedInNewTabDownload": "다운로드를 위해 새 탭에서 사진이 열렸습니다",
     "downloadFailedRetry": "다운로드에 실패했습니다. 다시 시도해 주세요.",
     "photoSharedSuccess": "사진이 성공적으로 공유되었습니다!",
-    "nativeShareFailed": "공유가 취소되었거나 실패했습니다"
+    "nativeShareFailed": "공유가 취소되었거나 실패했습니다",
+    "bulkDownloadComplete": "{count}장의 사진이 다운로드 완료되었습니다!",
+    "generatingZip": "ZIP 파일을 생성하는 중입니다...",
+    "selectionLimitReached": "최대 {max}장까지 선택할 수 있습니다.",
+    "downloadPartialFailure": "{total}장 중 {success}장 다운로드 완료. {failed}장 실패."
   },
   "common": {
     "search": "검색",
@@ -36,7 +40,9 @@
     "close": "닫기",
     "all": "전체",
     "photos": "장",
-    "allRightsReserved": "All rights reserved"
+    "allRightsReserved": "All rights reserved",
+    "selected": "{count}장 선택됨",
+    "clear": "선택 해제"
   },
   "home": {
     "title": "Find your snap",
