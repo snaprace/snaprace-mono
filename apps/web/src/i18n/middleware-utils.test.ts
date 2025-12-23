@@ -1,9 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   shouldSkipLocaleHandling,
-  getLocaleFromPathname,
-  isPotentialLocale,
-  getUnsupportedLocaleFromPathname,
   detectLocaleFromAcceptLanguage,
   extractSubdomain,
 } from "./middleware-utils";
@@ -16,7 +13,6 @@ describe("shouldSkipLocaleHandling", () => {
   });
 
   it("제외 경로는 스킵", () => {
-    // /api는 미들웨어에서 직접 처리 (x-organization 헤더 설정)
     expect(shouldSkipLocaleHandling("/_next/static")).toBe(true);
     expect(shouldSkipLocaleHandling("/favicon.ico")).toBe(true);
   });
@@ -28,57 +24,7 @@ describe("shouldSkipLocaleHandling", () => {
 
   it("일반 경로는 스킵 안함", () => {
     expect(shouldSkipLocaleHandling("/events")).toBe(false);
-    expect(shouldSkipLocaleHandling("/ko/events")).toBe(false);
     expect(shouldSkipLocaleHandling("/")).toBe(false);
-  });
-});
-
-describe("getLocaleFromPathname", () => {
-  it("경로에서 locale 추출", () => {
-    expect(getLocaleFromPathname("/ko/events")).toBe("ko");
-    expect(getLocaleFromPathname("/en/events")).toBe("en");
-    expect(getLocaleFromPathname("/ko")).toBe("ko");
-  });
-
-  it("locale 없으면 null 반환", () => {
-    expect(getLocaleFromPathname("/events")).toBe(null);
-    expect(getLocaleFromPathname("/")).toBe(null);
-    expect(getLocaleFromPathname("/ja/events")).toBe(null);
-  });
-});
-
-describe("isPotentialLocale", () => {
-  it("2-3글자 소문자는 잠재적 locale", () => {
-    expect(isPotentialLocale("en")).toBe(true);
-    expect(isPotentialLocale("ko")).toBe(true);
-    expect(isPotentialLocale("fr")).toBe(true);
-    expect(isPotentialLocale("jpn")).toBe(true);
-  });
-
-  it("그 외는 locale 아님", () => {
-    expect(isPotentialLocale("events")).toBe(false);
-    expect(isPotentialLocale("EN")).toBe(false);
-    expect(isPotentialLocale("e")).toBe(false);
-    expect(isPotentialLocale("")).toBe(false);
-  });
-});
-
-describe("getUnsupportedLocaleFromPathname", () => {
-  it("지원하지 않는 locale 감지", () => {
-    expect(getUnsupportedLocaleFromPathname("/fr/events")).toBe("fr");
-    expect(getUnsupportedLocaleFromPathname("/ja/events")).toBe("ja");
-    expect(getUnsupportedLocaleFromPathname("/de")).toBe("de");
-  });
-
-  it("지원하는 locale은 null 반환", () => {
-    expect(getUnsupportedLocaleFromPathname("/en/events")).toBe(null);
-    expect(getUnsupportedLocaleFromPathname("/ko/events")).toBe(null);
-  });
-
-  it("locale 아닌 경로는 null 반환", () => {
-    expect(getUnsupportedLocaleFromPathname("/events")).toBe(null);
-    expect(getUnsupportedLocaleFromPathname("/")).toBe(null);
-    expect(getUnsupportedLocaleFromPathname("/privacy-policy")).toBe(null);
   });
 });
 

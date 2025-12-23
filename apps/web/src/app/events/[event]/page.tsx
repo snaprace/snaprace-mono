@@ -1,13 +1,13 @@
 import { getEventById } from "@/server/services/events";
 import { notFound } from "next/navigation";
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getLocale } from "next-intl/server";
 import { EventPageContent } from "./_components/EventPageContent";
 import { PartnerBanner } from "./_components/PartnerBanner";
 import type { Metadata } from "next";
 import { getPhotoMetadata } from "@/server/utils/metadata";
 
 type Props = {
-  params: Promise<{ event: string; locale: string }>;
+  params: Promise<{ event: string }>;
   searchParams: Promise<{ pid?: string }>;
 };
 
@@ -40,9 +40,10 @@ export async function generateMetadata({
 export default async function EventPage({
   params,
 }: {
-  params: Promise<{ event: string; locale: string }>;
+  params: Promise<{ event: string }>;
 }) {
-  const { event: eventId, locale } = await params;
+  const { event: eventId } = await params;
+  const locale = await getLocale();
   setRequestLocale(locale);
 
   const event = await getEventById({ eventId });

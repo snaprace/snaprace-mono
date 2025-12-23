@@ -1,17 +1,11 @@
-import createMiddleware from "next-intl/middleware";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { routing } from "./i18n/routing";
 import {
   shouldSkipLocaleHandling,
-  getLocaleFromPathname,
-  getUnsupportedLocaleFromPathname,
   detectLocaleFromAcceptLanguage,
   extractSubdomain,
 } from "./i18n/middleware-utils";
-import { locales, defaultLocale, type Locale } from "./i18n/config";
-
-const intlMiddleware = createMiddleware(routing);
+import { locales, type Locale } from "./i18n/config";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -42,60 +36,41 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 경로에서 locale 확인
-  const pathnameLocale = getLocaleFromPathname(pathname);
+  // 하위 호환성을 위한 리다이렉션: /ko/events -> /events
+  const segments = pathname.split("/");
+  const localeFromPath = segments[1];
 
-  // 지원하지 않는 locale이면 기본 locale로 리다이렉트 (예: /fr/events → /en/events)
-  const unsupportedLocale = getUnsupportedLocaleFromPathname(pathname);
-  if (unsupportedLocale) {
-    const pathWithoutLocale =
-      pathname.replace(`/${unsupportedLocale}`, "") || "/";
-    const newUrl = new URL(
-      `/${defaultLocale}${pathWithoutLocale}${request.nextUrl.search}`,
-      request.url,
-    );
-    const response = NextResponse.redirect(newUrl, { status: 308 });
-    if (subdomain) {
-      response.headers.set("x-organization", subdomain);
-    }
+  if (localeFromPath && locales.includes(localeFromPath as Locale)) {
+    segments.splice(1, 1);
+    const newPath = segments.join("/") || "/";
+    const response = NextResponse.redirect(new URL(newPath, request.url), {
+      status: 301
+    });
+    response.cookies.set("NEXT_LOCALE", localeFromPath, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: "lax",
+    });
     return response;
   }
 
-  // locale 없으면 리다이렉트
-  if (!pathnameLocale) {
-    const cookieLocale = request.cookies.get("NEXT_LOCALE")?.value as
-      | Locale
-      | undefined;
-    let targetLocale: Locale;
+  const response = NextResponse.next();
 
-    if (cookieLocale && locales.includes(cookieLocale)) {
-      targetLocale = cookieLocale;
-    } else {
-      const acceptLanguage = request.headers.get("Accept-Language");
-      targetLocale = detectLocaleFromAcceptLanguage(acceptLanguage);
-    }
+  // 현재 locale 결정 (쿠키 -> Accept-Language -> 기본값)
+  const cookieLocale = request.cookies.get("NEXT_LOCALE")?.value as Locale | undefined;
+  let targetLocale: Locale;
 
-    const newUrl = new URL(
-      `/${targetLocale}${pathname}${request.nextUrl.search}`,
-      request.url,
-    );
-    const response = NextResponse.redirect(newUrl, { status: 308 });
-
-    if (subdomain) {
-      response.headers.set("x-organization", subdomain);
-    }
-
-    return response;
+  if (cookieLocale && locales.includes(cookieLocale)) {
+    targetLocale = cookieLocale;
+  } else {
+    const acceptLanguage = request.headers.get("Accept-Language");
+    targetLocale = detectLocaleFromAcceptLanguage(acceptLanguage);
   }
 
-  // next-intl 미들웨어 실행
-  const response = intlMiddleware(request);
-
-  // 커스텀 헤더 추가
   if (subdomain) {
     response.headers.set("x-organization", subdomain);
   }
-  response.headers.set("x-locale", pathnameLocale);
+  response.headers.set("x-locale", targetLocale);
 
   return response;
 }

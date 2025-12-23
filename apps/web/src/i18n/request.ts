@@ -5,6 +5,11 @@ import type { Locale } from "./config";
 export default getRequestConfig(async ({ requestLocale }) => {
   let locale = await requestLocale;
 
+  if (!locale) {
+    const { headers } = await import("next/headers");
+    locale = (await headers()).get("x-locale") ?? undefined;
+  }
+
   if (!locale || !routing.locales.includes(locale as Locale)) {
     locale = routing.defaultLocale;
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import EventsGrid from "./_components/EventsGrid";
 import { api } from "@/trpc/react";
 import { EventsGridSkeleton } from "@/components/states/EventsSkeleton";
@@ -13,8 +13,8 @@ import { getCountryFromLocale, type Locale } from "@/i18n/config";
 export default function EventsPage() {
   const t = useTranslations("events");
   const { organizer } = useOrganizer();
-  const params = useParams<{ locale: string }>();
-  const country = organizer ? undefined : getCountryFromLocale(params.locale as Locale);
+  const locale = useLocale() as Locale;
+  const country = organizer ? undefined : getCountryFromLocale(locale);
 
   const eventsQuery = api.events.getAll.useQuery({ country });
 

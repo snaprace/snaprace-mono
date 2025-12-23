@@ -6,27 +6,33 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { usePathname, useParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useOrganizer } from "@/contexts/OrganizerContext";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import type { Locale } from "@/i18n/config";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+
+function isActiveNavItem(pathname: string, href: string): boolean {
+  if (href === "/") {
+    return pathname === "/";
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function Header() {
   const t = useTranslations();
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const pathname = usePathname();
-  const params = useParams<{ locale: string }>();
   const { organizer } = useOrganizer();
-  const locale = (params.locale || "en") as Locale;
+  const locale = useLocale() as Locale
 
   // Disable sticky on photo detail pages: /events/[event]/[bib]
-  const isPhotoPage = /^\/[a-z]{2}\/events\/[^/]+\/[^/]+$/.test(pathname);
+  const isPhotoPage = /^\/events\/[^/]+\/[^/]+$/.test(pathname);
 
   const navigation = [
-    { name: t("common.search"), href: `/${locale}` },
-    { name: t("events.title"), href: `/${locale}/events` },
+    { name: t("common.search"), href: `/` },
+    { name: t("events.title"), href: `/events` },
   ];
 
   return (
@@ -65,9 +71,7 @@ export function Header() {
           {/* Desktop Navigation */}
           <nav className="hidden items-center space-x-8 md:flex">
             {navigation.map((item) => {
-              const isActive =
-                pathname === item.href ||
-                (item.href !== `/${locale}` && pathname.startsWith(item.href));
+              const isActive = isActiveNavItem(pathname, item.href);
 
               const navLinkClass = `text-sm transition-colors ${
                 isActive
@@ -136,10 +140,7 @@ export function Header() {
 
                   <nav className="flex flex-col space-y-3">
                     {navigation.map((item) => {
-                      const isActive =
-                        pathname === item.href ||
-                        (item.href !== `/${locale}` &&
-                          pathname.startsWith(item.href));
+                      const isActive = isActiveNavItem(pathname, item.href);
 
                       return (
                         <Link

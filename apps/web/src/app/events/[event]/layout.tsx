@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getLocale } from "next-intl/server";
 import type { Metadata } from "next";
 
 import { getEventById, type Event } from "@/server/services/events";
@@ -10,8 +10,9 @@ import { AdBanner } from "./_components/AdBanner";
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ event: string; locale: string }>;
+  params: Promise<{ event: string }>;
 }): Promise<Metadata> {
+  const locale = await getLocale();
   const eventId = (await params).event;
   const event: Event | null = await getEventById({ eventId });
 
@@ -76,21 +77,24 @@ export default async function EventLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ event: string; locale: string }>;
+  params: Promise<{ event: string }>;
 }) {
-  const { event: eventId, locale } = await params;
+  const { event: eventId } = await params;
+  const locale = await getLocale();
   setRequestLocale(locale);
 
-  const event: Event | null = await getEventById({ eventId });
+  const event = await getEventById({ eventId });
 
   if (!event) {
     notFound();
   }
 
+  const typedEvent = event;
+
   return (
     <div className="min-h-[calc(100vh-64px)] bg-white">
-      <EventHeader event={event} />
-      {event.organizer_id === "winningeventsgroup" && (
+      <EventHeader event={typedEvent} />
+      {typedEvent.organizer_id === "winningeventsgroup" && (
         <AdBanner
           title="Winning Events Group — Creating Unforgettable Experiences"
           description="Trusted race management for runners, communities, and charities since 2013"

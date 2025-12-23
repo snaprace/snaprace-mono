@@ -1,19 +1,15 @@
 import { headers } from "next/headers";
 import { createServerClient } from "@repo/supabase";
-import { setRequestLocale, getTranslations } from "next-intl/server";
+import { getLocale, setRequestLocale, getTranslations } from "next-intl/server";
 import { env } from "@/env";
 import { Footer } from "@/components/Footer";
 import { getOrganizerBySubdomainServer } from "@/server/services/organizers-server";
 import { listEvents, type Event } from "@/server/services/events";
-import { HomeSearch } from "@/app/_components/HomeSearch";
+import { HomeSearch } from "./_components/HomeSearch";
 import { getCountryFromLocale, type Locale } from "@/i18n/config";
 
-export default async function HomePage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = await params;
+export default async function HomePage() {
+  const locale = (await getLocale()) as Locale;
   setRequestLocale(locale);
 
   const t = await getTranslations("home");
@@ -32,7 +28,7 @@ export default async function HomePage({
   try {
     const country = organizer
       ? undefined
-      : getCountryFromLocale(locale as Locale);
+      : getCountryFromLocale(locale);
     events = await listEvents({
       supabase,
       organizationId: organizer?.organizer_id,

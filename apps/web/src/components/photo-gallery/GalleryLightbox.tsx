@@ -2,10 +2,14 @@ import React from "react";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import {
-  ArrowDownToLine,
-  ArrowLeftIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
+  ArrowDown,
+  
+  ArrowLeft, 
+
+  ChevronLeft,
+
+  ChevronRight, 
+
   Forward,
 } from "lucide-react";
 import NextJsImage from "./NextJsImage";
@@ -113,7 +117,7 @@ export function GalleryLightbox({
             >
               {!isMobile && (
                 <div className="absolute top-1/2 left-[-10%] -translate-y-1/2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                  <ChevronLeftIcon
+                  <ChevronLeft
                     size={30}
                     strokeWidth={1}
                     className="text-gray-500 drop-shadow-md hover:text-gray-800"
@@ -130,7 +134,7 @@ export function GalleryLightbox({
                 right: 0,
                 top: 0,
                 width: "33.33%",
-                height: "100%",
+                height: "calc(100% - 85px)",
                 cursor: "pointer",
                 zIndex: 2,
               }}
@@ -138,7 +142,7 @@ export function GalleryLightbox({
             >
               {!isMobile && (
                 <div className="absolute top-1/2 right-[-10%] -translate-y-1/2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                  <ChevronRightIcon
+                  <ChevronRight
                     size={30}
                     strokeWidth={1}
                     className="text-gray-500 drop-shadow-md hover:text-gray-800"
@@ -194,7 +198,7 @@ export function GalleryLightbox({
             }}
             onClick={onClose}
           >
-            <ArrowLeftIcon size={18} strokeWidth={1.5} />
+            <ArrowLeft size={18} strokeWidth={1.5} />
           </button>,
           <div
             key="actions"
@@ -210,7 +214,7 @@ export function GalleryLightbox({
               className="flex h-8 w-8 cursor-pointer items-center justify-center text-gray-400"
               onClick={handleDownload}
             >
-              <ArrowDownToLine size={18} strokeWidth={1.5} />
+              <ArrowDown   size={18} strokeWidth={1.5} />
             </button>
             {currentPhoto && (
               <ShareDialog

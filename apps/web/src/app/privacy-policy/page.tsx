@@ -1,5 +1,5 @@
 import { type Metadata } from "next";
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getLocale } from "next-intl/server";
 import { PrivacyPolicy } from "@/components/legal/PrivacyPolicy";
 
 export const metadata: Metadata = {
@@ -11,12 +11,8 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function PrivacyPolicyPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = await params;
+export default async function PrivacyPolicyPage() {
+  const locale = await getLocale();
   setRequestLocale(locale);
 
   return (

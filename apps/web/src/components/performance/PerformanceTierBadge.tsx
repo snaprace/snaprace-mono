@@ -121,10 +121,12 @@ export const PerformanceTierBadge = forwardRef<
             "group text-foreground inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium",
             className,
           )}
-          style={{
-            backgroundColor,
-            borderColor,
-          }}
+          style={
+            ({
+              backgroundColor,
+              borderColor,
+            })
+          }
           {...props}
         >
           <span className="flex items-center gap-2" style={accentStyle}>

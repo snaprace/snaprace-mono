@@ -18,36 +18,6 @@ export function shouldSkipLocaleHandling(pathname: string): boolean {
   );
 }
 
-export function getLocaleFromPathname(pathname: string): Locale | null {
-  const segments = pathname.split("/");
-  const firstSegment = segments[1];
-
-  if (firstSegment && locales.includes(firstSegment as Locale)) {
-    return firstSegment as Locale;
-  }
-  return null;
-}
-
-export function isPotentialLocale(segment: string): boolean {
-  return /^[a-z]{2,3}$/.test(segment);
-}
-
-export function getUnsupportedLocaleFromPathname(
-  pathname: string,
-): string | null {
-  const segments = pathname.split("/");
-  const firstSegment = segments[1];
-
-  if (
-    firstSegment &&
-    isPotentialLocale(firstSegment) &&
-    !locales.includes(firstSegment as Locale)
-  ) {
-    return firstSegment;
-  }
-  return null;
-}
-
 export function detectLocaleFromAcceptLanguage(header: string | null): Locale {
   if (!header) return defaultLocale;
 
