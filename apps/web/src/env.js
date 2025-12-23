@@ -17,11 +17,14 @@ export const env = createEnv({
     // Auth.js (NextAuth) configuration
     AUTH_SECRET: z.string(),
     AUTH_URL: z.string().url().optional(),
+    GOOGLE_CLIENT_ID: z.string(),
+    GOOGLE_CLIENT_SECRET: z.string(),
     // Crisp
     CRISP_WEBSITE_ID: z.string(),
     // Supabase DB
     SUPABASE_URL: z.string().url(),
     SUPABASE_ANON_KEY: z.string(),
+    SUPABASE_SERVICE_ROLE_KEY: z.string(),
     // Search by Selfie API
     SEARCH_BY_SELFIE_FUNCTION_NAME: z.string(),
   },
@@ -53,6 +56,8 @@ export const env = createEnv({
     SEARCH_BY_SELFIE_FUNCTION_NAME: process.env.SEARCH_BY_SELFIE_FUNCTION_NAME,
     AUTH_SECRET: process.env.AUTH_SECRET,
     AUTH_URL: process.env.AUTH_URL,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     // Crisp
     CRISP_WEBSITE_ID: process.env.CRISP_WEBSITE_ID,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
@@ -61,6 +66,7 @@ export const env = createEnv({
     // Supabase DB
     SUPABASE_URL: process.env.SUPABASE_URL,
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     // Image Handler
     NEXT_PUBLIC_IMAGE_HANDLER_URL: process.env.NEXT_PUBLIC_IMAGE_HANDLER_URL,
     NEXT_PUBLIC_IMAGE_BUCKET: process.env.NEXT_PUBLIC_IMAGE_BUCKET,

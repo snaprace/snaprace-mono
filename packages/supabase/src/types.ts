@@ -229,6 +229,69 @@ export type Database = {
         }
         Relationships: []
       }
+      organizer_members: {
+        Row: {
+          created_at: string | null
+          member_role: string
+          organizer_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          member_role?: string
+          organizer_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          member_role?: string
+          organizer_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizer_members_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizers"
+            referencedColumns: ["organizer_id"]
+          },
+          {
+            foreignKeyName: "organizer_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          role: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          role?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          role?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       photographers: {
         Row: {
           active: boolean

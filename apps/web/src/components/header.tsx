@@ -29,6 +29,9 @@ export function Header() {
 
   // Disable sticky on photo detail pages: /events/[event]/[bib]
   const isPhotoPage = /^\/events\/[^/]+\/[^/]+$/.test(pathname);
+  const isAdminPage = pathname.includes("/admin");
+
+  if (isAdminPage) return null;
 
   const navigation = [
     { name: t("common.search"), href: `/` },

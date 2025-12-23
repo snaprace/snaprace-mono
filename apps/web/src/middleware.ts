@@ -6,8 +6,9 @@ import {
   extractSubdomain,
 } from "./i18n/middleware-utils";
 import { locales, type Locale } from "./i18n/config";
+import { auth } from "./server/auth";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get("host") || "";
 
@@ -52,6 +53,36 @@ export function middleware(request: NextRequest) {
       sameSite: "lax",
     });
     return response;
+  }
+
+  // Auth Checks for Admin
+  if (pathname.startsWith("/admin")) {
+    const session = await auth();
+    const isLoginPage = pathname.includes("/login") || pathname.includes("/signup");
+
+    if (!session && !isLoginPage) {
+      // 로그인 안됨 -> 로그인 페이지로 리다이렉트
+      const loginUrl = new URL(`/admin/login`, request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    if (session) {
+      const userRole = (session.user as any).role;
+      
+      // 1. 메인 도메인 Admin -> SUPER_ADMIN 만 허용
+      if (!subdomain && pathname.startsWith("/admin")) {
+        if (userRole !== "SUPER_ADMIN" && !isLoginPage) {
+          return NextResponse.redirect(new URL(`/unauthorized`, request.url));
+        }
+      }
+
+      // 2. 서브도메인 Admin -> 해당 조직원인지 확인 (DB 조회 필요할 수 있지만, 여기서는 기본 역할 체크)
+      if (subdomain && pathname.startsWith("/admin")) {
+        if (userRole !== "ORGANIZER" && userRole !== "SUPER_ADMIN" && !isLoginPage) {
+          return NextResponse.redirect(new URL(`/unauthorized`, request.url));
+        }
+      }
+    }
   }
 
   const response = NextResponse.next();
