@@ -32,6 +32,9 @@ export const authConfig = {
     url: env.SUPABASE_URL,
     secret: (env as any).SUPABASE_SERVICE_ROLE_KEY,
   }) as any,
+  session: {
+    strategy: "jwt",
+  },
   providers: [
     GoogleProvider({
       clientId: (env as any).GOOGLE_CLIENT_ID,
@@ -44,6 +47,7 @@ export const authConfig = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
+        console.log(">>>> AUTH: authorize called", { email: credentials?.email });
         if (!credentials?.email || !credentials?.password) return null;
 
         const supabase = createServerClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
@@ -94,16 +98,19 @@ export const authConfig = {
 
       return true;
     },
-    session: ({ session, user, token }) => {
-      // With adapter, user is the user from database
-      return {
-        ...session,
-        user: {
-          ...session.user,
-          id: user.id,
-          role: (user as any).role,
-        },
-      };
+    jwt: ({ token, user }) => {
+      if (user) {
+        token.role = (user as any).role;
+        token.id = user.id;
+      }
+      return token;
+    },
+    session: ({ session, token }) => {
+      if (token && session.user) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as any;
+      }
+      return session;
     },
   },
 } satisfies NextAuthConfig;

@@ -68,10 +68,12 @@ export async function middleware(request: NextRequest) {
 
     if (session) {
       const userRole = (session.user as any).role;
+      console.log(">>>> MW: session found, role:", userRole, "subdomain:", subdomain);
       
       // 1. 메인 도메인 Admin -> SUPER_ADMIN 만 허용
       if (!subdomain && pathname.startsWith("/admin")) {
         if (userRole !== "SUPER_ADMIN" && !isLoginPage) {
+          console.log(">>>> MW: Main domain admin access denied for non-SUPER_ADMIN");
           return NextResponse.redirect(new URL(`/unauthorized`, request.url));
         }
       }
@@ -79,6 +81,7 @@ export async function middleware(request: NextRequest) {
       // 2. 서브도메인 Admin -> 해당 조직원인지 확인 (DB 조회 필요할 수 있지만, 여기서는 기본 역할 체크)
       if (subdomain && pathname.startsWith("/admin")) {
         if (userRole !== "ORGANIZER" && userRole !== "SUPER_ADMIN" && !isLoginPage) {
+          console.log(">>>> MW: Subdomain admin access denied for non-ORGANIZER/SUPER_ADMIN");
           return NextResponse.redirect(new URL(`/unauthorized`, request.url));
         }
       }

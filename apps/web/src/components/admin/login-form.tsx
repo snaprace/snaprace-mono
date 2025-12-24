@@ -49,7 +49,7 @@ export function LoginForm() {
         toast.success("Login Successful", {
           description: "Redirecting to dashboard...",
         });
-        router.push(`/${locale}/admin`);
+        router.push(`/admin`);
         router.refresh();
       }
     } catch (error) {
