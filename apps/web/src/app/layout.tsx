@@ -178,6 +178,12 @@ export default async function RootLayout({
             `,
           }}
         />
+        <script
+          defer
+          data-website-id="dfid_lcanOkGnCi6WspWy3muYC"
+          data-domain="snap-race.com"
+          src="https://datafa.st/js/script.js"
+        ></script>
       </head>
       <body className="bg-background m-0 min-h-screen antialiased">
         <NextIntlClientProvider key={locale} messages={messages}>
